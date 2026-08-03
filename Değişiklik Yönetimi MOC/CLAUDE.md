@@ -41,6 +41,9 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   (`moc_etki_checklist_setleri`/`_maddeleri`/`_yanitlari` + RLS/GRANT +
   2 hazır global set seed'i). Henüz Supabase'de UYGULANMADI — bu script
   canlıya alınmayı bekliyor (bkz. "Faz C" bölümü).
+- `moc_schema_faz_d.sql` — Faz D: `moc_requests.deleted_at` kolonu
+  (Taleplerim/Tüm Değişiklikler listelerindeki soft-delete için). Henüz
+  Supabase'de UYGULANMADI (bkz. "Faz D" bölümü).
 - `TASARIM_STANDARDI.md` — renk/tipografi/bileşen standardı, MOC.html
   buna birebir uyar.
 - `moc_theme_tokens.css`, `moc_wireframe_v1-2.html` — **kullanılmadı**
@@ -118,6 +121,40 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   Reçete kategorisi seçildiğinde Gıda seti "Kullan" edilmeden hiç
   görünmediğini, "Kullan" sonrası göründüğünü, "Evet" cevabının aksiyon
   açtığını ve o aksiyon kapanmadan APPROVAL'a geçilemediğini doğrulamak.
+
+## Faz D — Taleplerim/Tüm Değişiklikler: Düzenle + Sil (kod hazır, SQL uygulanmayı bekliyor)
+- **Yetki (`canManageRequest()`):** koordinasyon izni olan (EDITOR/ADMIN)
+  herhangi bir talebi yönetebilir; VIEWER kendi talebi olsa dahi
+  yönetemez (talep OLUŞTURMA taban izindir, düzenleme/silme değil).
+- **Düzenle:** `DRAFT` durumunda tüm alanlar açık (mevcut talep formu).
+  `DRAFT` dışındaki (terminal olmayan) durumlarda yalnız başlık/açıklama/
+  gerekçe düzenlenebilir — kategori/tür/öncelik/planned_end gibi
+  checklist ve onay zincirini belirleyen alanlar kilitli, snapshot
+  bozulmasın diye. Terminal durumda (`CLOSED`/`REJECTED`/`CANCELLED`)
+  düzenleme tamamen engelli.
+- **Sil (Q-Tedarikçi Faz D.1 ile aynı desen):** açık aksiyon
+  (`moc_action_items`, `status NOT IN ('DONE','CANCELLED')`) varsa
+  engellenir. `DRAFT` durumunda (henüz hiçbir onay/işlem başlamamış)
+  KALICI silme serbest — alt tablolar `ON DELETE CASCADE`. Diğer tüm
+  durumlarda yalnız `deleted_at` ile gizlenir (soft-delete), geçmiş
+  korunur; geri getirmek gerekirse SQL'den `deleted_at=NULL` — ayrı bir
+  "Geri Dönüşüm" ekranı yok, kapsam dışı bırakıldı.
+- **DURUM:** Kod (`MOC.html`) hazır, `moc_schema_faz_d.sql`
+  **Supabase'e henüz uygulanmadı.** Bir sonraki adım: script'i çalıştırıp
+  DRAFT'ta kalıcı silmeyi, ilerlemiş durumda soft-delete'i, açık aksiyon
+  varken silme engelini ve kısıtlı/tam düzenleme modlarını canlı test
+  etmek.
+
+## Bilinen açık — "Onay Bekleyenler" listesi (henüz düzeltilmedi)
+Kullanıcıya onay mekanizması açıklanırken fark edildi: `viewList('pending')`
+sorgusu `moc_approvals` üzerinde `decision IS NULL AND approver_id =
+cloudUserId` filtresi kullanıyor. Ancak `approver_id`, karar verilene kadar
+hep `NULL` kalıyor (üstlenme modeli — bkz. madde 2) — yani decision NULL
+olduğu sürece approver_id asla dolu olamaz. Sonuç: bu ekran şu anki
+mimaride kimse için hiçbir zaman dolu gelmiyor; kullanıcılar bekleyen
+onayları yalnız "Tüm Değişiklikler" listesinden tek tek MOC açarak
+görebiliyor. Düzeltme istenirse ayrı bir iş olarak ele alınmalı (muhtemel
+çözüm: role_code eşleşmesine göre filtrelemek, approver_id'ye bakmadan).
 
 ## Durum makinesi
 `MOC.html` içindeki `TRANSITIONS` objesi `moc_state_machine_v1.md` §3

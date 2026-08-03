@@ -446,7 +446,7 @@ function viewList(kind){
       .then(function(res){ renderApprovalQueue(res.data||[]); });
     return;
   }
-  var q = sb.from('moc_requests').select('*').order('created_at',{ascending:false});
+  var q = sb.from('moc_requests').select('*').is('deleted_at',null).order('created_at',{ascending:false});
   if(kind==='mine') q = q.eq('initiator_id',cloudUserId);
   q.then(function(res){ renderRequestTable(res.data||[], kind); });
 }
@@ -468,6 +468,11 @@ function renderRequestTable(rows, kind){
     if(t&&t.requires_end_date&&r.planned_end&&!['CLOSED','REJECTED','CANCELLED'].includes(r.status)){
       tempBadge=' '+tempWarnPill(r.planned_end);
     }
+    var rowActions='';
+    if(canManageRequest(r)){
+      rowActions='<button class="sm btn-line rowedit" data-id="'+r.id+'">Düzenle</button> '
+        +'<button class="sm btn-crit rowdel" data-id="'+r.id+'">Sil</button>';
+    }
     return '<tr class="rowclk" data-id="'+r.id+'">'
       +'<td>'+esc(r.moc_no||('#'+r.id))+'</td>'
       +'<td>'+esc(r.title)+'</td>'
@@ -475,14 +480,98 @@ function renderRequestTable(rows, kind){
       +'<td>'+(t?esc(t.name_tr):'—')+'</td>'
       +'<td>'+statusPill(r.status)+tempBadge+'</td>'
       +'<td>'+(r.priority==='EMERGENCY'?'<span class="pill crit">Acil</span>':'')+'</td>'
+      +'<td>'+rowActions+'</td>'
       +'</tr>';
   }).join('');
-  document.getElementById('content').innerHTML='<div class="panel"><table><thead><tr><th>MOC No</th><th>Başlık</th><th>Kategori</th><th>Akış Türü</th><th>Durum</th><th></th></tr></thead><tbody>'+body+'</tbody></table></div>';
-  bindRowClicks();
+  document.getElementById('content').innerHTML='<div class="panel"><table><thead><tr><th>MOC No</th><th>Başlık</th><th>Kategori</th><th>Akış Türü</th><th>Durum</th><th></th><th></th></tr></thead><tbody>'+body+'</tbody></table></div>';
+  bindRowClicks(rows);
 }
-function bindRowClicks(){
+function bindRowClicks(rows){
   Array.prototype.forEach.call(document.querySelectorAll('tr.rowclk'),function(tr){
     tr.onclick=function(){ go('detail', Number(tr.getAttribute('data-id'))); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.rowedit'),function(b){
+    b.onclick=function(e){
+      e.stopPropagation();
+      var r=(rows||[]).find(function(x){return x.id===Number(b.getAttribute('data-id'));});
+      if(r) editRequestFlow(r);
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.rowdel'),function(b){
+    b.onclick=function(e){
+      e.stopPropagation();
+      var r=(rows||[]).find(function(x){return x.id===Number(b.getAttribute('data-id'));});
+      if(r) deleteRequestFlow(r);
+    };
+  });
+}
+/* ============================================================================
+   Düzenle / Sil — Taleplerim ve Tüm Değişiklikler listeleri (Q-Tedarikçi
+   Faz D.1 güvenli silme deseniyle aynı ruhta, bkz. moc_schema_faz_d.sql).
+   Yetki: koordinasyon izni (EDITOR/ADMIN) HERHANGİ bir talebi yönetebilir;
+   taban roldeki (VIEWER) kullanıcı kendi talebi olsa dahi yönetemez —
+   talep OLUŞTURMA taban izindir ama düzenleme/silme değildir.
+   ========================================================================= */
+function canManageRequest(r){
+  return canDo('coordinate') || (isOwner(r) && cloudRole!=='VIEWER');
+}
+function editRequestFlow(req){
+  if(['CLOSED','REJECTED','CANCELLED'].includes(req.status)){
+    toast('Terminal durumdaki ('+STATUS_LABEL[req.status]+') bir talep düzenlenemez.',true);
+    return;
+  }
+  var locked = req.status!=='DRAFT';
+  modalTitle(locked?'Talebi Düzenle (kısıtlı — '+STATUS_LABEL[req.status]+')':'Talebi Düzenle');
+  if(locked){
+    setModalBody(
+      '<p class="hint" style="margin-bottom:12px">Bu talebin akışı başlamış durumda — kategori/tür/öncelik gibi checklist ve onay zincirini belirleyen alanlar kilitli. Yalnız başlık/açıklama/gerekçe düzenlenebilir.</p>'
+      +'<label>Başlık</label><input id="fTitle" value="'+esc(req.title||'')+'">'
+      +'<label>Açıklama</label><textarea id="fDesc">'+esc(req.description||'')+'</textarea>'
+      +'<label>Gerekçe</label><textarea id="fReason">'+esc(req.reason||'')+'</textarea>'
+    );
+    modalFoot('Kaydet','Vazgeç',function(){
+      var title=val('fTitle');
+      if(!title.trim()){ toast('Başlık zorunlu.',true); return; }
+      sb.from('moc_requests').update({title:title, description:val('fDesc'), reason:val('fReason')}).eq('id',req.id).then(function(res){
+        if(res.error){ toast('Hata: '+res.error.message,true); return; }
+        closeModal(); toast('Kaydedildi'); go(CURRENT_VIEW);
+      });
+    });
+  } else {
+    setModalBody(requestFormHtml());
+    fillRequestForm(req);
+    modalFoot('Kaydet','Vazgeç',function(){
+      var patch=readRequestForm();
+      if(!patch) return;
+      sb.from('moc_requests').update(patch).eq('id',req.id).then(function(res){
+        if(res.error){ toast('Hata: '+res.error.message,true); return; }
+        closeModal(); toast('Kaydedildi'); go(CURRENT_VIEW);
+      });
+    });
+  }
+  openModal();
+}
+function deleteRequestFlow(req){
+  sb.from('moc_action_items').select('id,status').eq('moc_id',req.id).then(function(res){
+    if(res.error){ toast('Hata: '+res.error.message,true); return; }
+    var openActs=(res.data||[]).filter(function(a){return a.status!=='DONE'&&a.status!=='CANCELLED';});
+    if(openActs.length){
+      toast('Bu talebe bağlı '+openActs.length+' açık aksiyon var — önce aksiyonları kapatın.',true);
+      return;
+    }
+    var hardDelete = req.status==='DRAFT';
+    var msg = hardDelete
+      ? 'Taslak "<b>'+esc(req.title)+'</b>" kalıcı olarak silinsin mi? Bu işlem geri alınamaz.'
+      : '"<b>'+esc(req.title)+'</b>" ('+STATUS_LABEL[req.status]+') silinsin mi? Geçmişin korunması için kayıt yalnızca gizlenecek, veritabanında kalacaktır.';
+    confirmBox(msg,'Sil',function(){
+      var op = hardDelete
+        ? sb.from('moc_requests').delete().eq('id',req.id)
+        : sb.from('moc_requests').update({deleted_at:new Date().toISOString()}).eq('id',req.id);
+      op.then(function(res2){
+        if(res2.error){ toast('Hata: '+res2.error.message,true); return; }
+        closeModal(); toast(hardDelete?'Talep kalıcı silindi':'Talep gizlendi'); go(CURRENT_VIEW);
+      });
+    },true);
   });
 }
 function statusPill(s){ return '<span class="pill '+(STATUS_PILL[s]||'na')+'">'+(STATUS_LABEL[s]||s)+'</span>'; }
