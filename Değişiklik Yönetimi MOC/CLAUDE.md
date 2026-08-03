@@ -183,6 +183,27 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   (`refreshChecklistAndTransitions()`), bu da 68 maddelik setlerde ciddi
   hız kazandırıyor. Bir madde kaydedildikten sonra `focusNextChecklistItem()`
   otomatik bir sonraki yanıtsız maddeye kaydırıyor.
+- **Bölüm accordion'u (03.08.2026 ikinci ince ayar):** 68 maddelik Genel
+  Risk seti + varsa Gıda seti tüm bölümleriyle aynı anda açık gelince
+  sayfa aşırı uzuyordu — kullanıcı geri bildirimiyle bölüm bazlı
+  katlanır yapıya geçildi (`renderChecklistPanel()` artık `bolum_baslik`'e
+  göre gruplayıp her bölümü `.chk-section` bloğu olarak render ediyor;
+  Gıda seti tek maddeli/tek bölümlü olduğu için otomatik kendi tek
+  accordion'unu oluşturuyor, ayrı kod gerekmedi). Her bölüm başlığında
+  ilerleme rozeti var: tamamlanan bölümde "✓ Tamamlandı" (yeşil),
+  eksikte "X/Y yanıtlandı" (amber/gri). Varsayılan açık/kapalı durumu
+  `CHECKLIST_MANUAL_OVERRIDE` (bölüm adı → kullanıcı tercihi) ile
+  yönetiliyor: override YOKSA bölüm, yalnızca "ilk yanıtsız bölüm"
+  ise açık gösteriliyor (`firstIncompleteIdx`) — bu da bir bölüm
+  tamamlanınca bir sonraki eksik bölümün otomatik açılmasını sağlıyor
+  (kullanıcı elle hiçbir şey yapmadan "kaldığı yerden devam" hissi).
+  Kullanıcı başlığa tıklayıp herhangi bir bölümü (tamamlanmış olsa
+  bile) istediği an açıp kapatabilir; bu manuel tercih override'a
+  yazılır ve MOC değişene kadar (`CHECKLIST_OVERRIDE_REQ` reset)
+  otomatik hesaplamayı ezer. Satırlar kapalı bölümde de DOM'da kalıyor
+  (yalnız `display:none`), böylece `focusNextChecklistItem()`'ın
+  `scrollIntoView` çağrısı bozulmadı — hızlı chip UI/otomatik sıradaki
+  maddeye kayma davranışı DEĞİŞMEDİ, yalnızca bölümler artık katlanır.
 - **Ayarlar CRUD:** yeni "Etki Değerlendirme Checklist Setleri" paneli —
   tenant'a özel setlerde "Maddeleri Yönet" (madde ekle/düzenle/pasifleştir),
   global zorunlu sette "Kopyala ve Özelleştir", global opsiyonel sette
