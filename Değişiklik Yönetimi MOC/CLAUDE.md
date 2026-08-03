@@ -97,11 +97,22 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   girer — global şablonu hiç kopyalamayan tesisler o checklist'i asla
   görmez, kategoriyi seçseler bile.
 - **Otomatik aksiyon:** bir maddede `evet_aksiyon_gerekli=true` iken
-  cevap "Evet" verilirse `saveChecklistAnswer()` otomatik bir
+  cevap "Evet" verilirse `commitChecklistAnswer()` otomatik bir
   `moc_action_items` kaydı açar (`phase='PRE_APPROVAL'`). Bu aksiyon(lar)
   `DONE`/`CANCELLED` olmadan ve tüm checklist maddeleri yanıtlanmadan
   `TECHNICAL_REVIEW → APPROVAL` geçişi kilitli kalır (bkz.
   `condReadyForApproval()`).
+- **Hızlı yanıt UI'ı (03.08.2026 ince ayar):** modal yerine satır-içi tek-
+  tık Evet/Hayır/N-A chip'leri (`renderChecklistRow()`). Gerekçe kutusu
+  varsayılan GİZLİ, yalnız "Evet" chip'ine basılınca açılır ve otomatik
+  odaklanır (gerekçe zorunluluğu aynen korunuyor — boş gerekçeyle
+  kaydedilemiyor). "Hayır"/"N-A" tek tıkla anında kaydediliyor, gerekçe
+  kutusu açılmıyor (istenirse "+ Not ekle" linkiyle sonradan eklenebilir).
+  Kaydetme sonrası artık `viewDetail()` ile TÜM sayfa yeniden çekilmiyor —
+  yalnız checklist ve durum geçişi panelleri yerinde güncelleniyor
+  (`refreshChecklistAndTransitions()`), bu da 68 maddelik setlerde ciddi
+  hız kazandırıyor. Bir madde kaydedildikten sonra `focusNextChecklistItem()`
+  otomatik bir sonraki yanıtsız maddeye kaydırıyor.
 - **Ayarlar CRUD:** yeni "Etki Değerlendirme Checklist Setleri" paneli —
   tenant'a özel setlerde "Maddeleri Yönet" (madde ekle/düzenle/pasifleştir),
   global zorunlu sette "Kopyala ve Özelleştir", global opsiyonel sette
