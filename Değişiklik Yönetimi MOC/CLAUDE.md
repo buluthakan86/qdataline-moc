@@ -101,6 +101,19 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   `--mint`, `--card` vb.) birebir uyuyor, yeni renk eklenmedi. Mobilde de
   yatay scroll ile kartlara erişim korunuyor (`.cardnav` dar ekranda
   otomatik kaydırılabilir kalıyor, medya sorgusu gerekmedi).
+- **Kart görünümü iki turda ince ayar edildi (kullanıcı ekran görüntüsü
+  referans alınarak, 03.08.2026):** İlk turda kartlar büyütülüp emoji
+  ikon + başlık aynı satırda alt-bantta gösterildi; kullanıcı geri
+  bildirimiyle ("yazılar/simgeler üst üste gelmesin, ekrandaki gibi
+  ayrı olsun") ikinci turda nihai düzene geçildi — **başlık solda dikey
+  ortalı, ikon sağda ayrı 46×46 kutuda** (`navcard`/`lbl`/`card-ico`),
+  metin ve ikon hiçbir genişlikte çakışmıyor. Emoji yerine `NAV_ICONS`
+  objesindeki gradyanlı **inline SVG "3B" ikonlar** kullanıldı (bar
+  grafik, pano, onay kalkanı, klasör, dişli) — gerçek fotoğraf/dış
+  görsel dosyası KULLANILMADI (tek dosya + build yok kısıtı, dış görsel
+  bağımlılığı istenmiyor); glossy/3B izlenimi SVG gradyan dolgularla
+  taklit edildi. Tüm kartlar aynı koyu gradyan arka plana sahip, seçili
+  kart yeşil glow/kenarlıkla (`--leaf`) vurgulanıyor.
 - **Dashboard ("Genel Bakış") yeni bir nav kartı/görünüm olarak eklendi**
   (`viewDashboard()`/`renderDashboardHtml()`) ve giriş sonrası varsayılan
   ekran oldu (`afterLogin` artık `go('dashboard')` çağırıyor, eskiden
