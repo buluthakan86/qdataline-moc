@@ -310,7 +310,7 @@ var TRANSITIONS = {
   DOC_UPDATE:       [ {to:'TRAINING', action:'coordinate'} ],
   TRAINING:         [ {to:'PSSR', action:'coordinate', cond:function(r,ctx){return !!(ctx.type&&ctx.type.requires_pssr);}},
                        {to:'STARTUP', action:'coordinate', cond:function(r,ctx){return !(ctx.type&&ctx.type.requires_pssr);}} ],
-  PSSR:             [ {to:'STARTUP', action:'pssr', cond:function(r,ctx){return ctx.pssr&&ctx.pssr.result==='RELEASED';}},
+  PSSR:             [ {to:'STARTUP', action:'pssr', cond:function(r,ctx){return !!(ctx.pssr&&ctx.pssr.result==='RELEASED') && condPssrChecklistAnswered(r,ctx) && condActionsDone('PSSR')(r,ctx);}},
                        {to:'IMPLEMENTATION', action:'pssr', cond:function(r,ctx){return ctx.pssr&&ctx.pssr.result==='NOT_RELEASED';}} ],
   STARTUP:          [ {to:'CLOSED', action:'close', cond:condNoOpenActions} ],
   CLOSED:[], REJECTED:[], CANCELLED:[]
@@ -333,6 +333,14 @@ function condNoOpenActions(r,ctx){
    kapanmış (DONE/CANCELLED) olmalı. */
 function condReadyForApproval(r,ctx){
   return condChecklistAnswered(r,ctx) && condActionsDone('PRE_APPROVAL')(r,ctx);
+}
+/* PSSR→STARTUP geçişi için: durum-tetiklemeli PSSR checklist'i tamamen
+   yanıtlanmış ve doğurduğu PSSR fazlı aksiyonlar kapanmış olmalı. */
+function condPssrChecklistAnswered(r,ctx){
+  var items = applicablePssrChecklistItems();
+  if(!items.length) return true;
+  var answeredIds = (ctx.checklistAnswers||[]).filter(function(a){return a.cevap;}).map(function(a){return a.madde_id;});
+  return items.every(function(m){return answeredIds.indexOf(m.id)>=0;});
 }
 
 var STATUS_LABEL = {DRAFT:'Taslak',SCREENING:'Ön Tarama',RISK_ASSESSMENT:'Risk Değerlendirme',
@@ -451,12 +459,27 @@ function fmtCostTRY(amount, currency){
 function applicableChecklistSets(categoryId){
   return (CHECKLIST_SETS||[]).filter(function(s){
     if(!s.aktif) return false;
+    if(s.tetik_tipi!=='kategori') return false;
     if(s.kategori_id===null) return s.tenant_id===null || s.tenant_id===cloudTenantId;
     return s.kategori_id===categoryId && s.tenant_id===cloudTenantId;
   });
 }
 function applicableChecklistItems(categoryId){
   var setIds = applicableChecklistSets(categoryId).map(function(s){return s.id;});
+  return (CHECKLIST_ITEMS||[]).filter(function(m){return setIds.indexOf(m.set_id)>=0;})
+    .sort(function(a,b){return a.sira_no-b.sira_no;});
+}
+/* Durum/adım tetiklemeli setler (ör. PSSR) — kategoriden bağımsız, yalnız
+   tetik_durum_kodu eşleşen adıma gelindiğinde ilgili panelde gösterilir. */
+function applicablePssrChecklistSets(){
+  return (CHECKLIST_SETS||[]).filter(function(s){
+    if(!s.aktif) return false;
+    if(s.tetik_tipi!=='durum' || s.tetik_durum_kodu!=='PSSR') return false;
+    return s.tenant_id===null || s.tenant_id===cloudTenantId;
+  });
+}
+function applicablePssrChecklistItems(){
+  var setIds = applicablePssrChecklistSets().map(function(s){return s.id;});
   return (CHECKLIST_ITEMS||[]).filter(function(m){return setIds.indexOf(m.set_id)>=0;})
     .sort(function(a,b){return a.sira_no-b.sira_no;});
 }
@@ -978,8 +1001,13 @@ function riskCell(score){
    ========================================================================= */
 var CHECKLIST_MANUAL_OVERRIDE={}, CHECKLIST_OVERRIDE_REQ=null;
 function renderChecklistPanel(){
+  return renderChecklistPanelGeneric(applicableChecklistItems(DETAIL_CTX.req.category_id), 'checklistPanel', 'Etki Değerlendirme Checklist\'i');
+}
+function renderPssrChecklistPanel(){
+  return renderChecklistPanelGeneric(applicablePssrChecklistItems(), 'pssrChecklistPanel', 'PSSR Checklist\'i — Devreye Alma Öncesi Güvenlik İncelemesi');
+}
+function renderChecklistPanelGeneric(items, panelId, heading){
   var ctx=DETAIL_CTX, req=ctx.req;
-  var items = applicableChecklistItems(req.category_id);
   if(!items.length) return '';
   if(CHECKLIST_OVERRIDE_REQ!==req.id){ CHECKLIST_MANUAL_OVERRIDE={}; CHECKLIST_OVERRIDE_REQ=req.id; }
   var answersByMadde={};
@@ -1018,10 +1046,10 @@ function renderChecklistPanel(){
   }).join('');
 
   var answered=items.filter(function(m){return answersByMadde[m.id]&&answersByMadde[m.id].cevap;}).length;
-  var html='<div class="panel" id="checklistPanel"><div class="ph"><h2>Etki Değerlendirme Checklist\'i</h2>'
+  var html='<div class="panel" id="'+panelId+'"><div class="ph"><h2>'+heading+'</h2>'
     +'<span class="pill '+(answered===items.length?'ok':'warn')+'" style="margin-left:auto">'+answered+'/'+items.length+' yanıtlandı</span></div><div class="pb">';
   html+=body;
-  html+='<p class="hint">Onay aşamasına geçmeden önce tüm maddeler yanıtlanmalı, "Evet" cevabının doğurduğu aksiyonlar kapatılmalıdır.</p>';
+  html+='<p class="hint">Bu aşamayı geçmeden önce tüm maddeler yanıtlanmalı, "Evet" cevabının doğurduğu aksiyonlar kapatılmalıdır.</p>';
   html+='</div></div>';
   return html;
 }
@@ -1089,6 +1117,10 @@ function toggleChecklistGerekce(id, show){
   el.style.display = show?'':'none';
   if(show){ var ta=el.querySelector('textarea'); if(ta) ta.focus(); }
 }
+function checklistPhaseForMadde(m){
+  var s=(CHECKLIST_SETS||[]).find(function(x){return x.id===m.set_id;});
+  return (s && s.tetik_tipi==='durum') ? s.tetik_durum_kodu : 'PRE_APPROVAL';
+}
 function commitChecklistAnswer(m, cevap, gerekce){
   var existing=(DETAIL_CTX.checklistAnswers||[]).find(function(a){return a.madde_id===m.id;});
   var needsAction = cevap==='EVET' && m.evet_aksiyon_gerekli;
@@ -1096,7 +1128,7 @@ function commitChecklistAnswer(m, cevap, gerekce){
   if(needsAction && !(existing&&existing.action_id)){
     actionPromise = sb.from('moc_action_items').insert({
       tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, title:'Etki değerlendirme: '+m.soru_metni,
-      phase:'PRE_APPROVAL', assignee_id:cloudUserId
+      phase:checklistPhaseForMadde(m), assignee_id:cloudUserId
     }).select().single().then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return existing?existing.action_id:null; }
       return res.data.id;
@@ -1124,6 +1156,7 @@ function commitChecklistAnswer(m, cevap, gerekce){
 }
 function refreshChecklistAndTransitions(){
   replacePanelById('checklistPanel', renderChecklistPanel());
+  replacePanelById('pssrChecklistPanel', renderPssrChecklistPanel());
   replacePanelById('transitionsPanel', renderTransitionsPanel());
   bindChecklistEvents();
   bindTransitionButtons();
@@ -1142,16 +1175,21 @@ function bindTransitionButtons(){
   });
 }
 function focusNextChecklistItem(afterId){
-  var items = applicableChecklistItems(DETAIL_CTX.req.category_id);
-  var idx = items.findIndex(function(m){return m.id===afterId;});
+  var lists=[applicableChecklistItems(DETAIL_CTX.req.category_id), applicablePssrChecklistItems()];
   var answered={};
   (DETAIL_CTX.checklistAnswers||[]).forEach(function(a){ if(a.cevap) answered[a.madde_id]=true; });
-  for(var i=idx+1;i<items.length;i++){
-    if(!answered[items[i].id]){
-      var row=document.querySelector('.chk-row[data-row-id="'+items[i].id+'"]');
-      if(row) row.scrollIntoView({block:'center',behavior:'smooth'});
-      return;
+  for(var li=0; li<lists.length; li++){
+    var items=lists[li];
+    var idx=items.findIndex(function(m){return m.id===afterId;});
+    if(idx<0) continue;
+    for(var i=idx+1;i<items.length;i++){
+      if(!answered[items[i].id]){
+        var row=document.querySelector('.chk-row[data-row-id="'+items[i].id+'"]');
+        if(row) row.scrollIntoView({block:'center',behavior:'smooth'});
+        return;
+      }
     }
+    return;
   }
 }
 
@@ -1232,6 +1270,7 @@ function actionStatusPill(s){ var m={OPEN:'na',IN_PROGRESS:'blue',DONE:'ok',OVER
 function renderPssrPanel(){
   var ctx=DETAIL_CTX, p=ctx.pssr;
   var html='<div class="panel"><div class="ph"><h2>PSSR — Devreye Alma Öncesi Güvenlik İncelemesi</h2></div><div class="pb">';
+  html+=renderPssrChecklistPanel();
   if(!p){
     html+='<div class="empty">Checklist henüz oluşturulmadı.</div>';
     if(canDo('pssr') && ctx.req.status==='PSSR') html+='<button class="btn-line" id="btnCreatePssr" style="margin-top:10px">Checklist Oluştur</button>';

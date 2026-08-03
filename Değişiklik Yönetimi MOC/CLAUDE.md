@@ -49,6 +49,10 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   `para_birimi`/`baslangic_maliyeti`/`tamamlanma_sonrasi_maliyet` +
   GENERATED STORED `sapma_tutari`/`sapma_yuzdesi` kolonları. Henüz
   Supabase'e UYGULANMADI (bkz. "Faz E" bölümü).
+- `moc_schema_faz_f.sql` — Faz F: PSSR Checklist Seti. Faz C'deki
+  `moc_etki_checklist_setleri`'ne `tetik_tipi`/`tetik_durum_kodu`
+  kolonları (idempotent ALTER) + üçüncü, DURUM-tetiklemeli bir set
+  seed'i ekler. Henüz Supabase'e UYGULANMADI (bkz. "Faz F" bölümü).
 - `TASARIM_STANDARDI.md` — renk/tipografi/bileşen standardı, MOC.html
   buna birebir uyar.
 - `moc_theme_tokens.css`, `moc_wireframe_v1-2.html` — **kullanılmadı**
@@ -153,6 +157,58 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   tamamlanma sonrası maliyeti girip sapmanın otomatik hesaplandığını,
   TRY dışı bir para biriminde kur çevriminin dashboard'a ve panele doğru
   yansıdığını doğrulamak.
+
+## Faz F — PSSR Checklist Seti: durum-tetiklemeli üçüncü set (kod hazır, SQL uygulanmayı bekliyor)
+- **Mimari farkı (Faz C'den):** Genel Risk ve Gıda setleri KATEGORİ bazlı
+  tetikleniyor (`kategori_id`, talep oluşturulurken belli olur). PSSR seti
+  DURUM/ADIM bazlı — yalnız `requires_pssr=true` olan türlerde, talep
+  `PSSR` durumuna/adımına geldiğinde devreye girer. Bunun için
+  `moc_etki_checklist_setleri`'ne iki yeni kolon eklendi:
+  `tetik_tipi` (`'kategori'` | `'durum'`, DEFAULT `'kategori'` — mevcut iki
+  set otomatik olarak eski davranışını korur, elle UPDATE gerekmedi) ve
+  `tetik_durum_kodu` (nullable, PSSR seti için `'PSSR'`).
+- **Aynı altyapı yeniden kullanıldı:** ayrı bir tablo AÇILMADI — aynı
+  `moc_etki_checklist_maddeleri`/`_yanitlari`, aynı "evet_aksiyon_gerekli"
+  → `moc_action_items` otomasyonu, aynı hızlı chip UI ve bölüm accordion'u
+  (`renderChecklistPanelGeneric()`, `MOC.html`) PSSR seti için de
+  kullanılıyor — yalnız panel ID'si (`pssrChecklistPanel`) ve başlığı
+  farklı, `renderPssrPanel()` içine gömülü render ediliyor.
+- **Tetikleme fonksiyonları:** `applicableChecklistSets()`/
+  `applicableChecklistItems()` artık yalnız `tetik_tipi==='kategori'`
+  setleri döndürüyor; yeni `applicablePssrChecklistSets()`/
+  `applicablePssrChecklistItems()` yalnız `tetik_tipi==='durum' &&
+  tetik_durum_kodu==='PSSR'` setleri döndürüyor (kategoriden bağımsız,
+  global + tenant kopyası deseni Set 1 ile aynı).
+- **Aksiyon fazı otomatik seçiliyor:** `checklistPhaseForMadde()`, maddenin
+  ait olduğu setin `tetik_tipi==='durum'` olup olmadığına bakarak
+  `moc_action_items.phase`'i belirliyor (durum tipinde `tetik_durum_kodu`,
+  yani `'PSSR'`; kategori tipinde eskisi gibi `'PRE_APPROVAL'`) —
+  `commitChecklistAnswer()` artık sabit `'PRE_APPROVAL'` yazmıyor.
+- **PSSR→STARTUP gating:** `condPssrChecklistAnswered()` + mevcut
+  `condActionsDone('PSSR')` artık `TRANSITIONS.PSSR` içindeki
+  `RELEASED` geçişinin koşuluna eklendi — PSSR checklist'i tamamen
+  yanıtlanmadan ve doğurduğu `phase='PSSR'` aksiyonları kapanmadan
+  `STARTUP`'a geçiş kilitli kalıyor (Genel Risk/Gıda setinin
+  `TECHNICAL_REVIEW → APPROVAL`'ı kilitlemesiyle aynı desen).
+- **Seed (1 hazır global set):** "Devreye Alma Öncesi Güvenlik
+  İncelemesi" (13 madde, 4 bölüm: Ekipman ve Kurulum Doğrulaması /
+  Güvenlik Sistemleri Doğrulaması / Dokümantasyon Doğrulaması / Eğitim
+  ve Kapanış Doğrulaması), global, `tenant_id` NULL, `tetik_tipi='durum'`,
+  `tetik_durum_kodu='PSSR'`. Sorular harici saha güvenliği/devreye alma
+  pratiklerinin KAPSAMINDAN esinlenerek özgün cümlelerle yazıldı; hiçbir
+  kaynak standart/kurum adı kodda, seed data'da veya yorum satırlarında
+  geçmiyor (grep ile teyit edildi).
+- **DURUM:** Kod (`MOC.html`) hazır, JS söz dizimi doğrulandı. Şema
+  (`moc_schema_faz_f.sql`) **Supabase'e henüz uygulanmadı** — SQL
+  uygulanmadan `tetik_tipi` kolonu mevcut olmadığı için
+  `applicableChecklistSets()`'in yeni filtresi Genel Risk/Gıda setlerini
+  de gizler; **kod ve SQL birlikte devreye alınmalı**, ayrı ayrı değil.
+  Bir sonraki adım: script'i çalıştırıp `requires_pssr=true` bir türde
+  MOC'u PSSR adımına kadar ilerletmek, PSSR panelinde yeni checklist'in
+  4 bölümlü accordion'la göründüğünü, "Evet" cevabının `phase='PSSR'`
+  aksiyon açtığını, o aksiyon kapanmadan ve checklist tamamlanmadan
+  RELEASED sonrası STARTUP'a geçilemediğini, `requires_pssr=false`
+  türlerde bu panelin hiç görünmediğini doğrulamak.
 
 ## Faz C — Etki Değerlendirme Checklist Sistemi (kod hazır, SQL uygulanmayı bekliyor)
 - **Mimari:** `moc_etki_checklist_setleri` (set — `kategori_id` NULL=her
