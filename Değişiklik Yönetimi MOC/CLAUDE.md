@@ -22,6 +22,9 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
 - `MOC.html` — uygulamanın kendisi (tek dosya).
 - `moc_schema_faz_a.sql` — Faz A'da çalıştırılan tablo/RLS/seed script'i
   (idempotent, zaten Supabase'de uygulandı).
+- `moc_schema_faz_b_moc_no.sql` — Faz B canlı test sırasında bulunan
+  moc_no eksikliğinin düzeltmesi (bkz. "Faz B doğrulama" altında),
+  zaten Supabase'de uygulandı.
 - `moc_state_machine_v1.md`, `moc_rbac_matrix_v1.md`, `moc_schema_v1-1.sql`
   — orijinal planlama dosyaları (iş mantığı kaynağı). `MOC_Teknik_Taslak_
   v2-1.md`, `moc_api_endpoints_v1-1.md`, `moc_kodlama_prompt_sprint1-1.md`
@@ -59,3 +62,23 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
 `MOC.html` içindeki `TRANSITIONS` objesi `moc_state_machine_v1.md` §3
 geçiş matrisinin JS karşılığıdır — tek doğruluk kaynağı o dosya, kod
 onunla çelişirse dosya esas alınır ve kod düzeltilir.
+
+## Faz B doğrulama (canlı test — tamamlandı)
+- **moc_no eksikliği bulundu ve düzeltildi:** `moc_requests.moc_no`
+  NOT NULL idi ama üretim mantığı hiç yazılmamıştı — Faz A şemasının
+  sonundaki "SONRAKİ ADIMLAR" yorumunda madde olarak listelenip
+  unutulmuştu. Düzeltme: `moc_schema_faz_b_moc_no.sql` — BEFORE INSERT
+  trigger (`moc_generate_no`, SECURITY DEFINER) + tenant/yıl bazlı
+  atomik sayaç tablosu (`moc_no_counters`, authenticated'a GRANT yok),
+  format `MOC-YYYY-NNNN`. Uygulama kodunda değişiklik gerekmedi.
+  **Kalıcı ders:** şema dosyalarındaki "sonraki adımlar / TODO" notları
+  bir sonraki fazda mutlaka tek tek kontrol edilmeli — kolayca
+  unutulup NOT NULL/constraint hatası olarak canlıda ortaya çıkabiliyor.
+- **Test edilip geçen akışlar:** talep oluşturma, durum makinesi
+  geçişleri, kendi talebini onaylayamama kuralı, acil/geçici rozetler,
+  PSSR gerekmeyen türlerde direkt STARTUP geçişi, rollback
+  (previous_moc_id ile yeni MOC oluşturma).
+- **Kullanıcı erişimi manuel adım:** Yeni bir kullanıcının MOC'a
+  girebilmesi için `modul_yetki` tablosuna `(user_id, modul='moc')`
+  satırı elle eklenmesi gerekiyor (bkz. §Auth) — bu adım otomatik
+  değil, yeni kullanıcı/tenant eklerken unutulmamalı.
