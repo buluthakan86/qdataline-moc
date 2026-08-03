@@ -73,6 +73,28 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
    (b) schema `USAGE` teyidi, (c) Supabase Dashboard → Data API →
    Settings → **Exposed Functions**'da fonksiyonu işaretle.
 
+## SIRADAKİ İŞ (Faz B2 sonrası ince ayar — henüz yapılmadı)
+1. **PSSR geçiş kuralı dosya↔kod tutarlılığı:** requires_pssr=false
+   türlerde (RIK/MOOC/Procedural) IMPLEMENTATION → STARTUP direkt
+   geçişi MOC.html'de zaten var (Faz B). `moc_state_machine_v1.md`'nin
+   bu davranışı net şekilde tanımladığını (PSSR adımının bu türlerde
+   hiç görünmediğini/atlandığını) doğrula, gerekirse dosyayı güncelle.
+2. **Sürümsüz dosya referansları:** `moc_kodlama_prompt_sprint1-1.md`
+   içinde `moc_schema_v1`/`moc_api_endpoints_v1` gibi sürüm eki
+   olmayan referanslar var — gerçek dosya adlarına (`_v1-1` vb.)
+   güncelle. Bu dosya zaten "kullanılmadı" olarak işaretli (yukarıda),
+   yine de iç tutarlılık için düzelt.
+3. **Planlama dosyaları ↔ kod tutarlılık taraması:** `moc_rbac_matrix_
+   v1.md`, `moc_schema_v1-1.sql`, `moc_state_machine_v1.md` dosyalarının
+   "Bilinen sınırlamalar / basitleştirmeler" bölümündeki B/B2
+   basitleştirmeleri (3 kademeli `canDo()` modeli, onaycı üstlenme
+   modeli, Ayarlar CRUD vb.) yansıtıp yansıtmadığını kontrol et.
+   Tutarsızsa planlama dosyalarını MEVCUT KODA göre güncelle (kod esas
+   alınır, test edilip çalışıyor).
+
+Bitince: Ekipman/Gıda/Q-Tedarikçi/Q-Kalite modüllerini rutin doğrula,
+bu bölümü CLAUDE.md'den kaldır, commit at.
+
 ## Durum makinesi
 `MOC.html` içindeki `TRANSITIONS` objesi `moc_state_machine_v1.md` §3
 geçiş matrisinin JS karşılığıdır — tek doğruluk kaynağı o dosya, kod
