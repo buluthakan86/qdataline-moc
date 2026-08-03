@@ -145,16 +145,56 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   varken silme engelini ve kısıtlı/tam düzenleme modlarını canlı test
   etmek.
 
-## Bilinen açık — "Onay Bekleyenler" listesi (henüz düzeltilmedi)
-Kullanıcıya onay mekanizması açıklanırken fark edildi: `viewList('pending')`
-sorgusu `moc_approvals` üzerinde `decision IS NULL AND approver_id =
-cloudUserId` filtresi kullanıyor. Ancak `approver_id`, karar verilene kadar
-hep `NULL` kalıyor (üstlenme modeli — bkz. madde 2) — yani decision NULL
-olduğu sürece approver_id asla dolu olamaz. Sonuç: bu ekran şu anki
-mimaride kimse için hiçbir zaman dolu gelmiyor; kullanıcılar bekleyen
-onayları yalnız "Tüm Değişiklikler" listesinden tek tek MOC açarak
-görebiliyor. Düzeltme istenirse ayrı bir iş olarak ele alınmalı (muhtemel
-çözüm: role_code eşleşmesine göre filtrelemek, approver_id'ye bakmadan).
+## Onay Zinciri — SIRALI (sequential) model + "Onay Bekleyenler" düzeltmesi (03.08.2026)
+Önceki tur "Onay Bekleyenler" listesinin hep boş geldiğini ve `step_order`'ın
+sadece etiket olup gating yapmadığını bulmuştu (paralel onay). Kullanıcıyla
+netleştirildi: onay zinciri **sıralı** olmalı — bu kritik bir düzeltme
+olarak uygulandı, yeni özellik değil.
+
+1. **Kök sebep (Onay Bekleyenler boş geliyordu):** `viewList('pending')`
+   sorgusu `decision IS NULL AND approver_id = cloudUserId` filtreliyordu.
+   `approver_id`, karar verilene kadar hep `NULL` kalıyor (üstlenme modeli)
+   — yani decision NULL olduğu sürece approver_id asla dolu olamıyordu,
+   ekran kimse için hiç dolmuyordu. **Düzeltme:** sorgu artık tüm
+   `moc_approvals` satırlarını `moc_requests` ile birlikte çekip, her MOC
+   için `activeApprovalStep()` ile sıradaki aktif adımı buluyor, o adımı
+   kararlaştırma yetkisi olan (talep sahibi değil, VIEWER değil, başka
+   birine kilitli değil) kullanıcılara gösteriyor.
+2. **Sıralı gating (`activeApprovalStep()`, MOC.html):** `step_order`'a göre
+   sıralanmış listede ilk kararı verilmemiş satır "aktif adım"dır — ondan
+   önceki TÜM adımlar `APPROVED` olmadan bir sonraki adım ne görünür ne de
+   kararlaştırılabilir. `canDecideApproval()` artık bunu zorunlu kılıyor;
+   Onay Zinciri panelinde aktif olmayan bekleyen adımlar "Kilitli — önceki
+   adım(lar) tamamlanmadı" pili ile ayrı gösteriliyor (aktif adım "Bekliyor
+   (sıradaki adım)"). Zincirde bir REJECTED/RETURNED varsa (mevcut
+   `checkApprovalAuto` zaten MOC'u APPROVAL dışına çıkarır) aktif adım
+   yoktur.
+3. **Şema değişikliği YOK** — `step_order`/`approver_id`/`decision` zaten
+   mevcuttu, düzeltme tamamen `MOC.html` içinde (yeni SQL dosyası yok).
+4. **Manuel test senaryosu (canlı doğrulama için):**
+   a. Bir MOC'u `TECHNICAL_REVIEW`'a kadar ilerletin, checklist'i
+      tamamlayın, `APPROVAL`'a geçirin.
+   b. Onay Zinciri panelinden "+ Onay Adımı Ekle" ile sırayla 3 adım
+      ekleyin (ör. step 1=HSE, step 2=ENGINEERING, step 3=PLANT_MANAGER).
+   c. Sayfayı yenileyip tekrar açın: yalnız **step 1 (HSE)** "Bekliyor
+      (sıradaki adım)" etiketiyle ve Onayla/İade/Reddet butonlarıyla
+      görünmeli; step 2 ve 3 "Kilitli" etiketiyle, butonsuz görünmeli.
+   d. "Onay Bekleyenler" ekranını açın: talep sahibi olmayan, EDITOR/ADMIN
+      rolündeki bir kullanıcı için yalnız step 1 satırı listelenmeli.
+   e. Step 1'i Onayla — sayfa yenilenince step 2 artık aktif ("Bekliyor",
+      butonlu) olmalı, step 3 hâlâ kilitli kalmalı; "Onay Bekleyenler"
+      artık step 2'yi göstermeli.
+   f. Step 2'yi Onayla, ardından step 3'ü Onayla — üçü de APPROVED olunca
+      MOC otomatik `IMPLEMENTATION`'a geçmeli.
+   g. Ayrı bir senaryoda step 2'yi step 1'den ÖNCE onaylamayı deneyin
+      (`canDecideApproval` false döner, buton zaten görünmüyor — DB'ye
+      doğrudan istekle zorlanırsa RLS tenant izolasyonunu geçer ama
+      client mantığı engeller; RLS seviyesinde ayrı bir CHECK constraint
+      **eklenmedi**, bilinçli — client-side kontrol yeterli görüldü, aynı
+      MOC'un diğer client-side kurallarıyla (canDo, condActionsDone vb.)
+      tutarlı).
+   **DURUM:** Kod hazır, henüz canlı ortamda adım adım doğrulanmadı —
+   yukarıdaki senaryo bir sonraki oturumda çalıştırılmalı.
 
 ## Durum makinesi
 `MOC.html` içindeki `TRANSITIONS` objesi `moc_state_machine_v1.md` §3

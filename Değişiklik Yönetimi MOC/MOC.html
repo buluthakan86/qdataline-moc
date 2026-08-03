@@ -442,8 +442,32 @@ function viewList(kind){
   document.getElementById('content').innerHTML='<div class="empty">Yükleniyor…</div>';
 
   if(kind==='pending'){
-    sb.from('moc_approvals').select('*, moc_requests(*)').is('decision',null).eq('approver_id',cloudUserId)
-      .then(function(res){ renderApprovalQueue(res.data||[]); });
+    /* Kök sebep düzeltmesi: eskiden `approver_id = cloudUserId` filtreleniyordu,
+       ama approver_id yalnız karar VERİLDİĞİNDE set edilir (üstlenme modeli) —
+       yani decision NULL olduğu sürece approver_id de asla dolu olamaz, bu liste
+       hiç kimse için hiçbir zaman dolmuyordu. Doğru mantık: her MOC için, sıralı
+       zincirdeki AKTİF adımı (activeApprovalStep) bul, o adımı kararlaştırma
+       yetkisi olan (talep sahibi değil, VIEWER değil, başka birine kilitli
+       değil) kullanıcılara göster. */
+    sb.from('moc_approvals').select('*, moc_requests(*)').order('step_order')
+      .then(function(res){
+        var rows=res.data||[];
+        var byMoc={};
+        rows.forEach(function(a){ (byMoc[a.moc_id]=byMoc[a.moc_id]||[]).push(a); });
+        var pending=[];
+        Object.keys(byMoc).forEach(function(mid){
+          var list=byMoc[mid];
+          var req=list[0]&&list[0].moc_requests;
+          if(!req || req.status!=='APPROVAL') return;
+          var active=activeApprovalStep(list);
+          if(!active) return;
+          if(req.initiator_id===cloudUserId) return;
+          if(cloudRole==='VIEWER') return;
+          if(active.approver_id && active.approver_id!==cloudUserId) return;
+          pending.push(active);
+        });
+        renderApprovalQueue(pending);
+      });
     return;
   }
   var q = sb.from('moc_requests').select('*').is('deleted_at',null).order('created_at',{ascending:false});
@@ -781,16 +805,38 @@ function saveChecklistAnswer(m, cevap, gerekce, existing){
   });
 }
 
+/* Sıralı onay zinciri: step_order'a göre sıralanmış listede, ilk kararı
+   verilmemiş (decision NULL) satır "aktif" adımdır — ondan önceki tüm
+   adımlar APPROVED olmadıkça bir sonraki adım görünmez/kararlaştırılamaz.
+   Zincirde bir REJECTED/RETURNED varsa (checkApprovalAuto zaten MOC'u
+   APPROVAL dışına çıkarır) burada aktif adım yoktur (null döner). */
+function activeApprovalStep(approvals){
+  var list=(approvals||[]).slice().sort(function(a,b){return a.step_order-b.step_order;});
+  for(var i=0;i<list.length;i++){
+    if(!list[i].decision) return list[i];
+    if(list[i].decision!=='APPROVED') return null;
+  }
+  return null;
+}
 function renderApprovalsPanel(){
   var ctx=DETAIL_CTX, req=ctx.req;
+  var active=activeApprovalStep(ctx.approvals);
   var html='<div class="panel"><div class="ph"><h2>Onay Zinciri</h2>';
   if(canDo('coordinate') && req.status==='TECHNICAL_REVIEW') html+='<button class="btn-line sm" id="btnAddApproval" style="margin-left:auto">+ Onay Adımı Ekle</button>';
   html+='</div><div class="pb">';
   if(!ctx.approvals.length){ html+='<div class="empty">Onay adımı tanımlanmadı.</div>'; }
   else{
-    html+=ctx.approvals.map(function(a){
+    html+='<p class="hint" style="margin-bottom:10px">Onay zinciri sıralıdır — bir adım, kendinden önceki tüm adımlar onaylanmadan kararlaştırılamaz.</p>';
+    html+=ctx.approvals.slice().sort(function(a,b){return a.step_order-b.step_order;}).map(function(a){
       var can = canDecideApproval(a);
-      var decLbl = a.decision ? ('<span class="pill '+(a.decision==='APPROVED'?'ok':a.decision==='REJECTED'?'crit':'warn')+'">'+a.decision+'</span> · '+fmtDT(a.decided_at)) : '<span class="pill miss">Bekliyor</span>';
+      var decLbl;
+      if(a.decision){
+        decLbl = '<span class="pill '+(a.decision==='APPROVED'?'ok':a.decision==='REJECTED'?'crit':'warn')+'">'+a.decision+'</span> · '+fmtDT(a.decided_at);
+      } else if(active && active.id===a.id){
+        decLbl = '<span class="pill warn">Bekliyor (sıradaki adım)</span>';
+      } else {
+        decLbl = '<span class="pill miss">Kilitli — önceki adım(lar) tamamlanmadı</span>';
+      }
       var actions='';
       if(can){
         actions='<button class="sm btn-leaf apdec" data-id="'+a.id+'" data-dec="APPROVED">Onayla</button>'
@@ -811,6 +857,8 @@ function canDecideApproval(a){
   if(!canDo('approve') && cloudRole==='VIEWER') return false; // taban izin onay veremez
   if(req.initiator_id===cloudUserId) return false; // çıkar çatışması
   if(a.approver_id && a.approver_id!==cloudUserId) return false; // atanmışsa yalnız o kişi
+  var active=activeApprovalStep(ctx.approvals);
+  if(!active || active.id!==a.id) return false; // sıralı zincir: yalnız aktif (sıradaki) adım kararlaştırılabilir
   return true;
 }
 
