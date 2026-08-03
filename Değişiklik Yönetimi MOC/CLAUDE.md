@@ -27,9 +27,7 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   zaten Supabase'de uygulandı.
 - `moc_schema_faz_b2.sql` — Faz B2: `moc_change_categories`/`moc_types`
   için INSERT/UPDATE RLS politikaları + GRANT (Ayarlar CRUD'u için).
-  **Henüz Supabase'de çalıştırılmadı — uygulamadan önce SQL Editor'da
-  bir kez çalıştırılmalı**, yoksa Ayarlar'daki Ekle/Düzenle işlemleri
-  RLS/GRANT hatasıyla başarısız olur.
+  Supabase'de uygulandı, canlı test edildi (bkz. "Faz B2 doğrulama").
 - `moc_state_machine_v1.md`, `moc_rbac_matrix_v1.md`, `moc_schema_v1-1.sql`
   — orijinal planlama dosyaları (iş mantığı kaynağı). `MOC_Teknik_Taslak_
   v2-1.md`, `moc_api_endpoints_v1-1.md`, `moc_kodlama_prompt_sprint1-1.md`
@@ -53,17 +51,16 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
    approver_id kendine set edilir. B2 planlamasında kullanıcıya bu model
    mi yoksa belirli-kişi-atama modeli mi istendiği soruldu — **üstlenme
    modelinin korunması** seçildi, değişiklik yapılmadı.
-3. **Ayarlar ekranı artık CRUD destekliyor (B2).** Kategori/tür
-   ekleme-düzenleme `viewSettings()`/`openCategoryModal()`/`openTypeModal()`
-   ile yapılıyor. Kurallar: yalnız kendi tenant'ınıza ait satırlar
-   düzenlenebilir (global/tenant_id NULL satırlar salt-okunur gösterilir,
-   RLS zaten bunu zorluyor — bkz. `moc_schema_faz_b2.sql`); silme yok,
-   yalnız soft-delete (`is_active` toggle) — kullanılmış türler/kategoriler
-   asla fiziksel silinemez. **Bu SQL dosyası Supabase'de henüz
-   çalıştırılmadı, önce çalıştırılmalı.**
+3. **Ayarlar ekranı artık CRUD destekliyor (B2, canlı test edildi).**
+   Kategori/tür ekleme-düzenleme `viewSettings()`/`openCategoryModal()`/
+   `openTypeModal()` ile yapılıyor. Kurallar: yalnız kendi tenant'ınıza
+   ait satırlar düzenlenebilir (global/tenant_id NULL satırlar salt-okunur
+   gösterilir, RLS zaten bunu zorluyor — bkz. `moc_schema_faz_b2.sql`);
+   silme yok, yalnız soft-delete (`is_active` toggle) — kullanılmış
+   türler/kategoriler asla fiziksel silinemez.
 4. **Acil değişiklik** yalnız UI banner + retro_hours gösterimi; state
    machine'de ayrı bir "sözlü onay" adımı/alanı yok.
-5. **Onay zinciri otomasyonu (B2'de eklendi).**
+5. **Onay zinciri otomasyonu (B2'de eklendi, canlı test edildi).**
    `moc_types.extra_approval_risk_threshold`/`extra_approval_role_code`
    Ayarlar'dan düzenlenebilir ve `ensureRiskThresholdApproval()` ile
    kullanılıyor: `TECHNICAL_REVIEW → APPROVAL` geçişinde, herhangi bir
@@ -100,3 +97,22 @@ onunla çelişirse dosya esas alınır ve kod düzeltilir.
   girebilmesi için `modul_yetki` tablosuna `(user_id, modul='moc')`
   satırı elle eklenmesi gerekiyor (bkz. §Auth) — bu adım otomatik
   değil, yeni kullanıcı/tenant eklerken unutulmamalı.
+
+## Faz B2 doğrulama (canlı test — tamamlandı)
+- **Ayarlar CRUD:** kategori ve akış türü (`moc_types`) ekleme/düzenleme
+  test edildi — kod, ad (TR/EN), ekipman bağlantısı, PSSR gerekliliği,
+  bitiş tarihi gerekliliği, geriye dönük süre, risk eşiği/rol kodu
+  alanları sorunsuz kaydediliyor. Global (tenant_id NULL) satırlar
+  beklendiği gibi salt-okunur kaldı, yalnız tenant'a özel satırlar
+  düzenlenebildi.
+- **Soft-delete koruması:** pasifleştirme (`is_active=false`) test
+  edildi, fiziksel silme yolu yok (UI'da hiç sunulmuyor) — kullanılmış
+  tür/kategoriler güvende.
+- **Risk eşiğine göre otomatik ek onay:** `extra_approval_risk_threshold`/
+  `extra_approval_role_code` tanımlı bir türde, eşiği aşan bir risk
+  kaydıyla `TECHNICAL_REVIEW → APPROVAL` geçişi tetiklendiğinde
+  `ensureRiskThresholdApproval()` otomatik onay adımını doğru şekilde
+  ekledi; eşik aşılmadığında veya adım zaten varsa tekrar eklemedi.
+- **Onaycı akışı ("üstlenme" modeli):** mevcut model (atama yok,
+  yetkili herhangi bir kullanıcı kararı üstlenerek veriyor) korunduğu
+  haliyle test edildi, sorunsuz.
