@@ -53,6 +53,11 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   `moc_etki_checklist_setleri`'ne `tetik_tipi`/`tetik_durum_kodu`
   kolonları (idempotent ALTER) + üçüncü, DURUM-tetiklemeli bir set
   seed'i ekler. Henüz Supabase'e UYGULANMADI (bkz. "Faz F" bölümü).
+- `moc_schema_faz_g.sql` — Faz G: Checklist Tetikleyici Cevap Düzeltmesi.
+  `moc_etki_checklist_maddeleri`'ne `tetikleyen_cevap` kolonu (idempotent
+  ALTER) + 91 maddenin (Genel Risk 68 + Gıda 10 + PSSR 13) tek tek
+  belirlenmiş doğru tetikleyici cevabını atayan idempotent UPDATE'ler.
+  Henüz Supabase'e UYGULANMADI (bkz. "Faz G" bölümü).
 - `TASARIM_STANDARDI.md` — renk/tipografi/bileşen standardı, MOC.html
   buna birebir uyar.
 - `moc_theme_tokens.css`, `moc_wireframe_v1-2.html` — **kullanılmadı**
@@ -157,6 +162,77 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   tamamlanma sonrası maliyeti girip sapmanın otomatik hesaplandığını,
   TRY dışı bir para biriminde kur çevriminin dashboard'a ve panele doğru
   yansıdığını doğrulamak.
+
+## Faz G — Checklist Tetikleyici Cevap Düzeltmesi (kod hazır, SQL uygulanmayı bekliyor)
+- **Bulunan mantık hatası:** Checklist soruları iki farklı tarzda yazılmış
+  ama sistem hepsini "Evet ise aksiyon gerekli" sabit varsayımıyla
+  işliyordu. "Risk tespit" tarzı sorularda ("X etkileniyor mu/gerekiyor
+  mu?") bu doğruydu — Evet kötü haberdir. Ama "doğrulama/teyit" tarzı
+  sorularda ("X tamamlandı mı/test edildi mi/çalışıyor mu?") mantık
+  TERSTİ — Hayır kötü haberdir, aksiyonu Hayır tetiklemeliydi. Bu özellikle
+  Faz F'nin PSSR setinin **13 maddesinin tamamını** (hepsi doğrulama
+  tarzı) ve Genel Risk setinin **52 maddesini** yanlış yönde çalıştırıyordu
+  — ör. "Acil durdurma sistemleri çalışır durumda mı?" sorusunda "Evet"
+  (sistem çalışıyor, sorun yok) yanlışlıkla aksiyon açıyor, "Hayır"
+  (sistem çalışmıyor, gerçek risk) sessizce geçiyordu.
+- **Çözüm:** `moc_etki_checklist_maddeleri`'ne `tetikleyen_cevap`
+  (`'Evet'`/`'Hayır'`, DEFAULT `'Evet'` — geriye dönük uyumlu) kolonu
+  eklendi. `MOC.html`'de `checklistTriggerCevap(m)` yardımcı fonksiyonu
+  eklendi; `commitChecklistAnswer()`'daki `needsAction` hesaplaması,
+  `renderChecklistRow()`'daki gerekçe kutusu açılma tetiği (`showGerekce`)
+  ve `bindChecklistEvents()`'teki chip tıklama akışı artık sabit `'EVET'`
+  yerine `cevap===checklistTriggerCevap(m)` karşılaştırması kullanıyor —
+  hangi cevap o maddenin tetikleyicisiyse yalnız o seçilince gerekçe kutusu
+  açılıyor ve aksiyon doğuyor.
+- **Ayarlar CRUD güncellendi:** `openChecklistItemForm()`'a "Tetikleyen
+  Cevap" seçici (Evet/Hayır, açıklayıcı örnekli) eklendi; madde tablosu
+  yeni bir "Tetikleyen" kolonu gösteriyor; `cloneChecklistSet()`
+  (tenant'ların "Kullan"/"Kopyala" akışı) artık `tetikleyen_cevap`'ı da
+  kopyalıyor — tenant kopyaları global şablonun düzeltilmiş mantığını
+  devralıyor.
+- **91 maddenin tam kırılımı** (`moc_schema_faz_g.sql`, madde bazlı —
+  her soru cümlesi tek tek okunup karar verildi):
+  - **Genel Risk Değerlendirme Checklist'i (68 madde):** 13 madde "Evet
+    tetikler" (risk tespit tarzı — sira 3,8,9,10,25,29,31,43,44,46,47,
+    49,50), 52 madde "Hayır tetikler" (doğrulama tarzı), **3 madde
+    kararsız bırakıldı** (aşağıya bkz.).
+  - **Gıda Güvenliği Etki Değerlendirmesi (10 madde):** 10/10 "Evet
+    tetikler" (hepsi risk tespit tarzı, örn. "HACCP planını etkiliyor
+    mu?") — davranış DEĞİŞMEDİ.
+  - **PSSR Checklist'i (13 madde):** 13/13 "Hayır tetikler" (hepsi
+    doğrulama tarzı — "...test edildi mi/çalışıyor mu/güncellendi mi?").
+    Madde #2 (basınç tahliye cihazları) zaten `evet_aksiyon_gerekli=false`
+    (N/A olabilir) olduğu için tetikleyen_cevap'ın işlevsel etkisi yok,
+    yalnız tutarlılık için 'Hayır' işaretlendi.
+  - **KARARSIZ BIRAKILAN 3 MADDE** (Genel Risk, varsayılan 'Evet'te
+    bırakıldı, SQL'de UPDATE edilmedi — çift olumsuz cümle yapısı
+    nedeniyle kullanıcı onayı bekleniyor):
+    1. "İtfaiye/acil müdahale ekiplerinin alana erişimi engellenmiyor
+       mu?" (sira 39)
+    2. "Yangın duvarları/bölmeleri değişiklikle delinmedi veya
+       zayıflatılmadı mı?" (sira 40)
+    3. "Değişiklik için gerekli tüm onaylar tamamlanmadan işe
+       başlanmıyor mu?" (sira 51)
+    Üçü de mantıksal olarak "Hayır tetikler" gibi görünüyor (çift
+    olumsuzu çözünce: engelleniyorsa/delinmişse/onaysız başlanmışsa
+    kötü durum "Hayır" cevabı ile ifade ediliyor) ama çift olumsuz
+    cümle yapısı yanlış yorumlama riski taşıdığı için otomatik
+    atanmadı — bir sonraki oturumda kullanıcıyla teyit edilip
+    `moc_schema_faz_g.sql`'e eklenmeli veya soru cümleleri tek
+    olumsuzlu hale getirilerek yeniden yazılmalı.
+- **DURUM:** Kod (`MOC.html`) hazır, JS söz dizimi doğrulandı, mantık
+  PSSR/Genel Risk örnek senaryolarıyla masaüstünde (kod okuması +
+  fonksiyon simülasyonu) doğrulandı. Şema (`moc_schema_faz_g.sql`)
+  **Supabase'e henüz uygulanmadı** — SQL uygulanmadan `tetikleyen_cevap`
+  kolonu mevcut değilken `m.tetikleyen_cevap` `undefined` döner ve
+  `checklistTriggerCevap()` varsayılan `'EVET'`e düşer, yani eski (hatalı)
+  davranış SQL uygulanana kadar sürer; **kod ve SQL birlikte devreye
+  alınmalı**. Bir sonraki adım: script'i çalıştırıp PSSR'da "Acil
+  durdurma sistemleri çalışır durumda mı?" sorusuna canlıda Hayır
+  cevabı verip aksiyon+gerekçe zorunluluğunun açıldığını, Evet
+  cevabında sorunsuz geçildiğini; Genel Risk/Gıda'daki risk-tespit
+  tarzı maddelerde davranışın (Evet tetikler) değişmediğini
+  doğrulamak; ayrıca yukarıdaki 3 kararsız maddeye karar verilmesi.
 
 ## Faz F — PSSR Checklist Seti: durum-tetiklemeli üçüncü set (kod hazır, SQL uygulanmayı bekliyor)
 - **Mimari farkı (Faz C'den):** Genel Risk ve Gıda setleri KATEGORİ bazlı

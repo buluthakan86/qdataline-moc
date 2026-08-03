@@ -1049,23 +1049,32 @@ function renderChecklistPanelGeneric(items, panelId, heading){
   var html='<div class="panel" id="'+panelId+'"><div class="ph"><h2>'+heading+'</h2>'
     +'<span class="pill '+(answered===items.length?'ok':'warn')+'" style="margin-left:auto">'+answered+'/'+items.length+' yanıtlandı</span></div><div class="pb">';
   html+=body;
-  html+='<p class="hint">Bu aşamayı geçmeden önce tüm maddeler yanıtlanmalı, "Evet" cevabının doğurduğu aksiyonlar kapatılmalıdır.</p>';
+  html+='<p class="hint">Bu aşamayı geçmeden önce tüm maddeler yanıtlanmalı, tetikleyici cevabın doğurduğu aksiyonlar kapatılmalıdır.</p>';
   html+='</div></div>';
   return html;
 }
+/* Her maddenin kendi tetikleyen_cevap'ı (Evet/Hayır) var — "risk tespit"
+   tarzı sorularda Evet, "doğrulama/teyit" tarzı sorularda Hayır kötü
+   haberdir ve aksiyon/gerekçe akışını o taraf tetikler. Eski veri/kolon
+   henüz uygulanmadıysa (tetikleyen_cevap undefined) varsayılan 'Evet'e
+   düşer — geriye dönük uyumlu. */
+function checklistTriggerCevap(m){
+  return (m && m.tetikleyen_cevap==='Hayır') ? 'HAYIR' : 'EVET';
+}
 function renderChecklistRow(m, a, canAnswer){
   var cevap = a&&a.cevap;
+  var trigger = checklistTriggerCevap(m);
   function chip(val,lbl){
     var active = cevap===val;
     return '<button type="button" class="sm chkchip'+(active?' active-'+val:'')+'" data-id="'+m.id+'" data-cevap="'+val+'"'+(canAnswer?'':' disabled')+'>'+lbl+'</button>';
   }
   var actionBadge = (a&&a.action_id) ? ' <span class="pill warn">Aksiyon açık</span>' : '';
-  var showGerekce = cevap==='EVET';
+  var showGerekce = cevap===trigger;
   var gerekceBox = '<div class="chk-gerekce" data-gid="'+m.id+'" style="'+(showGerekce?'':'display:none')+'">'
     +'<textarea class="chkGerekceInput" data-id="'+m.id+'" placeholder="Gerekçe (zorunlu)">'+(a?esc(a.gerekce||''):'')+'</textarea>'
     +(canAnswer?'<button type="button" class="sm btn-leaf chkGerekceSave" data-id="'+m.id+'">Kaydet</button>':'')
     +'</div>';
-  var noteLink = (canAnswer && cevap && cevap!=='EVET')
+  var noteLink = (canAnswer && cevap && cevap!==trigger)
     ? '<div class="hint"><a href="#" class="chkNoteLink" data-id="'+m.id+'">'+(a&&a.gerekce?'Notu düzenle':'+ Not ekle')+'</a></div>' : '';
   return '<div class="chk-row" data-row-id="'+m.id+'">'
     +'<div class="chk-q">'+esc(m.soru_metni)+actionBadge+'</div>'
@@ -1080,7 +1089,7 @@ function bindChecklistEvents(){
       var id=Number(b.getAttribute('data-id')), cevap=b.getAttribute('data-cevap');
       var m=(CHECKLIST_ITEMS||[]).find(function(x){return x.id===id;});
       if(!m) return;
-      if(cevap==='EVET'){ toggleChecklistGerekce(id,true); return; }
+      if(cevap===checklistTriggerCevap(m)){ toggleChecklistGerekce(id,true); return; }
       toggleChecklistGerekce(id,false);
       commitChecklistAnswer(m, cevap, '');
     };
@@ -1092,8 +1101,8 @@ function bindChecklistEvents(){
       if(!m) return;
       var ta=document.querySelector('.chkGerekceInput[data-id="'+id+'"]');
       var gerekce=ta?ta.value:'';
-      if(!gerekce.trim()){ toast('Evet cevabı için gerekçe zorunlu.',true); return; }
-      commitChecklistAnswer(m,'EVET',gerekce);
+      if(!gerekce.trim()){ toast('Bu cevap için gerekçe zorunlu.',true); return; }
+      commitChecklistAnswer(m,checklistTriggerCevap(m),gerekce);
     };
   });
   Array.prototype.forEach.call(document.querySelectorAll('.chkNoteLink'),function(lnk){
@@ -1123,7 +1132,7 @@ function checklistPhaseForMadde(m){
 }
 function commitChecklistAnswer(m, cevap, gerekce){
   var existing=(DETAIL_CTX.checklistAnswers||[]).find(function(a){return a.madde_id===m.id;});
-  var needsAction = cevap==='EVET' && m.evet_aksiyon_gerekli;
+  var needsAction = cevap===checklistTriggerCevap(m) && m.evet_aksiyon_gerekli;
   var actionPromise = Promise.resolve(existing?existing.action_id:null);
   if(needsAction && !(existing&&existing.action_id)){
     actionPromise = sb.from('moc_action_items').insert({
@@ -1675,7 +1684,7 @@ function cloneChecklistSet(setId){
     var items=(ALL_CHECKLIST_ITEMS||[]).filter(function(m){return m.set_id===setId;});
     if(!items.length){ toast('Set kopyalandı'); viewSettings(); return; }
     var payload=items.map(function(m){
-      return {set_id:newSetId, bolum_baslik:m.bolum_baslik, soru_metni:m.soru_metni, sira_no:m.sira_no, evet_aksiyon_gerekli:m.evet_aksiyon_gerekli};
+      return {set_id:newSetId, bolum_baslik:m.bolum_baslik, soru_metni:m.soru_metni, sira_no:m.sira_no, evet_aksiyon_gerekli:m.evet_aksiyon_gerekli, tetikleyen_cevap:m.tetikleyen_cevap||'Evet'};
     });
     sb.from('moc_etki_checklist_maddeleri').insert(payload).then(function(res2){
       if(res2.error){ toast('Hata: '+res2.error.message,true); return; }
@@ -1715,14 +1724,15 @@ function renderChecklistItemsModalBody(setId){
   var items=(ALL_CHECKLIST_ITEMS||[]).filter(function(m){return m.set_id===setId;}).sort(function(a,b){return a.sira_no-b.sira_no;});
   var rows=items.map(function(m){
     return '<tr'+(m.is_active?'':' style="opacity:.5"')+'><td>'+m.sira_no+'</td><td>'+esc(m.bolum_baslik)+'</td><td>'+esc(m.soru_metni)+'</td>'
+      +'<td>'+(m.tetikleyen_cevap==='Hayır'?'Hayır':'Evet')+'</td>'
       +'<td>'+(m.evet_aksiyon_gerekli?'Evet':'Hayır')+'</td>'
       +'<td><button class="sm btn-line editchkitem" data-id="'+m.id+'">Düzenle</button> '
       +'<button class="sm btn-line togglechkitem" data-id="'+m.id+'" data-v="'+(!m.is_active)+'">'+(m.is_active?'Pasifleştir':'Aktifleştir')+'</button></td></tr>';
   }).join('');
   setModalBody(
     '<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn-line sm" id="btnAddChkItem">+ Madde Ekle</button></div>'
-    +'<table><thead><tr><th>Sıra</th><th>Bölüm</th><th>Soru</th><th>Evet→Aksiyon</th><th></th></tr></thead><tbody>'
-    +(rows||'<tr><td colspan="5" class="empty">Madde yok.</td></tr>')+'</tbody></table>'
+    +'<table><thead><tr><th>Sıra</th><th>Bölüm</th><th>Soru</th><th>Tetikleyen</th><th>→Aksiyon</th><th></th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="6" class="empty">Madde yok.</td></tr>')+'</tbody></table>'
   );
   var ac=document.getElementById('btnAddChkItem'); if(ac) ac.onclick=function(){ openChecklistItemForm(setId,null); };
   Array.prototype.forEach.call(document.querySelectorAll('.editchkitem'),function(b){
@@ -1742,7 +1752,11 @@ function openChecklistItemForm(setId, m){
     '<label>Bölüm Başlığı</label><input id="ciBolum" value="'+(m?esc(m.bolum_baslik):'')+'">'
     +'<label>Soru Metni</label><textarea id="ciSoru">'+(m?esc(m.soru_metni):'')+'</textarea>'
     +'<div class="row2"><div><label>Sıra No</label><input id="ciSira" type="number" value="'+(m?m.sira_no:0)+'"></div>'
-    +'<div><label class="chk" style="margin-top:30px"><input type="checkbox" id="ciEvetAksiyon" '+(m&&m.evet_aksiyon_gerekli?'checked':'')+'> "Evet" cevabı otomatik aksiyon oluştursun</label></div></div>'
+    +'<div><label>Tetikleyen Cevap</label><select id="ciTetikleyen">'
+      +'<option value="Evet"'+((!m||m.tetikleyen_cevap!=='Hayır')?' selected':'')+'>Evet (risk tespiti — "X etkileniyor mu?" tarzı)</option>'
+      +'<option value="Hayır"'+(m&&m.tetikleyen_cevap==='Hayır'?' selected':'')+'>Hayır (doğrulama — "X tamamlandı mı?" tarzı)</option>'
+      +'</select></div></div>'
+    +'<label class="chk" style="margin-top:10px"><input type="checkbox" id="ciEvetAksiyon" '+(m&&m.evet_aksiyon_gerekli?'checked':'')+'> Tetikleyen cevap otomatik aksiyon oluştursun</label>'
     +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
     +'<button class="btn-line" id="btnChkItemBack">Geri</button>'
     +'<button class="btn-leaf" id="btnChkItemSave">Kaydet</button></div>'
@@ -1751,7 +1765,7 @@ function openChecklistItemForm(setId, m){
   document.getElementById('btnChkItemSave').onclick=function(){
     var bolum=val('ciBolum'), soru=val('ciSoru');
     if(!bolum.trim()||!soru.trim()){ toast('Bölüm ve soru metni zorunlu.',true); return; }
-    var payload={ bolum_baslik:bolum, soru_metni:soru, sira_no:num('ciSira')||0, evet_aksiyon_gerekli:document.getElementById('ciEvetAksiyon').checked };
+    var payload={ bolum_baslik:bolum, soru_metni:soru, sira_no:num('ciSira')||0, evet_aksiyon_gerekli:document.getElementById('ciEvetAksiyon').checked, tetikleyen_cevap:val('ciTetikleyen')||'Evet' };
     var op = m ? sb.from('moc_etki_checklist_maddeleri').update(payload).eq('id',m.id)
                : sb.from('moc_etki_checklist_maddeleri').insert(Object.assign({set_id:setId},payload));
     op.then(function(res){
