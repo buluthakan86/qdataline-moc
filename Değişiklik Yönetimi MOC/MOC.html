@@ -52,40 +52,49 @@ h1,h2,h3,h4{font-family:"Space Grotesk","Inter","Segoe UI",system-ui,sans-serif;
 #loginMsg{font-size:12px;color:var(--warn);min-height:16px;margin-top:10px}
 
 /* ---- Shell ---- */
-#app{display:none;min-height:100vh}
-aside.side{width:248px;flex-shrink:0;background:var(--card);color:var(--ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;border-right:1px solid var(--line);overflow-y:auto;transition:width .18s ease}
-aside.side.collapsed{width:66px}
-.brand{padding:15px 15px 12px;border-bottom:1px solid var(--line-2)}
-.logo-row{display:flex;align-items:center;gap:11px}
-.logo-mark{width:54px;height:32px;flex-shrink:0}
-.logo-txt .n{font-size:16px;font-weight:500;letter-spacing:.5px;color:var(--ink);line-height:1}
-.logo-txt .n b{font-weight:700;background:linear-gradient(90deg,#10B981,#A3E635);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.logo-txt .s{font-size:9.5px;color:var(--muted);letter-spacing:.4px;margin-top:3px;text-transform:uppercase}
-.brand-toggle{cursor:pointer;position:relative}
-.brand-toggle:hover .logo-txt .n{filter:brightness(1.12)}
-.brand-toggle::after{content:"‹‹";position:absolute;top:14px;right:12px;font-size:13px;color:var(--muted);font-weight:800;line-height:1}
-.side.collapsed .brand-toggle::after{content:"››";right:0;left:0;text-align:center;top:auto;bottom:-2px}
-.side.collapsed .logo-txt,.side.collapsed .nav-lbl,.side.collapsed .cnt{display:none}
-.side-search{margin-top:10px}
-.side-search input{width:100%;background:var(--sand);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:7px 10px;font-size:12.5px;font-family:inherit}
-.side.collapsed .side-search{display:none}
-nav.snav{padding:6px 10px 14px}
-.nav-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#5F7266;font-weight:700;padding:12px 10px 6px}
-.nav-item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;color:#C9D8CF;font-size:13px;font-weight:600;border:none;background:transparent;width:100%;text-align:left;transition:.13s;margin-bottom:2px;cursor:pointer}
-.nav-item .ico{width:19px;height:19px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px}
-.nav-item:hover{background:var(--mint-2)}
-.nav-item.on{background:var(--mint);color:var(--ink);box-shadow:inset 3px 0 0 var(--leaf)}
-.nav-item .cnt{margin-left:auto;font-size:11px;padding:1px 8px;border-radius:20px;font-weight:800;background:#1C2A21;color:#AFC6B8}
-.nav-item .cnt.warn{background:var(--warn-bg);color:var(--warn)}
-.nav-item .cnt.crit{background:var(--crit-bg);color:var(--crit)}
-
+#app{display:none;min-height:100vh;flex-direction:column}
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
-.topbar{background:var(--card);border-bottom:1px solid var(--line);padding:14px 26px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:40;flex-wrap:wrap}
+.topbar{background:var(--card);border-bottom:1px solid var(--line);padding:12px 26px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:40;flex-wrap:wrap}
+.topbar .logo-row{display:flex;align-items:center;gap:9px}
+.topbar .logo-mark{width:40px;height:24px;flex-shrink:0}
+.topbar .logo-txt .n{font-size:14.5px;font-weight:500;letter-spacing:.4px;color:var(--ink);line-height:1}
+.topbar .logo-txt .n b{font-weight:700;background:linear-gradient(90deg,#10B981,#A3E635);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .topbar h1{font-size:16px;font-weight:700}
 .topbar .crumb{font-size:12px;color:var(--muted)}
 .topbar .sp{flex:1}
+.topbar .side-search{width:190px}
+.topbar .side-search input{width:100%;background:var(--sand);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:7px 10px;font-size:12.5px;font-family:inherit}
 #userLabel{font-size:12px;color:var(--muted)}
-.content{padding:24px 26px;max-width:1580px;width:100%}
+.content{padding:20px 26px 24px;max-width:1580px;width:100%}
+
+/* ---- Üst kayan kart menü (eski sol menünün yerine) ---- */
+.cardnav-wrap{background:var(--card);border-bottom:1px solid var(--line);padding:16px 26px;position:sticky;top:53px;z-index:39}
+.cardnav{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;padding-bottom:4px}
+.cardnav::-webkit-scrollbar{height:8px}
+.navcard{flex:0 0 220px;height:118px;position:relative;display:flex;align-items:flex-end;border-radius:14px;border:1px solid var(--line);background:linear-gradient(150deg,var(--mint) 0%,var(--mint-2) 55%,#0C1610 100%);overflow:hidden;transition:.16s;cursor:pointer;box-shadow:var(--shadow)}
+.navcard::before{content:"";position:absolute;inset:0;background:radial-gradient(120px 90px at 85% 15%, rgba(16,185,129,.20), transparent 70%)}
+.navcard .card-body{position:relative;z-index:1;display:flex;align-items:center;gap:9px;padding:14px 16px;width:100%}
+.navcard .ico{font-size:22px;line-height:1;flex-shrink:0;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+.navcard .lbl{color:var(--ink);font-size:14px;font-weight:700;line-height:1.25}
+.navcard .cnt{position:absolute;top:10px;right:12px;z-index:1;font-size:11px;padding:2px 9px;border-radius:20px;font-weight:800;background:rgba(0,0,0,.32);color:#AFC6B8;backdrop-filter:blur(2px)}
+.navcard .cnt.warn{background:var(--warn-bg);color:var(--warn)}
+.navcard .cnt.crit{background:var(--crit-bg);color:var(--crit)}
+.navcard:hover{border-color:var(--leaf-d);transform:translateY(-2px)}
+.navcard.on{border-color:var(--leaf);box-shadow:0 0 0 1px var(--leaf), var(--shadow)}
+.navcard.on::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#059669,#84CC16)}
+
+/* ---- Dashboard ---- */
+.dash-section-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--leaf-d);font-weight:700;margin:4px 0 10px}
+.dash-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+@media(max-width:980px){.dash-grid{grid-template-columns:1fr}}
+.barrow{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12.5px}
+.barrow .barlbl{width:150px;flex-shrink:0;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.barrow .bartrack{flex:1;height:9px;background:var(--bar-track);border-radius:5px;overflow:hidden}
+.barrow .barfill{height:100%;border-radius:5px;background:linear-gradient(90deg,#059669,#84CC16)}
+.barrow .barval{width:28px;text-align:right;font-weight:700;flex-shrink:0}
+.dash-list-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line-2);font-size:12.5px}
+.dash-list-row:last-child{border:none}
+.dash-list-row .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ---- Butonlar ---- */
 button,.btn{font-family:inherit;font-size:12.5px;font-weight:600;border-radius:8px;border:1px solid transparent;padding:8px 14px;transition:.12s;cursor:pointer;white-space:nowrap}
@@ -206,32 +215,26 @@ textarea{resize:vertical;min-height:70px}
 
 <!-- ============================ APP ============================ -->
 <div id="app">
-  <aside class="side" id="side">
-    <div class="brand">
-      <div class="logo-row brand-toggle" id="brandToggle" title="Menüyü aç / kapat" role="button" tabindex="0">
+  <div class="main">
+    <div class="topbar">
+      <div class="logo-row">
         <svg class="logo-mark" viewBox="-104 -108 384 224" aria-label="Qdataline">
           <circle cx="0" cy="0" r="86" fill="none" stroke="#10B981" stroke-width="20" stroke-linecap="round" stroke-dasharray="470 71" stroke-dashoffset="-38" transform="rotate(45)"/>
           <path d="M 42 42 L 96 96 L 148 96 L 180 52 L 214 82 L 258 30" fill="none" stroke="#84CC16" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <div class="logo-txt">
           <div class="n">Q<b>data</b>line</div>
-          <div class="s">Değişiklik Yönetimi</div>
         </div>
       </div>
-      <div class="side-search"><input id="sideSearch" placeholder="MOC no / başlık ara…"></div>
-    </div>
-    <nav class="snav" id="snav"></nav>
-  </aside>
-
-  <div class="main">
-    <div class="topbar">
-      <h1 id="pageTitle">Taleplerim</h1>
+      <h1 id="pageTitle">Değişiklik Talepleri</h1>
       <span class="crumb" id="pageCrumb"></span>
       <div class="sp"></div>
+      <div class="side-search"><input id="sideSearch" placeholder="MOC no / başlık ara…"></div>
       <button class="btn-leaf" id="btnNewRequest">+ Yeni Değişiklik Talebi</button>
       <span id="userLabel"></span>
       <button class="btn-line sm" id="btnLogout">Çıkış</button>
     </div>
+    <div class="cardnav-wrap"><nav class="cardnav" id="snav"></nav></div>
     <div class="content" id="content"></div>
   </div>
 </div>
@@ -345,11 +348,12 @@ function afterLogin(session){
     sb.from('modul_yetki').select('modul').eq('user_id',cloudUserId).eq('modul',MOC_MODUL).maybeSingle().then(function(mr){
       if(mr.error||!mr.data){ loginMsg('Bu hesabın Değişiklik Yönetimi (MOC) modülüne erişimi yok.'); return; }
       loginMsg('Veriler yükleniyor…');
+      fetchExchangeRates();
       loadLookups().then(function(){
         document.getElementById('loginScreen').style.display='none';
         document.getElementById('app').style.display='flex';
         document.getElementById('userLabel').textContent=(cloudFullName?cloudFullName+' · ':'')+cloudUser+' · '+cloudRole;
-        renderNav(); go('mine');
+        renderNav(); go('dashboard');
       });
     });
   });
@@ -397,6 +401,38 @@ function catById(id){ return CATEGORIES.find(function(c){return c.id===id;}); }
 function catByIdAny(id){ return ALL_CATEGORIES.find(function(c){return c.id===id;}); }
 
 /* ============================================================================
+   Maliyet Takibi — çoklu para birimi + güncel kur çevrimi (Frankfurter API,
+   ECB referans kurları, ücretsiz, key gerektirmiyor, CORS açık — test edildi).
+   TRY dahil (ECB kapsamında). Kurlar oturum başına bir kez çekilir, base=TRY
+   ile alınır (rates[X] = 1 TRY karşılığı kaç X birimi), TRY'ye çevirirken
+   amount / rates[X] uygulanır. Servis erişilemezse ham değer gösterilir,
+   çevrim "—" olarak işaretlenir (sessizce yanlış rakam üretilmez).
+   ========================================================================= */
+var MOC_CURRENCIES=['TRY','USD','EUR','GBP'];
+var EXCHANGE_RATES={TRY:1}, EXCHANGE_DATE=null, EXCHANGE_READY=false;
+function fetchExchangeRates(){
+  return fetch('https://api.frankfurter.app/latest?base=TRY&symbols='+MOC_CURRENCIES.filter(function(c){return c!=='TRY';}).join(','))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(j&&j.rates){ EXCHANGE_RATES=Object.assign({TRY:1}, j.rates); EXCHANGE_DATE=j.date; EXCHANGE_READY=true; }
+    })
+    .catch(function(){ EXCHANGE_READY=false; });
+}
+function convertToTRY(amount, currency){
+  if(amount==null||isNaN(amount)) return null;
+  if(!currency||currency==='TRY') return amount;
+  var rate=EXCHANGE_RATES[currency];
+  if(!rate) return null;
+  return amount/rate;
+}
+function fmtMoney(n){ if(n==null||isNaN(n)) return '—'; return n.toLocaleString('tr-TR',{maximumFractionDigits:2}); }
+function fmtCostTRY(amount, currency){
+  var tl=convertToTRY(amount, currency);
+  if(currency==='TRY'||!currency) return fmtMoney(amount)+' ₺';
+  return fmtMoney(amount)+' '+currency+(tl!=null?' (güncel kurla ~'+fmtMoney(tl)+' ₺)':' (kur alınamadı)');
+}
+
+/* ============================================================================
    Etki Değerlendirme Checklist — hangi setler bu MOC talebine uygulanır
    Zorunlu (kategori_id NULL) setler: global + tenant'ın kendi ek setleri.
    Opsiyonel (kategori_id dolu) setler: yalnız tenant "Kullan" ile kendi
@@ -424,23 +460,28 @@ function condChecklistAnswered(r,ctx){
 /* ============================================================================
    Nav
    ========================================================================= */
-var CURRENT_VIEW='mine', CURRENT_ID=null;
+var CURRENT_VIEW='dashboard', CURRENT_ID=null;
 function renderNav(){
-  var html='<div class="nav-lbl">MOC</div>'
-    +navItem('mine','📋','Taleplerim')
+  var html=navItem('dashboard','📊','Genel Bakış')
+    +navItem('mine','📋','Değişiklik Talepleri')
     +navItem('pending','✅','Onay Bekleyenler')
     +navItem('all','🗂️','Tüm Değişiklikler');
   if(canDo('admin')) html+=navItem('settings','⚙️','Ayarlar');
   document.getElementById('snav').innerHTML=html;
-  Array.prototype.forEach.call(document.querySelectorAll('.nav-item[data-v]'),function(el){
+  Array.prototype.forEach.call(document.querySelectorAll('.navcard[data-v]'),function(el){
     el.onclick=function(){ go(el.getAttribute('data-v')); };
   });
 }
-function navItem(v,ico,lbl){ return '<button class="nav-item'+(CURRENT_VIEW===v?' on':'')+'" data-v="'+v+'"><span class="ico">'+ico+'</span>'+lbl+'</button>'; }
+function navItem(v,ico,lbl){
+  return '<button class="navcard'+(CURRENT_VIEW===v?' on':'')+'" data-v="'+v+'">'
+    +'<span class="card-body"><span class="ico">'+ico+'</span><span class="lbl">'+lbl+'</span></span>'
+    +'</button>';
+}
 function go(view,id){
   CURRENT_VIEW=view; CURRENT_ID=id||null;
   renderNav();
-  if(view==='mine') viewList('mine');
+  if(view==='dashboard') viewDashboard();
+  else if(view==='mine') viewList('mine');
   else if(view==='pending') viewList('pending');
   else if(view==='all') viewList('all');
   else if(view==='settings') viewSettings();
@@ -448,10 +489,102 @@ function go(view,id){
 }
 
 /* ============================================================================
+   Dashboard (Genel Bakış) — üst kart menüsünün altındaki özet alan.
+   KPI'lar: açık MOC sayısı, onay bekleyen sayısı (kişisel kuyruk, "Onay
+   Bekleyenler" ile aynı activeApprovalStep mantığı), toplam başlangıç/
+   sapma maliyeti (TRY'ye çevrilmiş). Ayrıca kategori dağılımı (basit çubuk
+   grafik) ve T-7 içinde biten/geçmiş geçici değişiklikler listesi.
+   ========================================================================= */
+function viewDashboard(){
+  document.getElementById('pageTitle').textContent='Genel Bakış';
+  document.getElementById('pageCrumb').textContent='';
+  document.getElementById('content').innerHTML='<div class="empty">Yükleniyor…</div>';
+  var TERMINAL=['CLOSED','REJECTED','CANCELLED'];
+  Promise.all([
+    sb.from('moc_requests').select('*').is('deleted_at',null),
+    sb.from('moc_approvals').select('*, moc_requests(*)').order('step_order')
+  ]).then(function(res){
+    var reqs=res[0].data||[];
+    var open=reqs.filter(function(r){ return TERMINAL.indexOf(r.status)<0; });
+
+    var approvalRows=res[1].data||[];
+    var byMoc={};
+    approvalRows.forEach(function(a){ (byMoc[a.moc_id]=byMoc[a.moc_id]||[]).push(a); });
+    var pendingCount=0;
+    Object.keys(byMoc).forEach(function(mid){
+      var list=byMoc[mid], req=list[0]&&list[0].moc_requests;
+      if(!req||req.status!=='APPROVAL') return;
+      var active=activeApprovalStep(list);
+      if(!active) return;
+      if(req.initiator_id===cloudUserId) return;
+      if(cloudRole==='VIEWER') return;
+      if(active.approver_id && active.approver_id!==cloudUserId) return;
+      pendingCount++;
+    });
+
+    var catCounts={};
+    open.forEach(function(r){ var k=r.category_id||0; catCounts[k]=(catCounts[k]||0)+1; });
+    var catBars=Object.keys(catCounts).map(function(k){
+      var c=catById(Number(k));
+      return {name:c?c.name_tr:'Diğer', count:catCounts[k]};
+    }).sort(function(a,b){return b.count-a.count;});
+    var maxCat=catBars.reduce(function(m,x){return Math.max(m,x.count);},1);
+
+    var tempList=open.map(function(r){
+      var t=typeById(r.type_id);
+      if(!t||!t.requires_end_date||!r.planned_end) return null;
+      return {req:r, days:daysLeft(r.planned_end)};
+    }).filter(function(x){ return x && x.days<=7; }).sort(function(a,b){return a.days-b.days;});
+
+    var costTotalStart=0, costTotalDeviation=0, costCount=0;
+    reqs.forEach(function(r){
+      var s=convertToTRY(r.baslangic_maliyeti, r.para_birimi);
+      if(s!=null){ costTotalStart+=s; costCount++; }
+      var d=convertToTRY(r.sapma_tutari, r.para_birimi);
+      if(d!=null) costTotalDeviation+=d;
+    });
+
+    renderDashboardHtml({
+      openCount:open.length, pendingCount:pendingCount, catBars:catBars, maxCat:maxCat,
+      tempList:tempList, costTotalStart:costTotalStart, costTotalDeviation:costTotalDeviation, costCount:costCount
+    });
+  });
+}
+function renderDashboardHtml(d){
+  var html='<div class="view">';
+  html+='<div class="kpis">'
+    +'<div class="kpi"><div class="val">'+d.openCount+'</div><div class="lbl">Açık MOC</div></div>'
+    +'<div class="kpi'+(d.pendingCount?' warn':'')+'"><div class="val">'+d.pendingCount+'</div><div class="lbl">Onay Bekleyen (Bende)</div></div>'
+    +'<div class="kpi"><div class="val">'+fmtMoney(d.costTotalStart)+' ₺</div><div class="lbl">Toplam Başlangıç Bütçesi'+(EXCHANGE_READY?'':' *')+'</div></div>'
+    +'<div class="kpi'+(d.costTotalDeviation>0?' crit':(d.costTotalDeviation<0?'':''))+'"><div class="val">'+(d.costTotalDeviation>0?'+':'')+fmtMoney(d.costTotalDeviation)+' ₺</div><div class="lbl">Toplam Sapma'+(EXCHANGE_READY?'':' *')+'</div></div>'
+    +'</div>';
+  if(!EXCHANGE_READY) html+='<p class="hint" style="margin-top:-12px;margin-bottom:16px">* Güncel kur servisine şu an ulaşılamadı, TRY dışı tutarlar bu toplamlara dahil edilemedi.</p>';
+
+  html+='<div class="dash-grid">';
+  html+='<div class="panel"><div class="ph"><h2>Kategoriye Göre Açık MOC Dağılımı</h2></div><div class="pb">';
+  html+= d.catBars.length ? d.catBars.map(function(b){
+    return '<div class="barrow"><div class="barlbl" title="'+esc(b.name)+'">'+esc(b.name)+'</div>'
+      +'<div class="bartrack"><div class="barfill" style="width:'+Math.round(b.count/d.maxCat*100)+'%"></div></div>'
+      +'<div class="barval">'+b.count+'</div></div>';
+  }).join('') : '<div class="empty">Açık MOC yok.</div>';
+  html+='</div></div>';
+
+  html+='<div class="panel"><div class="ph"><h2>Geçici Değişiklikler — T-7 / Süresi Geçen</h2></div><div class="pb">';
+  html+= d.tempList.length ? d.tempList.map(function(x){
+    return '<div class="dash-list-row"><span class="t">'+esc(x.req.moc_no||('#'+x.req.id))+' · '+esc(x.req.title)+'</span>'+tempWarnPill(x.req.planned_end)+'</div>';
+  }).join('') : '<div class="empty">Yaklaşan/geçmiş geçici değişiklik yok.</div>';
+  html+='</div></div>';
+  html+='</div>'; // dash-grid
+
+  html+='</div>';
+  document.getElementById('content').innerHTML=html;
+}
+
+/* ============================================================================
    Liste görünümleri
    ========================================================================= */
 function viewList(kind){
-  document.getElementById('pageTitle').textContent = kind==='mine'?'Taleplerim':kind==='pending'?'Onay Bekleyenler':'Tüm Değişiklikler';
+  document.getElementById('pageTitle').textContent = kind==='mine'?'Değişiklik Talepleri':kind==='pending'?'Onay Bekleyenler':'Tüm Değişiklikler';
   document.getElementById('pageCrumb').textContent='';
   document.getElementById('content').innerHTML='<div class="empty">Yükleniyor…</div>';
 
@@ -562,15 +695,22 @@ function editRequestFlow(req){
   modalTitle(locked?'Talebi Düzenle (kısıtlı — '+STATUS_LABEL[req.status]+')':'Talebi Düzenle');
   if(locked){
     setModalBody(
-      '<p class="hint" style="margin-bottom:12px">Bu talebin akışı başlamış durumda — kategori/tür/öncelik gibi checklist ve onay zincirini belirleyen alanlar kilitli. Yalnız başlık/açıklama/gerekçe düzenlenebilir.</p>'
+      '<p class="hint" style="margin-bottom:12px">Bu talebin akışı başlamış durumda — kategori/tür/öncelik gibi checklist ve onay zincirini belirleyen alanlar kilitli. Yalnız başlık/açıklama/gerekçe ve maliyet alanları düzenlenebilir.</p>'
       +'<label>Başlık</label><input id="fTitle" value="'+esc(req.title||'')+'">'
       +'<label>Açıklama</label><textarea id="fDesc">'+esc(req.description||'')+'</textarea>'
       +'<label>Gerekçe</label><textarea id="fReason">'+esc(req.reason||'')+'</textarea>'
+      +'<fieldset><legend>Maliyet Takibi</legend>'
+      +'<div class="row2"><div><label>Para Birimi</label><select id="fCurrency">'+MOC_CURRENCIES.map(function(c){return '<option value="'+c+'"'+(c===(req.para_birimi||'TRY')?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'
+      +'<div><label>Başlangıç Maliyeti</label><input id="fCostStart" type="number" step="0.01" min="0" value="'+(req.baslangic_maliyeti!=null?req.baslangic_maliyeti:'')+'"></div></div>'
+      +'<label>Tamamlanma Sonrası Maliyet</label><input id="fCostEnd" type="number" step="0.01" min="0" value="'+(req.tamamlanma_sonrasi_maliyet!=null?req.tamamlanma_sonrasi_maliyet:'')+'">'
+      +'<p class="hint">Sapma tutarı/yüzdesi bu iki değerden otomatik hesaplanır.</p>'
+      +'</fieldset>'
     );
     modalFoot('Kaydet','Vazgeç',function(){
       var title=val('fTitle');
       if(!title.trim()){ toast('Başlık zorunlu.',true); return; }
-      sb.from('moc_requests').update({title:title, description:val('fDesc'), reason:val('fReason')}).eq('id',req.id).then(function(res){
+      sb.from('moc_requests').update({title:title, description:val('fDesc'), reason:val('fReason'),
+        para_birimi:val('fCurrency')||'TRY', baslangic_maliyeti:num('fCostStart'), tamamlanma_sonrasi_maliyet:num('fCostEnd')}).eq('id',req.id).then(function(res){
         if(res.error){ toast('Hata: '+res.error.message,true); return; }
         closeModal(); toast('Kaydedildi'); go(CURRENT_VIEW);
       });
@@ -677,6 +817,7 @@ function renderDetail(){
   html+='</div></div>';
 
   html+=renderTransitionsPanel();
+  html+=renderCostPanel();
   html+=renderChecklistPanel();
   html+=renderRiskPanel();
   html+=renderApprovalsPanel();
@@ -722,6 +863,47 @@ function renderTransitionsPanel(){
   return html;
 }
 
+/* ============================================================================
+   Maliyet Takibi Paneli (Faz E) — başlangıç/tamamlanma sonrası maliyet,
+   sapma DB'de GENERATED STORED kolon (sapma_tutari/sapma_yuzdesi), burada
+   yalnız gösterilir; TRY dışı para birimleri Frankfurter kuruyla şeffaf
+   çevrilir (ham değer + "~Y TRY" birlikte).
+   ========================================================================= */
+function renderCostPanel(){
+  var req=DETAIL_CTX.req;
+  var html='<div class="panel" id="costPanel"><div class="ph"><h2>Maliyet Takibi</h2>';
+  if(canDo('coordinate')) html+='<button class="btn-line sm" id="btnEditCost" style="margin-left:auto">Düzenle</button>';
+  html+='</div><div class="pb">';
+  html+='<div class="row2"><div><b>Başlangıç Maliyeti:</b> '+(req.baslangic_maliyeti!=null?fmtCostTRY(req.baslangic_maliyeti,req.para_birimi):'—')+'</div>'
+    +'<div><b>Tamamlanma Sonrası:</b> '+(req.tamamlanma_sonrasi_maliyet!=null?fmtCostTRY(req.tamamlanma_sonrasi_maliyet,req.para_birimi):'—')+'</div></div>';
+  if(req.sapma_tutari!=null){
+    var sapmaCls = req.sapma_tutari>0?'crit':(req.sapma_tutari<0?'ok':'na');
+    html+='<div style="margin-top:10px"><b>Sapma:</b> <span class="pill '+sapmaCls+'">'
+      +(req.sapma_tutari>0?'+':'')+fmtMoney(req.sapma_tutari)+' '+req.para_birimi
+      +(req.sapma_yuzdesi!=null?' · '+(req.sapma_yuzdesi>0?'+':'')+req.sapma_yuzdesi+'%':'')+'</span></div>';
+  } else {
+    html+='<p class="hint" style="margin-top:8px">Tamamlanma sonrası maliyet girilince sapma otomatik hesaplanır.</p>';
+  }
+  html+='</div></div>';
+  return html;
+}
+function openEditCost(){
+  var req=DETAIL_CTX.req;
+  modalTitle('Maliyet Takibini Düzenle');
+  setModalBody(
+    '<div class="row2"><div><label>Para Birimi</label><select id="ecCurrency">'+MOC_CURRENCIES.map(function(c){return '<option value="'+c+'"'+(c===(req.para_birimi||'TRY')?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'
+    +'<div><label>Başlangıç Maliyeti</label><input id="ecStart" type="number" step="0.01" min="0" value="'+(req.baslangic_maliyeti!=null?req.baslangic_maliyeti:'')+'"></div></div>'
+    +'<label>Tamamlanma Sonrası Maliyet</label><input id="ecEnd" type="number" step="0.01" min="0" value="'+(req.tamamlanma_sonrasi_maliyet!=null?req.tamamlanma_sonrasi_maliyet:'')+'">'
+    +'<p class="hint">Sapma tutarı/yüzdesi bu iki değerden veritabanında otomatik hesaplanır.</p>'
+  );
+  modalFoot('Kaydet','Vazgeç',function(){
+    sb.from('moc_requests').update({para_birimi:val('ecCurrency')||'TRY', baslangic_maliyeti:num('ecStart'), tamamlanma_sonrasi_maliyet:num('ecEnd')}).eq('id',req.id).then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      closeModal(); toast('Maliyet bilgisi kaydedildi'); viewDetail(req.id);
+    });
+  });
+  openModal();
+}
 function renderRiskPanel(){
   var ctx=DETAIL_CTX;
   var rows=ctx.risks.map(function(r){
@@ -990,6 +1172,7 @@ function bindDetailEvents(){
   bindTransitionButtons();
   var er=document.getElementById('btnEditDraft'); if(er) er.onclick=openEditDraft;
   var rb=document.getElementById('btnRollback'); if(rb) rb.onclick=doRollback;
+  var ec=document.getElementById('btnEditCost'); if(ec) ec.onclick=openEditCost;
   var ar=document.getElementById('btnAddRisk'); if(ar) ar.onclick=openAddRisk;
   var aa=document.getElementById('btnAddApproval'); if(aa) aa.onclick=openAddApproval;
   var aac=document.getElementById('btnAddAction'); if(aac) aac.onclick=openAddAction;
@@ -1190,7 +1373,12 @@ function requestFormHtml(){
     +'<div class="row2"><div><label>Ünite/Bölüm</label><input id="fUnit"></div><div><label>Öncelik</label><select id="fPrio"><option value="NORMAL">Normal</option><option value="LOW">Düşük</option><option value="HIGH">Yüksek</option><option value="EMERGENCY">Acil</option></select></div></div>'
     +'<div id="fEndDateWrap" style="display:none"><label>Planlanan Bitiş (geçici değişiklikte zorunlu)</label><input id="fEnd" type="date"></div>'
     +'<label class="chk"><input type="checkbox" id="fRik"> Birebir Yenileme (RIK) — aynı spesifikasyonda parça, tam akış gerekmez</label>'
-    +'<label>Gerekçe</label><textarea id="fReason"></textarea>';
+    +'<label>Gerekçe</label><textarea id="fReason"></textarea>'
+    +'<fieldset><legend>Maliyet Takibi</legend>'
+    +'<div class="row2"><div><label>Para Birimi</label><select id="fCurrency">'+MOC_CURRENCIES.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('')+'</select></div>'
+    +'<div><label>Başlangıç Maliyeti</label><input id="fCostStart" type="number" step="0.01" min="0" placeholder="0.00"></div></div>'
+    +'<p class="hint">Tamamlanma sonrası maliyet, MOC detay sayfasından ilerleyen aşamada girilir; sapma tutarı/yüzdesi o zaman otomatik hesaplanır.</p>'
+    +'</fieldset>';
 }
 function fillRequestForm(req){
   if(req){
@@ -1203,6 +1391,8 @@ function fillRequestForm(req){
     document.getElementById('fEnd').value=req.planned_end||'';
     document.getElementById('fRik').checked=!!req.is_rik;
     document.getElementById('fReason').value=req.reason||'';
+    document.getElementById('fCurrency').value=req.para_birimi||'TRY';
+    document.getElementById('fCostStart').value=req.baslangic_maliyeti!=null?req.baslangic_maliyeti:'';
   }
   toggleEndDate();
   document.getElementById('fType').onchange=toggleEndDate;
@@ -1219,7 +1409,8 @@ function readRequestForm(){
   return {
     title:title, description:val('fDesc'), category_id:Number(val('fCat')), type_id:Number(val('fType')),
     unit_area:val('fUnit'), priority:val('fPrio'), planned_end: val('fEnd')||null,
-    is_rik: document.getElementById('fRik').checked, reason: val('fReason')
+    is_rik: document.getElementById('fRik').checked, reason: val('fReason'),
+    para_birimi: val('fCurrency')||'TRY', baslangic_maliyeti: num('fCostStart')
   };
 }
 function openNewRequest(){
@@ -1536,13 +1727,6 @@ function fmtDT(iso){ if(!iso) return '—'; var d=new Date(iso); return p2(d.get
    Başlat
    ========================================================================= */
 (function(){
-  var bt=document.getElementById('brandToggle');
-  var navCollapsed=false;
-  try{ navCollapsed=localStorage.getItem('moc_nav_collapsed')==='1'; }catch(e){}
-  document.getElementById('side').classList.toggle('collapsed',navCollapsed);
-  function toggleNav(){ navCollapsed=!navCollapsed; document.getElementById('side').classList.toggle('collapsed',navCollapsed); try{localStorage.setItem('moc_nav_collapsed',navCollapsed?'1':'0');}catch(e){} }
-  if(bt){ bt.onclick=toggleNav; bt.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleNav(); } }; }
-
   document.getElementById('loginForm').addEventListener('submit',function(e){
     e.preventDefault();
     if(!sb){ loginMsg('Supabase yapılandırılmadı.'); return; }

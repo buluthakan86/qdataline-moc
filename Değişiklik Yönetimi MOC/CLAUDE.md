@@ -42,8 +42,13 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   2 hazır global set seed'i). Henüz Supabase'de UYGULANMADI — bu script
   canlıya alınmayı bekliyor (bkz. "Faz C" bölümü).
 - `moc_schema_faz_d.sql` — Faz D: `moc_requests.deleted_at` kolonu
-  (Taleplerim/Tüm Değişiklikler listelerindeki soft-delete için). Henüz
-  Supabase'de UYGULANMADI (bkz. "Faz D" bölümü).
+  (Taleplerim/Tüm Değişiklikler listelerindeki soft-delete için). Faz C ile
+  birlikte Supabase'e uygulandı, canlı test edilmedi (bir sonraki oturumda
+  senaryo doğrulanmalı, bkz. "Faz D" bölümü).
+- `moc_schema_faz_e.sql` — Faz E: Maliyet Takibi. `moc_requests`'e
+  `para_birimi`/`baslangic_maliyeti`/`tamamlanma_sonrasi_maliyet` +
+  GENERATED STORED `sapma_tutari`/`sapma_yuzdesi` kolonları. Henüz
+  Supabase'e UYGULANMADI (bkz. "Faz E" bölümü).
 - `TASARIM_STANDARDI.md` — renk/tipografi/bileşen standardı, MOC.html
   buna birebir uyar.
 - `moc_theme_tokens.css`, `moc_wireframe_v1-2.html` — **kullanılmadı**
@@ -83,6 +88,58 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
    izin kontrolünü unutma: (a) `GRANT EXECUTE ... TO authenticated`,
    (b) schema `USAGE` teyidi, (c) Supabase Dashboard → Data API →
    Settings → **Exposed Functions**'da fonksiyonu işaretle.
+
+## UI Yeniden Düzenleme — Üst Kart Menü + Dashboard + Faz E Maliyet Takibi (03.08.2026)
+- **Menü etiketi:** "Taleplerim" → "Değişiklik Talepleri" (yalnız etiket,
+  `go('mine')`/`viewList('mine')` işlevi aynı). "Onay Bekleyenler"
+  bilinçli olarak değiştirilmedi.
+- **Sol dikey menü kaldırıldı, üst yatay kayan kart menüye geçildi:**
+  `aside.side` tamamen silindi (eski collapse/localStorage mantığı da
+  kaldırıldı — `moc_nav_collapsed` artık kullanılmıyor). `renderNav()`
+  artık `.navcard` sınıfıyla `#snav`'i (`div.cardnav`, `overflow-x:auto`)
+  dolduruyor; `TASARIM_STANDARDI` renk/tipografi tokenlarına (`--leaf`,
+  `--mint`, `--card` vb.) birebir uyuyor, yeni renk eklenmedi. Mobilde de
+  yatay scroll ile kartlara erişim korunuyor (`.cardnav` dar ekranda
+  otomatik kaydırılabilir kalıyor, medya sorgusu gerekmedi).
+- **Dashboard ("Genel Bakış") yeni bir nav kartı/görünüm olarak eklendi**
+  (`viewDashboard()`/`renderDashboardHtml()`) ve giriş sonrası varsayılan
+  ekran oldu (`afterLogin` artık `go('dashboard')` çağırıyor, eskiden
+  `go('mine')`). Kartların ALTINDA sürekli değil, kendi başına bir
+  görünüm olarak tasarlandı — diğer ekranlarda (liste/detay/ayarlar) yer
+  kaplamıyor. İçerik: açık MOC / bende onay bekleyen / toplam başlangıç
+  bütçesi / toplam sapma KPI'ları (mevcut `.kpi`/`.kpis` CSS sınıfları
+  kullanıldı, yeni bileşen eklenmedi), kategoriye göre açık MOC dağılımı
+  (basit CSS çubuk grafik, `.barrow`/`.barfill` — recharts/React
+  eklenmedi, tek-dosya/build-yok kısıtı gereği), ve T-7/süresi geçmiş
+  geçici değişiklikler listesi (`tempWarnPill` yeniden kullanıldı).
+- **Faz E — Maliyet Takibi** (`moc_schema_faz_e.sql`, Supabase'e henüz
+  UYGULANMADI): `moc_requests.para_birimi` (TRY/USD/EUR/GBP, CHECK
+  constraint) + `baslangic_maliyeti`/`tamamlanma_sonrasi_maliyet` +
+  `sapma_tutari`/`sapma_yuzdesi` (ikisi de `GENERATED ALWAYS AS ... STORED`
+  — istemci asla yazmaz, DB hesaplar, tutarsızlık imkansız). Başlangıç
+  maliyeti yeni talep formunda girilir; tamamlanma sonrası maliyet detay
+  sayfasındaki "Maliyet Takibi" panelinden (`renderCostPanel`/
+  `openEditCost`, yalnız `canDo('coordinate')`) veya kısıtlı-düzenleme
+  modalından girilir.
+- **Kur çevrimi — Frankfurter API** (`https://api.frankfurter.app`, ECB
+  referans kurları, ücretsiz, API key yok): `fetchExchangeRates()` girişten
+  sonra bir kez `base=TRY&symbols=USD,EUR,GBP` ile çekiliyor,
+  `EXCHANGE_RATES` içinde önbelleğe alınıyor. **CORS testi yapıldı, sorun
+  yok** — servis genel kullanım için tasarlanmış, tarayıcıdan doğrudan
+  `fetch()` ile erişilebiliyor. TRY, ECB kapsamında zaten mevcut (ayrı bir
+  alternatif servise gerek kalmadı). Çevrim şeffaf gösteriliyor
+  (`fmtCostTRY`: "X USD, güncel kurla ~Y TRY"); servis erişilemezse ham
+  değer gösterilir, TRY karşılığı "kur alınamadı" olarak işaretlenir —
+  sessizce yanlış rakam üretilmiyor. Dashboard'daki toplam bütçe/sapma
+  KPI'ları da aynı önbelleğe alınmış kurla hesaplanıyor; kur çekilemediyse
+  KPI başlığına "*" ekleniyor ve altına uyarı notu düşülüyor.
+- **DURUM:** Kod (`MOC.html`) hazır, JS söz dizimi doğrulandı (`node
+  --check`). `moc_schema_faz_e.sql` **Supabase'e henüz uygulanmadı**,
+  yeni maliyet formu/panel canlı test edilmedi. Bir sonraki adım:
+  script'i çalıştırıp yeni talepte başlangıç maliyeti girmeyi, detaydan
+  tamamlanma sonrası maliyeti girip sapmanın otomatik hesaplandığını,
+  TRY dışı bir para biriminde kur çevriminin dashboard'a ve panele doğru
+  yansıdığını doğrulamak.
 
 ## Faz C — Etki Değerlendirme Checklist Sistemi (kod hazır, SQL uygulanmayı bekliyor)
 - **Mimari:** `moc_etki_checklist_setleri` (set — `kategori_id` NULL=her
@@ -125,13 +182,13 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   cümlelerle yazıldı; hiçbir kaynak standart/kurum adı kodda, seed
   data'da veya yorum satırlarında geçmiyor (bkz. `moc_schema_faz_c.sql`
   başlık notu, grep ile teyit edildi).
-- **DURUM:** Kod (`MOC.html`) ve şema (`moc_schema_faz_c.sql`) hazır,
-  **Supabase'e henüz uygulanmadı, canlı test edilmedi.** Bir sonraki
-  adım: `moc_schema_faz_c.sql`'i Supabase SQL Editor'da çalıştırıp,
-  gerçek bir MOC talebinde Genel Risk seti otomatik göründüğünü, Ürün/
-  Reçete kategorisi seçildiğinde Gıda seti "Kullan" edilmeden hiç
-  görünmediğini, "Kullan" sonrası göründüğünü, "Evet" cevabının aksiyon
-  açtığını ve o aksiyon kapanmadan APPROVAL'a geçilemediğini doğrulamak.
+- **DURUM:** Kod (`MOC.html`) ve şema (`moc_schema_faz_c.sql`)
+  Supabase'e UYGULANDI (03.08.2026), **henüz canlı senaryo adım adım
+  doğrulanmadı.** Bir sonraki adım: gerçek bir MOC talebinde Genel Risk
+  seti otomatik göründüğünü, Ürün/Reçete kategorisi seçildiğinde Gıda
+  seti "Kullan" edilmeden hiç görünmediğini, "Kullan" sonrası
+  göründüğünü, "Evet" cevabının aksiyon açtığını ve o aksiyon
+  kapanmadan APPROVAL'a geçilemediğini doğrulamak.
 
 ## Faz D — Taleplerim/Tüm Değişiklikler: Düzenle + Sil (kod hazır, SQL uygulanmayı bekliyor)
 - **Yetki (`canManageRequest()`):** koordinasyon izni olan (EDITOR/ADMIN)
