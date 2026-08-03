@@ -1,8 +1,16 @@
 # MOC Modülü — RBAC İzin Matrisi v1
 
-> Referanslar: `moc_api_endpoints_v1.md`, `moc_state_machine_v1.md`
+> Referanslar: `moc_api_endpoints_v1-1.md`, `moc_state_machine_v1.md`
 > Mevcut Ekipman Yönetimi projesinin rol altyapısına **MOC izin seti** olarak eklenir.
 > Yeni rol tablosu açılmaz; mevcut role-permission yapınıza aşağıdaki izin kodları tanımlanır.
+
+> **UYGULANAN MODEL (Faz B, canlı) — bu dosyanın §1/§2'sinden farklı,
+> bkz. §6.** Aşağıdaki 14 izin kodu × 8 rol tasarımı **uygulanmadı**.
+> Gerçekte platformun paylaşılan `profiles.role` (ADMIN/EDITOR/VIEWER)
+> kolonu kullanılıyor; `MOC.html` `canDo(action)` fonksiyonu bunu MOC
+> aksiyonlarına eşliyor (bkz. §6 — "Gerçek Uygulanan Model"). §1–§5
+> orijinal vizyon/kapsam referansı olarak korunuyor, ileride ayrıntılı
+> role-permission tablosuna geçilirse yol haritası olarak kullanılabilir.
 
 ---
 
@@ -98,4 +106,35 @@ router.post('/requests/:id/transition', requireAuth, mocService.transitionGuard,
 
 ---
 
-*Sürüm: v1 — 21.07.2026 · Sıradaki aşama: UI wireframe (tema tokenlarıyla talep formu + dashboard).*
+## 6. Gerçek Uygulanan Model (Faz B/B2, canlı — kod esas alınır)
+
+§1–§5'teki 14 izinli/8 rollü tasarım yerine **3 kademeli rol** kullanılıyor
+(`profiles.role`: `ADMIN` / `EDITOR` / `VIEWER`). `MOC.html` `canDo(action)`:
+
+| `action` | ADMIN | EDITOR | VIEWER |
+|---|:---:|:---:|:---:|
+| `create` | ✅ | ✅ | ✅ (taban izin — herkes talep başlatabilir) |
+| `screen`, `coordinate`, `risk`, `review`, `pssr`, `close` | ✅ | ✅ | — |
+| `admin`, `reopen` | ✅ | — | — |
+
+- Tek bir aksiyon seti var; §1'deki `moc.approve`, `moc.temp.manage`,
+  `moc.report`, `moc.audit.view` gibi ayrı izin kodları yok — bu
+  yetenekler ya EDITOR/ADMIN'in genel yetkisine dahil ya da (rapor/audit
+  gibi) henüz UI'da ayrı bir ekran olarak yok.
+- **Onaycı ataması yok (bilinçli tercih).** §1'deki `moc.approve` +
+  "kimin hangi adımda karar verebileceği ataması" modeli **uygulanmadı**.
+  Bunun yerine: `moc_approvals.approver_id` boş oluşturulur, EDITOR/ADMIN
+  yetkisine sahip herhangi bir kullanıcı (talep sahibi hariç) o anki
+  kararı "üstlenerek" verir — karar anında `approver_id` kendisine set
+  edilir. B2 planlamasında bu model yeniden sorgulandı, korunması
+  seçildi (bkz. `MOC.html` proje `CLAUDE.md` §"Bilinen sınırlamalar").
+- §3'teki kayıt-bazlı kurallar (sahiplik, kendi talebini onaylayamama,
+  aksiyon tamamlama) **tam uygulanıyor** — bunlar rol modelinden bağımsız
+  ve kod bu kısıtları koruyor.
+- §4 seed örneği ve §5 UI notları (menü görünürlüğü, admin ekranı
+  gizleme) kavramsal olarak geçerli, yalnız izin kodu sayısı `canDo()`
+  aksiyon listesine indirgendi.
+
+---
+
+*Sürüm: v1 — 21.07.2026 · §6 eklendi: 03.08.2026 (Faz B2 sonrası kod↔plan taraması).*

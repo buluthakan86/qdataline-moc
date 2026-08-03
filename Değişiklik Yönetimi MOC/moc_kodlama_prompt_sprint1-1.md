@@ -1,3 +1,12 @@
+> **ARŞİV — KULLANILMADI.** Bu dosya Node.js/Express/React/TS mimarisi
+> varsayımıyla yazıldı; gerçek uygulama tek dosya HTML (`MOC.html`,
+> Supabase doğrudan istemci erişimi) olarak farklı bir mimariyle
+> geliştirildi (bkz. proje `CLAUDE.md`). İçindeki dosya referansları
+> (`moc_schema_v1.sql`, `moc_api_endpoints_v1.md` vb.) kasıtlı olarak
+> sürüm eki almadan bırakıldı — güncel karşılıkları `moc_schema_v1-1.sql`,
+> `moc_api_endpoints_v1-1.md`'dir. Yalnız kapsam/vizyon referansı olarak
+> tutuluyor, güncellenmeyecek.
+
 # MOC Modülü — Kodlama Başlangıç Promptu (Sprint 1)
 
 > Kullanım: Bu promptu Claude'a (Claude Code veya sohbet) yapıştır.

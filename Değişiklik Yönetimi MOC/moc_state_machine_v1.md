@@ -38,7 +38,8 @@ stateDiagram-v2
 
     IMPLEMENTATION --> DOC_UPDATE : Uygulama bitti
     DOC_UPDATE --> TRAINING : Dokümanlar güncellendi
-    TRAINING --> PSSR : Eğitim/bilgilendirme tamam
+    TRAINING --> PSSR : Eğitim/bilgilendirme tamam (requires_pssr = true)
+    TRAINING --> STARTUP : Eğitim/bilgilendirme tamam (requires_pssr = false)
 
     PSSR --> STARTUP : RELEASED
     PSSR --> IMPLEMENTATION : NOT_RELEASED (eksik gider)
@@ -53,6 +54,13 @@ stateDiagram-v2
 `CLOSED` sonrası izleme devam eder: `moc_temporary_tracking.expires_at` dolmadan
 **eski duruma dönüş** (`restored_at`) kaydedilmeli; dolarsa eskalasyon + uzatma akışı.
 Uzatma = yeni mini-onay (`moc_approvals`'a ek satır), MOC yeniden açılmaz.
+
+### PSSR Gerektirmeyen Türler (RIK / MOOC / Procedural)
+`moc_types.requires_pssr = false` olan akış türlerinde PSSR adımı hiç
+görünmez/atlanmaz: `TRAINING` durumundan doğrudan `STARTUP`'a geçilir
+(kod: `MOC.html` `TRANSITIONS.TRAINING` — `requires_pssr` koşuluna göre
+`PSSR` veya `STARTUP` hedefi seçilir). PSSR checklist'i hiç oluşturulmaz,
+ilgili panel gösterilmez.
 
 ### Acil Değişiklik Farkı
 Acil akışta sıra değişir: `DRAFT → IMPLEMENTATION (sözlü ön onayla) → geriye dönük
@@ -78,7 +86,8 @@ RISK_ASSESSMENT → APPROVAL → ...` Geriye dönük dosya `moc_types.retro_hour
 | APPROVAL | TECHNICAL_REVIEW | Bir adım `RETURNED` | Sistem (otomatik) |
 | IMPLEMENTATION | DOC_UPDATE | `phase=IMPLEMENTATION` aksiyonların tümü `DONE` | Koordinatör |
 | DOC_UPDATE | TRAINING | Etkilenen dokümanlar (`AFFECTED_DOC`) yeni sürüm aldı | Koordinatör |
-| TRAINING | PSSR | Tüm `moc_trainings.acknowledged = true` | Koordinatör |
+| TRAINING | PSSR | Tüm `moc_trainings.acknowledged = true`; tür `requires_pssr = true` | Koordinatör |
+| TRAINING | STARTUP | Tüm `moc_trainings.acknowledged = true`; tür `requires_pssr = false` (PSSR atlanır) | Koordinatör |
 | PSSR | STARTUP | Checklist `result = RELEASED` | PSSR ekibi (`moc.pssr`) |
 | PSSR | IMPLEMENTATION | `result = NOT_RELEASED` | PSSR ekibi |
 | STARTUP | CLOSED | Açık aksiyon yok (POST_STARTUP dahil) | Koordinatör (`moc.close`) |

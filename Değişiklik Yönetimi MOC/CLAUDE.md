@@ -29,10 +29,14 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   için INSERT/UPDATE RLS politikaları + GRANT (Ayarlar CRUD'u için).
   Supabase'de uygulandı, canlı test edildi (bkz. "Faz B2 doğrulama").
 - `moc_state_machine_v1.md`, `moc_rbac_matrix_v1.md`, `moc_schema_v1-1.sql`
-  — orijinal planlama dosyaları (iş mantığı kaynağı). `MOC_Teknik_Taslak_
-  v2-1.md`, `moc_api_endpoints_v1-1.md`, `moc_kodlama_prompt_sprint1-1.md`
-  Node/Express/React varsayımıyla yazıldığı için **kullanılmadı** —
-  yalnız kapsam/vizyon referansı olarak dursunlar.
+  — orijinal planlama dosyaları (iş mantığı kaynağı), B/B2 basitleştirmelerini
+  yansıtacak şekilde güncellendi (03.08.2026): state machine'e PSSR atlama
+  kuralı, rbac_matrix'e gerçek 3-kademeli `canDo()` modeli + onaycı
+  üstlenme notu (§6), schema dosyasına faz_b2 kolon/RLS farkları eklendi.
+  `MOC_Teknik_Taslak_v2-1.md`, `moc_api_endpoints_v1-1.md`,
+  `moc_kodlama_prompt_sprint1-1.md` Node/Express/React varsayımıyla
+  yazıldığı için **kullanılmadı/ARŞİV** — yalnız kapsam/vizyon referansı
+  olarak dursunlar.
 - `TASARIM_STANDARDI.md` — renk/tipografi/bileşen standardı, MOC.html
   buna birebir uyar.
 - `moc_theme_tokens.css`, `moc_wireframe_v1-2.html` — **kullanılmadı**
@@ -72,28 +76,6 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
    izin kontrolünü unutma: (a) `GRANT EXECUTE ... TO authenticated`,
    (b) schema `USAGE` teyidi, (c) Supabase Dashboard → Data API →
    Settings → **Exposed Functions**'da fonksiyonu işaretle.
-
-## SIRADAKİ İŞ (Faz B2 sonrası ince ayar — henüz yapılmadı)
-1. **PSSR geçiş kuralı dosya↔kod tutarlılığı:** requires_pssr=false
-   türlerde (RIK/MOOC/Procedural) IMPLEMENTATION → STARTUP direkt
-   geçişi MOC.html'de zaten var (Faz B). `moc_state_machine_v1.md`'nin
-   bu davranışı net şekilde tanımladığını (PSSR adımının bu türlerde
-   hiç görünmediğini/atlandığını) doğrula, gerekirse dosyayı güncelle.
-2. **Sürümsüz dosya referansları:** `moc_kodlama_prompt_sprint1-1.md`
-   içinde `moc_schema_v1`/`moc_api_endpoints_v1` gibi sürüm eki
-   olmayan referanslar var — gerçek dosya adlarına (`_v1-1` vb.)
-   güncelle. Bu dosya zaten "kullanılmadı" olarak işaretli (yukarıda),
-   yine de iç tutarlılık için düzelt.
-3. **Planlama dosyaları ↔ kod tutarlılık taraması:** `moc_rbac_matrix_
-   v1.md`, `moc_schema_v1-1.sql`, `moc_state_machine_v1.md` dosyalarının
-   "Bilinen sınırlamalar / basitleştirmeler" bölümündeki B/B2
-   basitleştirmeleri (3 kademeli `canDo()` modeli, onaycı üstlenme
-   modeli, Ayarlar CRUD vb.) yansıtıp yansıtmadığını kontrol et.
-   Tutarsızsa planlama dosyalarını MEVCUT KODA göre güncelle (kod esas
-   alınır, test edilip çalışıyor).
-
-Bitince: Ekipman/Gıda/Q-Tedarikçi/Q-Kalite modüllerini rutin doğrula,
-bu bölümü CLAUDE.md'den kaldır, commit at.
 
 ## Durum makinesi
 `MOC.html` içindeki `TRANSITIONS` objesi `moc_state_machine_v1.md` §3

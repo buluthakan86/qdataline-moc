@@ -3,6 +3,17 @@
 -- Taslak referansı: MOC_Teknik_Taslak_v2.1
 -- Tarih: 21.07.2026
 --
+-- NOT (03.08.2026, Faz B2 sonrası): Bu dosya orijinal tasarım taslağıdır,
+-- doğrudan Supabase'e uygulanmadı. Gerçekte uygulanan/canlı sıra:
+-- moc_schema_faz_a.sql -> moc_schema_faz_b_moc_no.sql -> moc_schema_faz_b2.sql.
+-- Bilinen farklar: (1) tenant_id burada BIGINT varsayımıyla, gerçek şemada
+-- current_tenant_id()/profiles tabanlı; (2) moc_types burada
+-- extra_approval_risk_threshold/extra_approval_role_code kolonlarını
+-- İÇERMİYOR — bunlar moc_schema_faz_b2.sql ile eklendi; (3) lookup RLS
+-- burada SELECT-only, faz_b2 INSERT/UPDATE politikaları + GRANT ekledi
+-- (Ayarlar CRUD için). Değişiklik gerektiğinde canlı şema (faz_* dosyaları)
+-- esas alınır, bu dosya yalnız orijinal tasarım referansıdır.
+--
 -- VARSAYIMLAR (mevcut projenize göre uyarlayın):
 --   * Platform çekirdeği: tenant(id BIGINT PK), users(id BIGINT PK).
 --     PK tipiniz UUID ise BIGINT referanslarını UUID yapın.
