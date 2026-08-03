@@ -204,35 +204,38 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
     Madde #2 (basınç tahliye cihazları) zaten `evet_aksiyon_gerekli=false`
     (N/A olabilir) olduğu için tetikleyen_cevap'ın işlevsel etkisi yok,
     yalnız tutarlılık için 'Hayır' işaretlendi.
-  - **KARARSIZ BIRAKILAN 3 MADDE** (Genel Risk, varsayılan 'Evet'te
-    bırakıldı, SQL'de UPDATE edilmedi — çift olumsuz cümle yapısı
-    nedeniyle kullanıcı onayı bekleniyor):
+  - **Çift olumsuz 3 madde (Genel Risk #39/#40/#51) — kullanıcı onayıyla
+    çözüldü (03.08.2026):** Üçü de "Hayır tetikler" olarak işaretlendi
+    VE kafa karıştırıcı çift-olumsuz cümle yapıları, anlamı değiştirmeden
+    doğrudan/olumlu cümleye çevrildi:
     1. "İtfaiye/acil müdahale ekiplerinin alana erişimi engellenmiyor
-       mu?" (sira 39)
+       mu?" → **"İtfaiye/acil müdahale ekiplerinin alana erişimi açık
+       mı?"** (Hayır tetikler — erişim açık değilse risk var)
     2. "Yangın duvarları/bölmeleri değişiklikle delinmedi veya
-       zayıflatılmadı mı?" (sira 40)
+       zayıflatılmadı mı?" → **"Yangın duvarları/bölmeleri
+       değişiklikten etkilenmeden sağlam kaldı mı?"** (Hayır tetikler)
     3. "Değişiklik için gerekli tüm onaylar tamamlanmadan işe
-       başlanmıyor mu?" (sira 51)
-    Üçü de mantıksal olarak "Hayır tetikler" gibi görünüyor (çift
-    olumsuzu çözünce: engelleniyorsa/delinmişse/onaysız başlanmışsa
-    kötü durum "Hayır" cevabı ile ifade ediliyor) ama çift olumsuz
-    cümle yapısı yanlış yorumlama riski taşıdığı için otomatik
-    atanmadı — bir sonraki oturumda kullanıcıyla teyit edilip
-    `moc_schema_faz_g.sql`'e eklenmeli veya soru cümleleri tek
-    olumsuzlu hale getirilerek yeniden yazılmalı.
+       başlanmıyor mu?" → **"İşe başlamadan önce gerekli tüm onaylar
+       tamamlandı mı?"** (Hayır tetikler)
+    `moc_schema_faz_g.sql`'in 4. bölümünde eski metinle eşleştirilip hem
+    `tetikleyen_cevap` hem `soru_metni` tek UPDATE'te güncelleniyor
+    (idempotent — script tekrar çalıştırıldığında satır artık yeni
+    metni taşıdığı için eski metinle eşleşmez, no-op).
 - **DURUM:** Kod (`MOC.html`) hazır, JS söz dizimi doğrulandı, mantık
   PSSR/Genel Risk örnek senaryolarıyla masaüstünde (kod okuması +
-  fonksiyon simülasyonu) doğrulandı. Şema (`moc_schema_faz_g.sql`)
-  **Supabase'e henüz uygulanmadı** — SQL uygulanmadan `tetikleyen_cevap`
-  kolonu mevcut değilken `m.tetikleyen_cevap` `undefined` döner ve
-  `checklistTriggerCevap()` varsayılan `'EVET'`e düşer, yani eski (hatalı)
-  davranış SQL uygulanana kadar sürer; **kod ve SQL birlikte devreye
-  alınmalı**. Bir sonraki adım: script'i çalıştırıp PSSR'da "Acil
-  durdurma sistemleri çalışır durumda mı?" sorusuna canlıda Hayır
-  cevabı verip aksiyon+gerekçe zorunluluğunun açıldığını, Evet
+  fonksiyon simülasyonu) doğrulandı. Şema (`moc_schema_faz_g.sql`,
+  91 maddenin tamamı için karar netleşmiş halde) **Supabase'e henüz
+  uygulanmadı** — SQL uygulanmadan `tetikleyen_cevap` kolonu mevcut
+  değilken `m.tetikleyen_cevap` `undefined` döner ve
+  `checklistTriggerCevap()` varsayılan `'EVET'`e düşer, yani eski
+  (hatalı) davranış SQL uygulanana kadar sürer; **kod ve SQL birlikte
+  devreye alınmalı**. Bir sonraki adım: script'i çalıştırıp PSSR'da
+  "Acil durdurma sistemleri çalışır durumda mı?" sorusuna canlıda
+  Hayır cevabı verip aksiyon+gerekçe zorunluluğunun açıldığını, Evet
   cevabında sorunsuz geçildiğini; Genel Risk/Gıda'daki risk-tespit
-  tarzı maddelerde davranışın (Evet tetikler) değişmediğini
-  doğrulamak; ayrıca yukarıdaki 3 kararsız maddeye karar verilmesi.
+  tarzı maddelerde davranışın (Evet tetikler) değişmediğini; #39/#40/
+  #51'in güncellenmiş metinle ve Hayır tetikleyerek doğru göründüğünü
+  doğrulamak.
 
 ## Faz F — PSSR Checklist Seti: durum-tetiklemeli üçüncü set (kod hazır, SQL uygulanmayı bekliyor)
 - **Mimari farkı (Faz C'den):** Genel Risk ve Gıda setleri KATEGORİ bazlı

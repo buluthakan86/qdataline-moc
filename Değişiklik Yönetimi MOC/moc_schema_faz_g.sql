@@ -22,15 +22,11 @@
 -- için ayrıca UPDATE edilmedi (bkz. proje CLAUDE.md "Faz G" bölümündeki
 -- tam kırılım raporu).
 --
--- KARARSIZ KALINAN 3 MADDE (bilinçli olarak GÜNCELLENMEDİ, varsayılan
--- 'Evet'te bırakıldı — çift olumsuz cümle yapısı nedeniyle yanlış
--- yorumlama riski var, kullanıcı onayı bekleniyor):
---   * Genel Risk #39: "İtfaiye/acil müdahale ekiplerinin alana erişimi
---     engellenmiyor mu?"
---   * Genel Risk #40: "Yangın duvarları/bölmeleri değişiklikle delinmedi
---     veya zayıflatılmadı mı?"
---   * Genel Risk #51: "Değişiklik için gerekli tüm onaylar tamamlanmadan
---     işe başlanmıyor mu?"
+-- ÇİFT OLUMSUZ 3 MADDE (Genel Risk #39/#40/#51) — ilk turda kararsız
+-- bırakılmıştı, kullanıcı onayladı: üçü de "Hayır tetikler". Ayrıca
+-- kullanıcı isteğiyle madde METİNLERİ de çift-olumsuz yapıdan doğrudan/
+-- olumlu cümleye çevrildi (anlam DEĞİŞMEDİ, yalnız netleştirildi — bkz.
+-- aşağıdaki bölüm 4, eski/yeni metin karşılaştırması yorum satırlarında).
 --
 -- UPDATE'ler soru_metni (tam cümle) eşleşmesiyle yapılır — id'ler seed
 -- sırasında (IDENTITY) otomatik üretildiği için script içinde sabit
@@ -150,12 +146,41 @@ WHERE soru_metni = ANY(ARRAY[
 -- tetikler" olan tüm maddeler kolonun DEFAULT'u ('Evet') ile zaten
 -- doğru durumda — ayrıca UPDATE gerekmiyor (bkz. CLAUDE.md kırılımı).
 
+-- ----------------------------------------------------------------------------
+-- 4. Genel Risk — çift olumsuz 3 madde: "Hayır tetikler" + metin netleştirme
+--    (kullanıcı onayı ile, 2026-08-03). Eski metin ile eşleştirilip hem
+--    tetikleyen_cevap hem soru_metni tek UPDATE'te güncelleniyor; script
+--    tekrar çalıştırıldığında satır artık YENİ metni taşıdığı için eski
+--    metinle eşleşmez — no-op, idempotent.
+-- ----------------------------------------------------------------------------
+
+-- #39 eski: "İtfaiye/acil müdahale ekiplerinin alana erişimi engellenmiyor mu?"
+UPDATE public.moc_etki_checklist_maddeleri
+SET tetikleyen_cevap = 'Hayır', soru_metni = 'İtfaiye/acil müdahale ekiplerinin alana erişimi açık mı?'
+WHERE soru_metni = 'İtfaiye/acil müdahale ekiplerinin alana erişimi engellenmiyor mu?';
+
+-- #40 eski: "Yangın duvarları/bölmeleri değişiklikle delinmedi veya zayıflatılmadı mı?"
+UPDATE public.moc_etki_checklist_maddeleri
+SET tetikleyen_cevap = 'Hayır', soru_metni = 'Yangın duvarları/bölmeleri değişiklikten etkilenmeden sağlam kaldı mı?'
+WHERE soru_metni = 'Yangın duvarları/bölmeleri değişiklikle delinmedi veya zayıflatılmadı mı?';
+
+-- #51 eski: "Değişiklik için gerekli tüm onaylar tamamlanmadan işe başlanmıyor mu?"
+UPDATE public.moc_etki_checklist_maddeleri
+SET tetikleyen_cevap = 'Hayır', soru_metni = 'İşe başlamadan önce gerekli tüm onaylar tamamlandı mı?'
+WHERE soru_metni = 'Değişiklik için gerekli tüm onaylar tamamlanmadan işe başlanmıyor mu?';
+
 COMMIT;
 
 -- ============================================================================
 -- GERİ ALMA (yalnız elle, gerekirse — bu script bunu ÇALIŞTIRMAZ)
 -- ============================================================================
 -- BEGIN;
+-- UPDATE public.moc_etki_checklist_maddeleri SET soru_metni = 'İtfaiye/acil müdahale ekiplerinin alana erişimi engellenmiyor mu?'
+--   WHERE soru_metni = 'İtfaiye/acil müdahale ekiplerinin alana erişimi açık mı?';
+-- UPDATE public.moc_etki_checklist_maddeleri SET soru_metni = 'Yangın duvarları/bölmeleri değişiklikle delinmedi veya zayıflatılmadı mı?'
+--   WHERE soru_metni = 'Yangın duvarları/bölmeleri değişiklikten etkilenmeden sağlam kaldı mı?';
+-- UPDATE public.moc_etki_checklist_maddeleri SET soru_metni = 'Değişiklik için gerekli tüm onaylar tamamlanmadan işe başlanmıyor mu?'
+--   WHERE soru_metni = 'İşe başlamadan önce gerekli tüm onaylar tamamlandı mı?';
 -- UPDATE public.moc_etki_checklist_maddeleri SET tetikleyen_cevap = 'Evet';
 -- ALTER TABLE public.moc_etki_checklist_maddeleri DROP CONSTRAINT IF EXISTS moc_etki_checklist_maddeleri_tetikleyen_cevap_check;
 -- ALTER TABLE public.moc_etki_checklist_maddeleri DROP COLUMN IF EXISTS tetikleyen_cevap;
