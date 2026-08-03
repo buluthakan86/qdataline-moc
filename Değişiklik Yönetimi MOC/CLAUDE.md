@@ -37,6 +37,10 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
   `moc_kodlama_prompt_sprint1-1.md` Node/Express/React varsayımıyla
   yazıldığı için **kullanılmadı/ARŞİV** — yalnız kapsam/vizyon referansı
   olarak dursunlar.
+- `moc_schema_faz_c.sql` — Faz C: Etki Değerlendirme Checklist Sistemi
+  (`moc_etki_checklist_setleri`/`_maddeleri`/`_yanitlari` + RLS/GRANT +
+  2 hazır global set seed'i). Henüz Supabase'de UYGULANMADI — bu script
+  canlıya alınmayı bekliyor (bkz. "Faz C" bölümü).
 - `TASARIM_STANDARDI.md` — renk/tipografi/bileşen standardı, MOC.html
   buna birebir uyar.
 - `moc_theme_tokens.css`, `moc_wireframe_v1-2.html` — **kullanılmadı**
@@ -76,6 +80,44 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
    izin kontrolünü unutma: (a) `GRANT EXECUTE ... TO authenticated`,
    (b) schema `USAGE` teyidi, (c) Supabase Dashboard → Data API →
    Settings → **Exposed Functions**'da fonksiyonu işaretle.
+
+## Faz C — Etki Değerlendirme Checklist Sistemi (kod hazır, SQL uygulanmayı bekliyor)
+- **Mimari:** `moc_etki_checklist_setleri` (set — `kategori_id` NULL=her
+  MOC'ta zorunlu, dolu=yalnız o kategoride; `tenant_id` NULL=global şablon,
+  dolu=tesis kopyası) → `moc_etki_checklist_maddeleri` (bölüm/soru/sıra/
+  "evet_aksiyon_gerekli") → `moc_etki_checklist_yanitlari` (MOC başına,
+  madde başına tek yanıt EVET/HAYIR/NA + gerekçe + varsa oluşan `action_id`).
+- **Tetikleme mantığı** (`applicableChecklistSets()`, `MOC.html`): zorunlu
+  setler (kategori_id NULL) global halleriyle doğrudan her tenant'ta
+  devreye girer; kategoriye bağlı setler yalnız tenant kendi kopyasını
+  (`tenant_id` = kendisi) Ayarlar'dan "Kullan" ile oluşturduysa devreye
+  girer — global şablonu hiç kopyalamayan tesisler o checklist'i asla
+  görmez, kategoriyi seçseler bile.
+- **Otomatik aksiyon:** bir maddede `evet_aksiyon_gerekli=true` iken
+  cevap "Evet" verilirse `saveChecklistAnswer()` otomatik bir
+  `moc_action_items` kaydı açar (`phase='PRE_APPROVAL'`). Bu aksiyon(lar)
+  `DONE`/`CANCELLED` olmadan ve tüm checklist maddeleri yanıtlanmadan
+  `TECHNICAL_REVIEW → APPROVAL` geçişi kilitli kalır (bkz.
+  `condReadyForApproval()`).
+- **Ayarlar CRUD:** yeni "Etki Değerlendirme Checklist Setleri" paneli —
+  tenant'a özel setlerde "Maddeleri Yönet" (madde ekle/düzenle/pasifleştir),
+  global zorunlu sette "Kopyala ve Özelleştir", global opsiyonel sette
+  "Kullan" butonu. Silme yok, yalnız soft-delete (`aktif`/`is_active`).
+- **Seed (2 hazır global set):** "Genel Risk Değerlendirme Checklist'i"
+  (68 madde, 7 bölüm, zorunlu, kategori bağımsız) ve "Gıda Güvenliği Etki
+  Değerlendirmesi" (10 madde, yeni eklenen "Ürün/Reçete Değişikliği"
+  kategorisine bağlı, opsiyonel). Sorular harici saha güvenliği/risk
+  değerlendirmesi kaynak dokümanlarının KAPSAMINDAN esinlenerek özgün
+  cümlelerle yazıldı; hiçbir kaynak standart/kurum adı kodda, seed
+  data'da veya yorum satırlarında geçmiyor (bkz. `moc_schema_faz_c.sql`
+  başlık notu, grep ile teyit edildi).
+- **DURUM:** Kod (`MOC.html`) ve şema (`moc_schema_faz_c.sql`) hazır,
+  **Supabase'e henüz uygulanmadı, canlı test edilmedi.** Bir sonraki
+  adım: `moc_schema_faz_c.sql`'i Supabase SQL Editor'da çalıştırıp,
+  gerçek bir MOC talebinde Genel Risk seti otomatik göründüğünü, Ürün/
+  Reçete kategorisi seçildiğinde Gıda seti "Kullan" edilmeden hiç
+  görünmediğini, "Kullan" sonrası göründüğünü, "Evet" cevabının aksiyon
+  açtığını ve o aksiyon kapanmadan APPROVAL'a geçilemediğini doğrulamak.
 
 ## Durum makinesi
 `MOC.html` içindeki `TRANSITIONS` objesi `moc_state_machine_v1.md` §3

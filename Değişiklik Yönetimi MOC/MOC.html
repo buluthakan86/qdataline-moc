@@ -276,7 +276,7 @@ var TRANSITIONS = {
                        {to:'CLOSED', action:'screen', cond:function(r){return !!r.is_rik;}},
                        {to:'REJECTED', action:'screen', cond:function(r){return !!(r.reason&&r.reason.trim());}} ],
   RISK_ASSESSMENT:  [ {to:'TECHNICAL_REVIEW', action:'risk', cond:function(r,ctx){return (ctx.risks||[]).length>0;}} ],
-  TECHNICAL_REVIEW: [ {to:'APPROVAL', action:'review'},
+  TECHNICAL_REVIEW: [ {to:'APPROVAL', action:'review', cond:condReadyForApproval},
                        {to:'RISK_ASSESSMENT', action:'review'} ],
   APPROVAL:         [ ], // sistem otomatik ilerletir (bkz. checkApprovalAuto)
   IMPLEMENTATION:   [ {to:'DOC_UPDATE', action:'coordinate', cond:condActionsDone('IMPLEMENTATION')} ],
@@ -300,6 +300,12 @@ function condActionsDone(phase){
 }
 function condNoOpenActions(r,ctx){
   return (ctx.actions||[]).every(function(a){return a.status==='DONE'||a.status==='CANCELLED';});
+}
+/* Onaya geçiş için: etki değerlendirme checklist'i tamamen yanıtlanmış ve
+   "Evet + aksiyon gerekli" cevaplarının doğurduğu PRE_APPROVAL aksiyonları
+   kapanmış (DONE/CANCELLED) olmalı. */
+function condReadyForApproval(r,ctx){
+  return condChecklistAnswered(r,ctx) && condActionsDone('PRE_APPROVAL')(r,ctx);
 }
 
 var STATUS_LABEL = {DRAFT:'Taslak',SCREENING:'Ön Tarama',RISK_ASSESSMENT:'Risk Değerlendirme',
@@ -345,26 +351,61 @@ function cloudInit(){
    Lookup verisi (kategoriler, türler)
    ========================================================================= */
 var CATEGORIES=[], TYPES=[], ALL_CATEGORIES=[], ALL_TYPES=[];
+var CHECKLIST_SETS=[], CHECKLIST_ITEMS=[], ALL_CHECKLIST_SETS=[], ALL_CHECKLIST_ITEMS=[];
 function loadLookups(){
   return Promise.all([
     sb.from('moc_change_categories').select('*').eq('is_active',true).order('sort_order'),
-    sb.from('moc_types').select('*').eq('is_active',true)
+    sb.from('moc_types').select('*').eq('is_active',true),
+    sb.from('moc_etki_checklist_setleri').select('*').eq('aktif',true),
+    sb.from('moc_etki_checklist_maddeleri').select('*').eq('is_active',true)
   ]).then(function(res){
     CATEGORIES = res[0].data||[]; TYPES = res[1].data||[];
+    CHECKLIST_SETS = res[2].data||[]; CHECKLIST_ITEMS = res[3].data||[];
   });
 }
 function reloadLookupsAll(){
   return Promise.all([
     sb.from('moc_change_categories').select('*').order('sort_order'),
-    sb.from('moc_types').select('*')
+    sb.from('moc_types').select('*'),
+    sb.from('moc_etki_checklist_setleri').select('*').order('id'),
+    sb.from('moc_etki_checklist_maddeleri').select('*').order('sira_no')
   ]).then(function(res){
     ALL_CATEGORIES = res[0].data||[]; ALL_TYPES = res[1].data||[];
     CATEGORIES = ALL_CATEGORIES.filter(function(c){return c.is_active;});
     TYPES = ALL_TYPES.filter(function(t){return t.is_active;});
+    ALL_CHECKLIST_SETS = res[2].data||[]; ALL_CHECKLIST_ITEMS = res[3].data||[];
+    CHECKLIST_SETS = ALL_CHECKLIST_SETS.filter(function(s){return s.aktif;});
+    CHECKLIST_ITEMS = ALL_CHECKLIST_ITEMS.filter(function(m){return m.is_active;});
   });
 }
 function typeById(id){ return TYPES.find(function(t){return t.id===id;}); }
 function catById(id){ return CATEGORIES.find(function(c){return c.id===id;}); }
+function catByIdAny(id){ return ALL_CATEGORIES.find(function(c){return c.id===id;}); }
+
+/* ============================================================================
+   Etki Değerlendirme Checklist — hangi setler bu MOC talebine uygulanır
+   Zorunlu (kategori_id NULL) setler: global + tenant'ın kendi ek setleri.
+   Opsiyonel (kategori_id dolu) setler: yalnız tenant "Kullan" ile kendi
+   kopyasını oluşturduysa devreye girer — global şablon doğrudan kullanılmaz.
+   ========================================================================= */
+function applicableChecklistSets(categoryId){
+  return (CHECKLIST_SETS||[]).filter(function(s){
+    if(!s.aktif) return false;
+    if(s.kategori_id===null) return s.tenant_id===null || s.tenant_id===cloudTenantId;
+    return s.kategori_id===categoryId && s.tenant_id===cloudTenantId;
+  });
+}
+function applicableChecklistItems(categoryId){
+  var setIds = applicableChecklistSets(categoryId).map(function(s){return s.id;});
+  return (CHECKLIST_ITEMS||[]).filter(function(m){return setIds.indexOf(m.set_id)>=0;})
+    .sort(function(a,b){return a.sira_no-b.sira_no;});
+}
+function condChecklistAnswered(r,ctx){
+  var items = applicableChecklistItems(r.category_id);
+  if(!items.length) return true;
+  var answeredIds = (ctx.checklistAnswers||[]).filter(function(a){return a.cevap;}).map(function(a){return a.madde_id;});
+  return items.every(function(m){return answeredIds.indexOf(m.id)>=0;});
+}
 
 /* ============================================================================
    Nav
@@ -466,12 +507,14 @@ function viewDetail(id){
     sb.from('moc_approvals').select('*').eq('moc_id',id).order('step_order'),
     sb.from('moc_action_items').select('*').eq('moc_id',id).order('created_at'),
     sb.from('moc_pssr_checklists').select('*').eq('moc_id',id).eq('is_template',false).maybeSingle(),
-    sb.from('moc_temporary_tracking').select('*').eq('moc_id',id).maybeSingle()
+    sb.from('moc_temporary_tracking').select('*').eq('moc_id',id).maybeSingle(),
+    sb.from('moc_etki_checklist_yanitlari').select('*').eq('moc_request_id',id)
   ]).then(function(res){
     var req=res[0].data;
     if(!req){ document.getElementById('content').innerHTML='<div class="empty">Kayıt bulunamadı.</div>'; return; }
     DETAIL_CTX = { req:req, risks:res[1].data||[], approvals:res[2].data||[], actions:res[3].data||[],
-                   pssr:res[4].data||null, temp:res[5].data||null, type:typeById(req.type_id), category:catById(req.category_id) };
+                   pssr:res[4].data||null, temp:res[5].data||null, checklistAnswers:res[6].data||[],
+                   type:typeById(req.type_id), category:catById(req.category_id) };
     document.getElementById('pageTitle').textContent = req.moc_no || ('MOC #'+req.id);
     document.getElementById('pageCrumb').textContent = req.title;
     renderDetail();
@@ -507,6 +550,7 @@ function renderDetail(){
   html+='</div></div>';
 
   html+=renderTransitionsPanel();
+  html+=renderChecklistPanel();
   html+=renderRiskPanel();
   html+=renderApprovalsPanel();
   html+=renderActionsPanel();
@@ -567,6 +611,85 @@ function riskCell(score){
   if(score==null) return '—';
   var cls = score<=4?'var(--ok)':score<=9?'var(--warn)':score<=14?'#FB923C':'var(--crit)';
   return '<span class="risk-cell" style="background:'+cls+'">'+score+'</span>';
+}
+
+/* ============================================================================
+   Etki Değerlendirme Checklist Paneli (Faz C)
+   ========================================================================= */
+function renderChecklistPanel(){
+  var ctx=DETAIL_CTX, req=ctx.req;
+  var items = applicableChecklistItems(req.category_id);
+  if(!items.length) return '';
+  var answersByMadde={};
+  (ctx.checklistAnswers||[]).forEach(function(a){ answersByMadde[a.madde_id]=a; });
+  var canAnswer = canDo('risk') || canDo('coordinate');
+  var lastSection=null, rows='';
+  items.forEach(function(m){
+    if(m.bolum_baslik!==lastSection){
+      rows+='<tr><td colspan="3" style="padding-top:16px;font-weight:800;color:var(--leaf-d);border:none">'+esc(m.bolum_baslik)+'</td></tr>';
+      lastSection=m.bolum_baslik;
+    }
+    var a=answersByMadde[m.id];
+    var cevapHtml = (a&&a.cevap) ? cevapPill(a.cevap) : '<span class="pill miss">Yanıtsız</span>';
+    if(a&&a.action_id) cevapHtml+=' <span class="pill warn">Aksiyon açık</span>';
+    var actBtn = canAnswer ? '<button class="sm btn-line etkans" data-id="'+m.id+'">'+(a&&a.cevap?'Düzenle':'Yanıtla')+'</button>' : '';
+    rows+='<tr><td>'+esc(m.soru_metni)+'</td><td>'+cevapHtml+'</td><td>'+actBtn+'</td></tr>';
+  });
+  var answered=items.filter(function(m){return answersByMadde[m.id]&&answersByMadde[m.id].cevap;}).length;
+  var html='<div class="panel"><div class="ph"><h2>Etki Değerlendirme Checklist\'i</h2>'
+    +'<span class="pill '+(answered===items.length?'ok':'warn')+'" style="margin-left:auto">'+answered+'/'+items.length+' yanıtlandı</span></div><div class="pb">';
+  html+='<table><thead><tr><th>Soru</th><th>Yanıt</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+  html+='<p class="hint">Onay aşamasına geçmeden önce tüm maddeler yanıtlanmalı, "Evet" cevabının doğurduğu aksiyonlar kapatılmalıdır.</p>';
+  html+='</div></div>';
+  return html;
+}
+function cevapPill(c){
+  var m={EVET:'warn',HAYIR:'ok',NA:'na'}, l={EVET:'Evet',HAYIR:'Hayır',NA:'N/A'};
+  return '<span class="pill '+(m[c]||'na')+'">'+(l[c]||c)+'</span>';
+}
+function openChecklistAnswer(maddeId){
+  var m=(CHECKLIST_ITEMS||[]).find(function(x){return x.id===maddeId;});
+  if(!m) return;
+  var existing=(DETAIL_CTX.checklistAnswers||[]).find(function(a){return a.madde_id===maddeId;});
+  modalTitle('Checklist Yanıtı');
+  setModalBody(
+    '<p style="margin-bottom:10px;color:var(--muted)">'+esc(m.soru_metni)+'</p>'
+    +'<label>Yanıt</label><select id="ecCevap"><option value="HAYIR">Hayır</option><option value="EVET">Evet</option><option value="NA">Uygulanamaz (N/A)</option></select>'
+    +'<label>Gerekçe (Evet ise zorunlu)</label><textarea id="ecGerekce">'+(existing?esc(existing.gerekce||''):'')+'</textarea>'
+    +(m.evet_aksiyon_gerekli?'<p class="hint">Bu madde için "Evet" cevabı otomatik bir aksiyon kaydı oluşturur; onay aşamasına geçmeden bu aksiyonun kapatılması gerekir.</p>':'')
+  );
+  document.getElementById('ecCevap').value = existing&&existing.cevap ? existing.cevap : 'HAYIR';
+  modalFoot('Kaydet','Vazgeç',function(){
+    var cevap=val('ecCevap'), gerekce=val('ecGerekce');
+    if(cevap==='EVET' && !gerekce.trim()){ toast('Evet cevabı için gerekçe zorunlu.',true); return; }
+    saveChecklistAnswer(m, cevap, gerekce, existing);
+  });
+  openModal();
+}
+function saveChecklistAnswer(m, cevap, gerekce, existing){
+  var needsAction = cevap==='EVET' && m.evet_aksiyon_gerekli;
+  var actionPromise = Promise.resolve(existing?existing.action_id:null);
+  if(needsAction && !(existing&&existing.action_id)){
+    actionPromise = sb.from('moc_action_items').insert({
+      tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, title:'Etki değerlendirme: '+m.soru_metni,
+      phase:'PRE_APPROVAL', assignee_id:cloudUserId
+    }).select().single().then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return existing?existing.action_id:null; }
+      return res.data.id;
+    });
+  }
+  actionPromise.then(function(actionId){
+    var payload={ tenant_id:cloudTenantId, moc_request_id:DETAIL_CTX.req.id, madde_id:m.id,
+      cevap:cevap, gerekce:gerekce||null, action_id: needsAction?actionId:(existing?existing.action_id:null),
+      answered_by:cloudUserId, answered_at:new Date().toISOString() };
+    var op = existing
+      ? sb.from('moc_etki_checklist_yanitlari').update(payload).eq('id',existing.id)
+      : sb.from('moc_etki_checklist_yanitlari').insert(payload);
+    op.then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      closeModal(); toast('Yanıt kaydedildi'); viewDetail(DETAIL_CTX.req.id);
+    });
+  });
 }
 
 function renderApprovalsPanel(){
@@ -660,6 +783,9 @@ function bindDetailEvents(){
   });
   Array.prototype.forEach.call(document.querySelectorAll('.pssrres'),function(b){
     b.onclick=function(){ setPssrResult(b.getAttribute('data-r')); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.etkans'),function(b){
+    b.onclick=function(){ openChecklistAnswer(Number(b.getAttribute('data-id'))); };
   });
 }
 
@@ -936,8 +1062,36 @@ function renderSettings(){
   document.getElementById('content').innerHTML=
     '<div class="panel"><div class="ph"><h2>Değişiklik Kategorileri</h2><button class="btn-line sm" id="btnAddCat" style="margin-left:auto">+ Kategori Ekle</button></div><div class="pb"><table><thead><tr><th>Kod</th><th>Ad</th><th>Ekipman Bağlantısı</th><th>Durum</th><th></th></tr></thead><tbody>'+(catRows||'<tr><td colspan="5" class="empty">Kayıt yok.</td></tr>')+'</tbody></table></div></div>'
     +'<div class="panel"><div class="ph"><h2>Akış Türleri</h2><button class="btn-line sm" id="btnAddType" style="margin-left:auto">+ Tür Ekle</button></div><div class="pb"><table><thead><tr><th>Kod</th><th>Ad</th><th>PSSR</th><th>Bitiş Tarihi</th><th>Geriye Dönük (sa)</th><th>Ek Onay Eşiği</th><th>Durum</th><th></th></tr></thead><tbody>'+(typeRows||'<tr><td colspan="8" class="empty">Kayıt yok.</td></tr>')+'</tbody></table></div></div>'
-    +'<p class="hint">Global (tenant\'sız) satırlar platform varsayılanıdır, yalnız kendi tenant\'ınıza ait satırları düzenleyebilirsiniz. Kullanılmış kayıtlar silinemez, yalnız pasifleştirilebilir.</p>';
+    +'<p class="hint">Global (tenant\'sız) satırlar platform varsayılanıdır, yalnız kendi tenant\'ınıza ait satırları düzenleyebilirsiniz. Kullanılmış kayıtlar silinemez, yalnız pasifleştirilebilir.</p>'
+    +renderChecklistSettingsSection();
   bindSettingsEvents();
+}
+function renderChecklistSettingsSection(){
+  var rows=(ALL_CHECKLIST_SETS||[]).map(function(s){
+    var own = s.tenant_id===cloudTenantId;
+    var isGlobal = s.tenant_id===null;
+    var katName = s.kategori_id ? ((catByIdAny(s.kategori_id)||{}).name_tr || '—') : 'Tüm Kategoriler (zorunlu)';
+    var itemCount=(ALL_CHECKLIST_ITEMS||[]).filter(function(m){return m.set_id===s.id;}).length;
+    var scope = isGlobal ? '<span class="pill blue">Global Şablon</span>' : '<span class="pill purple">Tesis Kopyası</span>';
+    var actions='';
+    if(own){
+      actions='<button class="sm btn-line editchkset" data-id="'+s.id+'">Maddeleri Yönet</button> '
+        +'<button class="sm btn-line togglechkset" data-id="'+s.id+'" data-v="'+(!s.aktif)+'">'+(s.aktif?'Pasifleştir':'Aktifleştir')+'</button>';
+    } else if(isGlobal && s.kategori_id!==null){
+      var already = (ALL_CHECKLIST_SETS||[]).some(function(x){return x.tenant_id===cloudTenantId && x.kategori_id===s.kategori_id && x.ad===s.ad;});
+      actions = already ? '<span class="hint">Tesisinizde aktif</span>' : '<button class="sm btn-leaf usechkset" data-id="'+s.id+'">Kullan</button>';
+    } else if(isGlobal && s.kategori_id===null){
+      actions='<button class="sm btn-line copychkset" data-id="'+s.id+'">Kopyala ve Özelleştir</button>';
+    }
+    return '<tr'+(s.aktif?'':' style="opacity:.5"')+'><td>'+esc(s.ad)+'</td><td>'+esc(katName)+'</td><td>'+scope+'</td><td>'+itemCount+'</td>'
+      +'<td>'+(s.aktif?'<span class="pill ok">Aktif</span>':'<span class="pill miss">Pasif</span>')+'</td><td>'+actions+'</td></tr>';
+  }).join('');
+  return '<div class="panel"><div class="ph"><h2>Etki Değerlendirme Checklist Setleri</h2>'
+    +(canDo('admin')?'<button class="btn-line sm" id="btnAddChkSet" style="margin-left:auto">+ Yeni Set</button>':'')
+    +'</div><div class="pb"><table><thead><tr><th>Ad</th><th>Kategori</th><th>Kapsam</th><th>Madde</th><th>Durum</th><th></th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="6" class="empty">Kayıt yok.</td></tr>')+'</tbody></table>'
+    +'<p class="hint">"Tüm Kategoriler (zorunlu)" setler her talepte otomatik devreye girer. Kategoriye bağlı setler, tesisiniz "Kullan" demeden hiç görünmez. Global şablonlar salt-okunurdur; kopyalayıp kendi tesisinize özel düzenleyebilirsiniz.</p>'
+    +'</div></div>';
 }
 function bindSettingsEvents(){
   var ac=document.getElementById('btnAddCat'); if(ac) ac.onclick=function(){ openCategoryModal(null); };
@@ -964,6 +1118,117 @@ function bindSettingsEvents(){
       });
     };
   });
+  var acs=document.getElementById('btnAddChkSet'); if(acs) acs.onclick=openNewChecklistSetModal;
+  Array.prototype.forEach.call(document.querySelectorAll('.usechkset,.copychkset'),function(b){
+    b.onclick=function(){ cloneChecklistSet(Number(b.getAttribute('data-id'))); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.togglechkset'),function(b){
+    b.onclick=function(){
+      sb.from('moc_etki_checklist_setleri').update({aktif:b.getAttribute('data-v')==='true'}).eq('id',Number(b.getAttribute('data-id'))).then(function(res){
+        if(res.error){ toast('Hata: '+res.error.message,true); return; }
+        toast('Güncellendi'); viewSettings();
+      });
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.editchkset'),function(b){
+    b.onclick=function(){ openChecklistItemsModal(Number(b.getAttribute('data-id'))); };
+  });
+}
+/* ---- Checklist seti kopyalama ("Kullan" / "Kopyala ve Özelleştir") ---- */
+function cloneChecklistSet(setId){
+  var s=(ALL_CHECKLIST_SETS||[]).find(function(x){return x.id===setId;});
+  if(!s) return;
+  sb.from('moc_etki_checklist_setleri').insert({tenant_id:cloudTenantId, kategori_id:s.kategori_id, ad:s.ad, aciklama:s.aciklama, aktif:true}).select().single().then(function(res){
+    if(res.error){ toast('Hata: '+res.error.message,true); return; }
+    var newSetId=res.data.id;
+    var items=(ALL_CHECKLIST_ITEMS||[]).filter(function(m){return m.set_id===setId;});
+    if(!items.length){ toast('Set kopyalandı'); viewSettings(); return; }
+    var payload=items.map(function(m){
+      return {set_id:newSetId, bolum_baslik:m.bolum_baslik, soru_metni:m.soru_metni, sira_no:m.sira_no, evet_aksiyon_gerekli:m.evet_aksiyon_gerekli};
+    });
+    sb.from('moc_etki_checklist_maddeleri').insert(payload).then(function(res2){
+      if(res2.error){ toast('Hata: '+res2.error.message,true); return; }
+      toast('Set tesisinize kopyalandı'); viewSettings();
+    });
+  });
+}
+function openNewChecklistSetModal(){
+  modalTitle('Yeni Checklist Seti');
+  setModalBody(
+    '<label>Ad</label><input id="csAd">'
+    +'<label>Açıklama</label><textarea id="csAciklama"></textarea>'
+    +'<label>Kategori (boş = tüm kategorilerde zorunlu)</label><select id="csKat"><option value="">Tüm Kategoriler (zorunlu)</option>'
+    +CATEGORIES.map(function(c){return '<option value="'+c.id+'">'+esc(c.name_tr)+'</option>';}).join('')+'</select>'
+  );
+  modalFoot('Oluştur','Vazgeç',function(){
+    var ad=val('csAd');
+    if(!ad.trim()){ toast('Ad zorunlu.',true); return; }
+    var kat=val('csKat');
+    sb.from('moc_etki_checklist_setleri').insert({tenant_id:cloudTenantId, kategori_id: kat?Number(kat):null, ad:ad, aciklama:val('csAciklama'), aktif:true}).then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      closeModal(); toast('Set oluşturuldu, madde ekleyin'); viewSettings();
+    });
+  });
+  openModal();
+}
+/* ---- Checklist madde yönetimi (nested modal) ---- */
+function openChecklistItemsModal(setId){
+  var s=(ALL_CHECKLIST_SETS||[]).find(function(x){return x.id===setId;});
+  modalTitle('Maddeler — '+(s?esc(s.ad):''));
+  document.getElementById('modalSave').style.display='none';
+  document.getElementById('modalCancel').textContent='Kapat';
+  renderChecklistItemsModalBody(setId);
+  openModal(true);
+}
+function renderChecklistItemsModalBody(setId){
+  var items=(ALL_CHECKLIST_ITEMS||[]).filter(function(m){return m.set_id===setId;}).sort(function(a,b){return a.sira_no-b.sira_no;});
+  var rows=items.map(function(m){
+    return '<tr'+(m.is_active?'':' style="opacity:.5"')+'><td>'+m.sira_no+'</td><td>'+esc(m.bolum_baslik)+'</td><td>'+esc(m.soru_metni)+'</td>'
+      +'<td>'+(m.evet_aksiyon_gerekli?'Evet':'Hayır')+'</td>'
+      +'<td><button class="sm btn-line editchkitem" data-id="'+m.id+'">Düzenle</button> '
+      +'<button class="sm btn-line togglechkitem" data-id="'+m.id+'" data-v="'+(!m.is_active)+'">'+(m.is_active?'Pasifleştir':'Aktifleştir')+'</button></td></tr>';
+  }).join('');
+  setModalBody(
+    '<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn-line sm" id="btnAddChkItem">+ Madde Ekle</button></div>'
+    +'<table><thead><tr><th>Sıra</th><th>Bölüm</th><th>Soru</th><th>Evet→Aksiyon</th><th></th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="5" class="empty">Madde yok.</td></tr>')+'</tbody></table>'
+  );
+  var ac=document.getElementById('btnAddChkItem'); if(ac) ac.onclick=function(){ openChecklistItemForm(setId,null); };
+  Array.prototype.forEach.call(document.querySelectorAll('.editchkitem'),function(b){
+    b.onclick=function(){ openChecklistItemForm(setId, items.find(function(m){return m.id===Number(b.getAttribute('data-id'));})); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.togglechkitem'),function(b){
+    b.onclick=function(){
+      sb.from('moc_etki_checklist_maddeleri').update({is_active:b.getAttribute('data-v')==='true'}).eq('id',Number(b.getAttribute('data-id'))).then(function(res){
+        if(res.error){ toast('Hata: '+res.error.message,true); return; }
+        reloadLookupsAll().then(function(){ renderChecklistItemsModalBody(setId); });
+      });
+    };
+  });
+}
+function openChecklistItemForm(setId, m){
+  setModalBody(
+    '<label>Bölüm Başlığı</label><input id="ciBolum" value="'+(m?esc(m.bolum_baslik):'')+'">'
+    +'<label>Soru Metni</label><textarea id="ciSoru">'+(m?esc(m.soru_metni):'')+'</textarea>'
+    +'<div class="row2"><div><label>Sıra No</label><input id="ciSira" type="number" value="'+(m?m.sira_no:0)+'"></div>'
+    +'<div><label class="chk" style="margin-top:30px"><input type="checkbox" id="ciEvetAksiyon" '+(m&&m.evet_aksiyon_gerekli?'checked':'')+'> "Evet" cevabı otomatik aksiyon oluştursun</label></div></div>'
+    +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
+    +'<button class="btn-line" id="btnChkItemBack">Geri</button>'
+    +'<button class="btn-leaf" id="btnChkItemSave">Kaydet</button></div>'
+  );
+  document.getElementById('btnChkItemBack').onclick=function(){ renderChecklistItemsModalBody(setId); };
+  document.getElementById('btnChkItemSave').onclick=function(){
+    var bolum=val('ciBolum'), soru=val('ciSoru');
+    if(!bolum.trim()||!soru.trim()){ toast('Bölüm ve soru metni zorunlu.',true); return; }
+    var payload={ bolum_baslik:bolum, soru_metni:soru, sira_no:num('ciSira')||0, evet_aksiyon_gerekli:document.getElementById('ciEvetAksiyon').checked };
+    var op = m ? sb.from('moc_etki_checklist_maddeleri').update(payload).eq('id',m.id)
+               : sb.from('moc_etki_checklist_maddeleri').insert(Object.assign({set_id:setId},payload));
+    op.then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      toast('Kaydedildi');
+      reloadLookupsAll().then(function(){ renderChecklistItemsModalBody(setId); });
+    });
+  };
 }
 function openCategoryModal(c){
   modalTitle(c?'Kategori Düzenle':'Kategori Ekle');
