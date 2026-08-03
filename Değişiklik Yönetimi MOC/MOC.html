@@ -344,13 +344,23 @@ function cloudInit(){
 /* ============================================================================
    Lookup verisi (kategoriler, türler)
    ========================================================================= */
-var CATEGORIES=[], TYPES=[];
+var CATEGORIES=[], TYPES=[], ALL_CATEGORIES=[], ALL_TYPES=[];
 function loadLookups(){
   return Promise.all([
     sb.from('moc_change_categories').select('*').eq('is_active',true).order('sort_order'),
     sb.from('moc_types').select('*').eq('is_active',true)
   ]).then(function(res){
     CATEGORIES = res[0].data||[]; TYPES = res[1].data||[];
+  });
+}
+function reloadLookupsAll(){
+  return Promise.all([
+    sb.from('moc_change_categories').select('*').order('sort_order'),
+    sb.from('moc_types').select('*')
+  ]).then(function(res){
+    ALL_CATEGORIES = res[0].data||[]; ALL_TYPES = res[1].data||[];
+    CATEGORIES = ALL_CATEGORIES.filter(function(c){return c.is_active;});
+    TYPES = ALL_TYPES.filter(function(t){return t.is_active;});
   });
 }
 function typeById(id){ return TYPES.find(function(t){return t.id===id;}); }
@@ -666,11 +676,28 @@ function doTransition(to){
     patch.reason=reason;
   }
   if(to==='CLOSED') patch.closed_at=new Date().toISOString();
-  sb.from('moc_requests').update(patch).eq('id',req.id).then(function(res){
-    if(res.error){ toast('Hata: '+res.error.message,true); return; }
-    if(to==='TECHNICAL_REVIEW' && req.status==='RISK_ASSESSMENT'){ /* no-op, kullanıcı APPROVAL'a manuel geçer */ }
-    toast('Durum güncellendi: '+STATUS_LABEL[to]);
-    viewDetail(req.id);
+  var pre = (to==='APPROVAL' && req.status==='TECHNICAL_REVIEW') ? ensureRiskThresholdApproval() : Promise.resolve();
+  pre.then(function(){
+    sb.from('moc_requests').update(patch).eq('id',req.id).then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      toast('Durum güncellendi: '+STATUS_LABEL[to]);
+      viewDetail(req.id);
+    });
+  });
+}
+/* Risk eşiğine göre otomatik ek onay adımı (bkz. Ayarlar > Akış Türleri).
+   moc_types.extra_approval_risk_threshold/role_code aşılırsa ve o role_code
+   için henüz bir onay adımı yoksa, sona bir tane eklenir. */
+function ensureRiskThresholdApproval(){
+  var ctx=DETAIL_CTX, t=ctx.type;
+  if(!t || !t.extra_approval_risk_threshold || !t.extra_approval_role_code) return Promise.resolve();
+  var maxRisk = (ctx.risks||[]).reduce(function(m,r){ return Math.max(m, r.risk_after||0); }, 0);
+  if(maxRisk < t.extra_approval_risk_threshold) return Promise.resolve();
+  var already = (ctx.approvals||[]).some(function(a){ return a.role_code===t.extra_approval_role_code; });
+  if(already) return Promise.resolve();
+  var nextStep=(ctx.approvals||[]).length+1;
+  return sb.from('moc_approvals').insert({tenant_id:cloudTenantId, moc_id:ctx.req.id, step_order:nextStep, role_code:t.extra_approval_role_code}).then(function(res){
+    if(!res.error) toast('Risk eşiği aşıldı — otomatik ek onay adımı eklendi: '+t.extra_approval_role_code);
   });
 }
 
@@ -877,17 +904,120 @@ function openNewRequest(){
 }
 
 /* ============================================================================
-   Ayarlar (salt-okunur özet — CRUD ikinci alt-turda)
+   Ayarlar — Kategori/Tür CRUD (Faz B2)
+   Global (tenant_id NULL) satırlar salt-okunur gösterilir (platform seviyesi
+   varsayılanlar); yalnız kendi tenant'ının satırları düzenlenebilir. Silme
+   yok — soft-delete (is_active=false), kullanılmış tür/kategoriler asla
+   fiziksel silinmiyor (bkz. moc_schema_faz_b2.sql).
    ========================================================================= */
 function viewSettings(){
   document.getElementById('pageTitle').textContent='Ayarlar';
-  document.getElementById('pageCrumb').textContent='Kategori ve akış türü tanımları (salt-okunur)';
-  var catRows=CATEGORIES.map(function(c){return '<tr><td>'+esc(c.code)+'</td><td>'+esc(c.name_tr)+'</td><td>'+(c.requires_equipment_link?'Evet':'Hayır')+'</td></tr>';}).join('');
-  var typeRows=TYPES.map(function(t){return '<tr><td>'+esc(t.code)+'</td><td>'+esc(t.name_tr)+'</td><td>'+(t.requires_pssr?'Evet':'Hayır')+'</td><td>'+(t.requires_end_date?'Evet':'Hayır')+'</td><td>'+(t.retro_hours||'—')+'</td></tr>';}).join('');
+  document.getElementById('pageCrumb').textContent='Kategori ve akış türü tanımları';
+  document.getElementById('content').innerHTML='<div class="empty">Yükleniyor…</div>';
+  reloadLookupsAll().then(renderSettings);
+}
+function renderSettings(){
+  var catRows=ALL_CATEGORIES.map(function(c){
+    var own = c.tenant_id===cloudTenantId;
+    return '<tr'+(c.is_active?'':' style="opacity:.5"')+'><td>'+esc(c.code)+'</td><td>'+esc(c.name_tr)+'</td>'
+      +'<td>'+(c.requires_equipment_link?'Evet':'Hayır')+'</td>'
+      +'<td>'+(c.is_active?'<span class="pill ok">Aktif</span>':'<span class="pill miss">Pasif</span>')+'</td>'
+      +'<td>'+(own?'<button class="sm btn-line editcat" data-id="'+c.id+'">Düzenle</button> <button class="sm btn-line togglecat" data-id="'+c.id+'" data-v="'+(!c.is_active)+'">'+(c.is_active?'Pasifleştir':'Aktifleştir')+'</button>':'<span class="hint">Global</span>')+'</td></tr>';
+  }).join('');
+  var typeRows=ALL_TYPES.map(function(t){
+    var own = t.tenant_id===cloudTenantId;
+    return '<tr'+(t.is_active?'':' style="opacity:.5"')+'><td>'+esc(t.code)+'</td><td>'+esc(t.name_tr)+'</td>'
+      +'<td>'+(t.requires_pssr?'Evet':'Hayır')+'</td><td>'+(t.requires_end_date?'Evet':'Hayır')+'</td>'
+      +'<td>'+(t.retro_hours||'—')+'</td>'
+      +'<td>'+(t.extra_approval_risk_threshold?('≥'+t.extra_approval_risk_threshold+' → '+esc(t.extra_approval_role_code||'—')):'—')+'</td>'
+      +'<td>'+(t.is_active?'<span class="pill ok">Aktif</span>':'<span class="pill miss">Pasif</span>')+'</td>'
+      +'<td>'+(own?'<button class="sm btn-line edittype" data-id="'+t.id+'">Düzenle</button> <button class="sm btn-line toggletype" data-id="'+t.id+'" data-v="'+(!t.is_active)+'">'+(t.is_active?'Pasifleştir':'Aktifleştir')+'</button>':'<span class="hint">Global</span>')+'</td></tr>';
+  }).join('');
   document.getElementById('content').innerHTML=
-    '<div class="panel"><div class="ph"><h2>Değişiklik Kategorileri</h2></div><div class="pb"><table><thead><tr><th>Kod</th><th>Ad</th><th>Ekipman Bağlantısı Zorunlu</th></tr></thead><tbody>'+catRows+'</tbody></table></div></div>'
-    +'<div class="panel"><div class="ph"><h2>Akış Türleri</h2></div><div class="pb"><table><thead><tr><th>Kod</th><th>Ad</th><th>PSSR Gerekli</th><th>Bitiş Tarihi Gerekli</th><th>Geriye Dönük Süre (sa)</th></tr></thead><tbody>'+typeRows+'</tbody></table></div></div>'
-    +'<p class="hint">Kategori/tür ekleme-düzenleme ve moc_ RBAC atama ekranları B2 sprintinde eklenecek.</p>';
+    '<div class="panel"><div class="ph"><h2>Değişiklik Kategorileri</h2><button class="btn-line sm" id="btnAddCat" style="margin-left:auto">+ Kategori Ekle</button></div><div class="pb"><table><thead><tr><th>Kod</th><th>Ad</th><th>Ekipman Bağlantısı</th><th>Durum</th><th></th></tr></thead><tbody>'+(catRows||'<tr><td colspan="5" class="empty">Kayıt yok.</td></tr>')+'</tbody></table></div></div>'
+    +'<div class="panel"><div class="ph"><h2>Akış Türleri</h2><button class="btn-line sm" id="btnAddType" style="margin-left:auto">+ Tür Ekle</button></div><div class="pb"><table><thead><tr><th>Kod</th><th>Ad</th><th>PSSR</th><th>Bitiş Tarihi</th><th>Geriye Dönük (sa)</th><th>Ek Onay Eşiği</th><th>Durum</th><th></th></tr></thead><tbody>'+(typeRows||'<tr><td colspan="8" class="empty">Kayıt yok.</td></tr>')+'</tbody></table></div></div>'
+    +'<p class="hint">Global (tenant\'sız) satırlar platform varsayılanıdır, yalnız kendi tenant\'ınıza ait satırları düzenleyebilirsiniz. Kullanılmış kayıtlar silinemez, yalnız pasifleştirilebilir.</p>';
+  bindSettingsEvents();
+}
+function bindSettingsEvents(){
+  var ac=document.getElementById('btnAddCat'); if(ac) ac.onclick=function(){ openCategoryModal(null); };
+  var at=document.getElementById('btnAddType'); if(at) at.onclick=function(){ openTypeModal(null); };
+  Array.prototype.forEach.call(document.querySelectorAll('.editcat'),function(b){
+    b.onclick=function(){ openCategoryModal(ALL_CATEGORIES.find(function(c){return c.id===Number(b.getAttribute('data-id'));})); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.togglecat'),function(b){
+    b.onclick=function(){
+      sb.from('moc_change_categories').update({is_active: b.getAttribute('data-v')==='true'}).eq('id',Number(b.getAttribute('data-id'))).then(function(res){
+        if(res.error){ toast('Hata: '+res.error.message,true); return; }
+        toast('Güncellendi'); viewSettings();
+      });
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.edittype'),function(b){
+    b.onclick=function(){ openTypeModal(ALL_TYPES.find(function(t){return t.id===Number(b.getAttribute('data-id'));})); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.toggletype'),function(b){
+    b.onclick=function(){
+      sb.from('moc_types').update({is_active: b.getAttribute('data-v')==='true'}).eq('id',Number(b.getAttribute('data-id'))).then(function(res){
+        if(res.error){ toast('Hata: '+res.error.message,true); return; }
+        toast('Güncellendi'); viewSettings();
+      });
+    };
+  });
+}
+function openCategoryModal(c){
+  modalTitle(c?'Kategori Düzenle':'Kategori Ekle');
+  setModalBody(
+    '<label>Kod</label><input id="ccCode" value="'+(c?esc(c.code):'')+'">'
+    +'<label>Ad (TR)</label><input id="ccNameTr" value="'+(c?esc(c.name_tr):'')+'">'
+    +'<label>Ad (EN)</label><input id="ccNameEn" value="'+(c?esc(c.name_en):'')+'">'
+    +'<label class="chk"><input type="checkbox" id="ccEq" '+(c&&c.requires_equipment_link?'checked':'')+'> Ekipman bağlantısı zorunlu</label>'
+    +'<label>Sıra No</label><input id="ccSort" type="number" value="'+(c?c.sort_order:0)+'">'
+  );
+  modalFoot('Kaydet','Vazgeç',function(){
+    var code=val('ccCode'), nameTr=val('ccNameTr'), nameEn=val('ccNameEn');
+    if(!code.trim()||!nameTr.trim()||!nameEn.trim()){ toast('Kod ve ad alanları zorunlu.',true); return; }
+    var payload={ code:code, name_tr:nameTr, name_en:nameEn, requires_equipment_link:document.getElementById('ccEq').checked, sort_order:num('ccSort')||0 };
+    var op = c ? sb.from('moc_change_categories').update(payload).eq('id',c.id)
+               : sb.from('moc_change_categories').insert(Object.assign({tenant_id:cloudTenantId},payload));
+    op.then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      closeModal(); toast('Kaydedildi'); viewSettings();
+    });
+  });
+  openModal();
+}
+function openTypeModal(t){
+  modalTitle(t?'Akış Türü Düzenle':'Akış Türü Ekle');
+  setModalBody(
+    '<label>Kod</label><input id="tcCode" value="'+(t?esc(t.code):'')+'">'
+    +'<label>Ad (TR)</label><input id="tcNameTr" value="'+(t?esc(t.name_tr):'')+'">'
+    +'<label>Ad (EN)</label><input id="tcNameEn" value="'+(t?esc(t.name_en):'')+'">'
+    +'<div class="row2"><label class="chk"><input type="checkbox" id="tcPssr" '+(t&&t.requires_pssr?'checked':'')+'> PSSR gerekli</label>'
+    +'<label class="chk"><input type="checkbox" id="tcEnd" '+(t&&t.requires_end_date?'checked':'')+'> Bitiş tarihi gerekli (geçici)</label></div>'
+    +'<label>Geriye Dönük Süre — Acil (saat)</label><input id="tcRetro" type="number" value="'+(t&&t.retro_hours!=null?t.retro_hours:'')+'">'
+    +'<fieldset><legend>Risk Eşiğine Göre Otomatik Ek Onay</legend>'
+    +'<label>Risk Eşiği (risk_after ≥ bu değer, boş = kapalı)</label><input id="tcThresh" type="number" min="1" max="25" value="'+(t&&t.extra_approval_risk_threshold!=null?t.extra_approval_risk_threshold:'')+'">'
+    +'<label>Ek Onay Rol Kodu</label><input id="tcRole" value="'+(t&&t.extra_approval_role_code?esc(t.extra_approval_role_code):'')+'" placeholder="ör. PLANT_MANAGER">'
+    +'<p class="hint">TECHNICAL_REVIEW → APPROVAL geçişinde, herhangi bir risk kaydının risk_after değeri bu eşiği geçerse belirtilen role otomatik bir onay adımı eklenir.</p>'
+    +'</fieldset>'
+  );
+  modalFoot('Kaydet','Vazgeç',function(){
+    var code=val('tcCode'), nameTr=val('tcNameTr'), nameEn=val('tcNameEn');
+    if(!code.trim()||!nameTr.trim()||!nameEn.trim()){ toast('Kod ve ad alanları zorunlu.',true); return; }
+    var thresh=num('tcThresh'), role=val('tcRole');
+    if(thresh && !role.trim()){ toast('Risk eşiği girildiyse rol kodu zorunlu.',true); return; }
+    var payload={ code:code, name_tr:nameTr, name_en:nameEn,
+      requires_pssr:document.getElementById('tcPssr').checked, requires_end_date:document.getElementById('tcEnd').checked,
+      retro_hours:num('tcRetro'), extra_approval_risk_threshold: thresh||null, extra_approval_role_code: thresh?role:null };
+    var op = t ? sb.from('moc_types').update(payload).eq('id',t.id)
+               : sb.from('moc_types').insert(Object.assign({tenant_id:cloudTenantId},payload));
+    op.then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      closeModal(); toast('Kaydedildi'); viewSettings();
+    });
+  });
+  openModal();
 }
 
 /* ============================================================================

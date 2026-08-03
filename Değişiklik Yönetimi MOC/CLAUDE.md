@@ -25,6 +25,11 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
 - `moc_schema_faz_b_moc_no.sql` — Faz B canlı test sırasında bulunan
   moc_no eksikliğinin düzeltmesi (bkz. "Faz B doğrulama" altında),
   zaten Supabase'de uygulandı.
+- `moc_schema_faz_b2.sql` — Faz B2: `moc_change_categories`/`moc_types`
+  için INSERT/UPDATE RLS politikaları + GRANT (Ayarlar CRUD'u için).
+  **Henüz Supabase'de çalıştırılmadı — uygulamadan önce SQL Editor'da
+  bir kez çalıştırılmalı**, yoksa Ayarlar'daki Ekle/Düzenle işlemleri
+  RLS/GRANT hatasıyla başarısız olur.
 - `moc_state_machine_v1.md`, `moc_rbac_matrix_v1.md`, `moc_schema_v1-1.sql`
   — orijinal planlama dosyaları (iş mantığı kaynağı). `MOC_Teknik_Taslak_
   v2-1.md`, `moc_api_endpoints_v1-1.md`, `moc_kodlama_prompt_sprint1-1.md`
@@ -35,23 +40,36 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
 - `moc_theme_tokens.css`, `moc_wireframe_v1-2.html` — **kullanılmadı**
   (TASARIM_STANDARDI ile çelişen ayrı bir renk sistemi tanımlıyorlardı).
 
-## Bilinen sınırlamalar / basitleştirmeler (Faz B)
+## Bilinen sınırlamalar / basitleştirmeler (Faz B / B2)
 1. **RBAC 3 kademeye indirgendi.** `moc_rbac_matrix_v1.md`'deki 14 ayrı
    izin kodu yerine platformun paylaşılan `profiles.role` kolonu
    (ADMIN/EDITOR/VIEWER) kullanılıyor — `canDo()` fonksiyonu bunu MOC
    aksiyonlarına eşliyor. Kayıt-seviyesi kurallar (kendi talebini
    onaylayamama, DRAFT'ı yalnız sahibi/koordinatör düzenler) tam
    uygulanıyor.
-2. **Onaycı ataması yok.** `moc_approvals.approver_id` önceden atanmıyor;
-   yetkili herhangi bir kullanıcı (talep sahibi hariç) kararı "üstlenerek"
-   verir, karar anında approver_id kendine set edilir. Gerçek atama akışı
-   (kullanıcı seçici) B2'de eklenebilir.
-3. **Ayarlar ekranı salt-okunur.** Kategori/tür CRUD'u yok, sadece liste.
+2. **Onaycı ataması yok (bilinçli tercih, B2'de tekrar sorgulandı).**
+   `moc_approvals.approver_id` önceden atanmıyor; yetkili herhangi bir
+   kullanıcı (talep sahibi hariç) kararı "üstlenerek" verir, karar anında
+   approver_id kendine set edilir. B2 planlamasında kullanıcıya bu model
+   mi yoksa belirli-kişi-atama modeli mi istendiği soruldu — **üstlenme
+   modelinin korunması** seçildi, değişiklik yapılmadı.
+3. **Ayarlar ekranı artık CRUD destekliyor (B2).** Kategori/tür
+   ekleme-düzenleme `viewSettings()`/`openCategoryModal()`/`openTypeModal()`
+   ile yapılıyor. Kurallar: yalnız kendi tenant'ınıza ait satırlar
+   düzenlenebilir (global/tenant_id NULL satırlar salt-okunur gösterilir,
+   RLS zaten bunu zorluyor — bkz. `moc_schema_faz_b2.sql`); silme yok,
+   yalnız soft-delete (`is_active` toggle) — kullanılmış türler/kategoriler
+   asla fiziksel silinemez. **Bu SQL dosyası Supabase'de henüz
+   çalıştırılmadı, önce çalıştırılmalı.**
 4. **Acil değişiklik** yalnız UI banner + retro_hours gösterimi; state
    machine'de ayrı bir "sözlü onay" adımı/alanı yok.
-5. **Onay zinciri otomasyonu** (`moc_types.extra_approval_risk_threshold/
-   role_code`) şema kolonları hazır ama UI'da henüz kullanılmıyor —
-   onay adımları elle ekleniyor.
+5. **Onay zinciri otomasyonu (B2'de eklendi).**
+   `moc_types.extra_approval_risk_threshold`/`extra_approval_role_code`
+   Ayarlar'dan düzenlenebilir ve `ensureRiskThresholdApproval()` ile
+   kullanılıyor: `TECHNICAL_REVIEW → APPROVAL` geçişinde, herhangi bir
+   risk kaydının `risk_after`'ı eşiği geçerse ve o role_code için henüz
+   adım yoksa, otomatik bir onay adımı sona ekleniyor (Q-Tedarikçi Faz F
+   basit eşik deseniyle aynı ruhta — RPC yok, client-side kontrol).
 6. **Yeni RPC yok.** Tüm işlemler doğrudan `UPDATE`/`INSERT` + RLS ile
    yapılıyor. İleride bir `transition()` RPC'si gerekirse, 3 katmanlı
    izin kontrolünü unutma: (a) `GRANT EXECUTE ... TO authenticated`,
