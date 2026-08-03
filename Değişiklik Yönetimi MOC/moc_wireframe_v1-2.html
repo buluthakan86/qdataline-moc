@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q-MOC | Qdataline — Değişiklik Yönetimi</title>
+<style>
+  :root{
+    --q-bg-base:#0C1510;--q-bg-surface:#121D16;--q-bg-elevated:#1A2A20;--q-border:#24382C;
+    --q-accent:#34D399;--q-accent-strong:#10B981;--q-accent-soft:rgba(52,211,153,.1);
+    --q-text-primary:#E8F0EB;--q-text-secondary:#9DB4A6;--q-text-muted:#5F7A6B;--q-text-on-accent:#0C1510;
+    --q-status-active:#38BDF8;--q-status-approval:#FBBF24;--q-status-success:#34D399;
+    --q-status-danger:#F87171;--q-status-warning:#FB923C;
+    --q-radius-sm:6px;--q-radius-md:10px;--q-radius-lg:16px;
+  }
+  *{box-sizing:border-box;margin:0}
+  body{font-family:'Inter',-apple-system,'Segoe UI',sans-serif;background:var(--q-bg-base);color:var(--q-text-primary);display:flex;min-height:100vh}
+  /* --- Sidebar --- */
+  aside{width:216px;background:var(--q-bg-surface);border-right:1px solid var(--q-border);padding:20px 12px;flex-shrink:0}
+  .logo{font-size:18px;font-weight:400;letter-spacing:.5px;padding:0 10px 6px}
+  .logo b{font-weight:800;color:var(--q-accent)}
+  .modbadge{display:inline-flex;align-items:center;gap:6px;margin:0 10px 18px;padding:4px 10px;border-radius:99px;background:var(--q-accent-soft);color:var(--q-accent);font-size:11px;font-weight:800;letter-spacing:.08em}
+  .wordmark{font-weight:400;letter-spacing:.5px;color:var(--q-text-primary)}
+  .wordmark b{font-weight:800;color:var(--q-accent)}
+  .eyebrow{font-size:12px;color:var(--q-text-secondary);margin-bottom:4px}
+  .foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--q-border);font-size:11px;color:var(--q-text-muted)}
+  .foot b{color:var(--q-text-secondary)}
+  .nav a{display:block;padding:9px 12px;border-radius:var(--q-radius-sm);color:var(--q-text-secondary);text-decoration:none;font-size:13px;margin-bottom:2px}
+  .nav a.on{background:var(--q-accent-soft);color:var(--q-accent);font-weight:600}
+  .nav .grp{font-size:10px;letter-spacing:.12em;color:var(--q-text-muted);padding:16px 12px 6px;text-transform:uppercase}
+  /* --- Main --- */
+  main{flex:1;padding:26px 30px;max-width:1200px}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+  h1{font-size:20px;font-weight:700}
+  .btn{background:var(--q-accent);color:var(--q-text-on-accent);border:none;padding:9px 16px;border-radius:var(--q-radius-sm);font-weight:700;font-size:13px;cursor:pointer}
+  .btn:hover{background:var(--q-accent-strong)}
+  .btn.ghost{background:transparent;color:var(--q-text-secondary);border:1px solid var(--q-border)}
+  /* --- Uyarı bandı --- */
+  .warnband{display:flex;gap:10px;align-items:center;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.35);color:var(--q-status-warning);padding:10px 14px;border-radius:var(--q-radius-md);font-size:13px;margin-bottom:20px}
+  /* --- KPI kartları --- */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px}
+  .kpi{background:var(--q-bg-surface);border:1px solid var(--q-border);border-radius:var(--q-radius-md);padding:14px 16px}
+  .kpi .v{font-size:26px;font-weight:800;margin:4px 0 2px}
+  .kpi .l{font-size:11px;color:var(--q-text-secondary);text-transform:uppercase;letter-spacing:.06em}
+  .kpi .s{font-size:11px;color:var(--q-text-muted)}
+  .kpi.red .v{color:var(--q-status-danger)} .kpi.amb .v{color:var(--q-status-approval)} .kpi.grn .v{color:var(--q-accent)}
+  /* --- Tablo --- */
+  .card{background:var(--q-bg-surface);border:1px solid var(--q-border);border-radius:var(--q-radius-lg);overflow:hidden}
+  .card h2{font-size:13px;padding:14px 18px;border-bottom:1px solid var(--q-border);color:var(--q-text-secondary);letter-spacing:.06em;text-transform:uppercase}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{color:var(--q-text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  th,td{text-align:left;padding:11px 18px;border-bottom:1px solid var(--q-border)}
+  tr:last-child td{border:none}
+  tr:hover td{background:var(--q-bg-elevated)}
+  .badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;background:var(--q-accent-soft)}
+  .b-act{color:var(--q-status-active)} .b-app{color:var(--q-status-approval)} .b-ok{color:var(--q-status-success)}
+  .b-wrn{color:var(--q-status-warning)} .b-red{color:var(--q-status-danger)}
+  .risk{display:inline-flex;width:30px;height:22px;align-items:center;justify-content:center;border-radius:var(--q-radius-sm);font-weight:800;font-size:11px;color:var(--q-text-on-accent)}
+  .r-l{background:var(--q-status-success)} .r-m{background:var(--q-status-approval)} .r-h{background:var(--q-status-warning)} .r-c{background:var(--q-status-danger)}
+  /* --- Form görünümü --- */
+  .form{display:none;max-width:640px}
+  .form.show{display:block}
+  .dash.hide{display:none}
+  fieldset{border:1px solid var(--q-border);border-radius:var(--q-radius-md);background:var(--q-bg-surface);padding:18px;margin-bottom:16px}
+  legend{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--q-accent);padding:0 8px;font-weight:700}
+  label{display:block;font-size:12px;color:var(--q-text-secondary);margin:12px 0 5px}
+  input,select,textarea{width:100%;background:var(--q-bg-base);border:1px solid var(--q-border);border-radius:var(--q-radius-sm);color:var(--q-text-primary);padding:9px 11px;font-size:13px;font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--q-accent);border-color:transparent}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .hint{font-size:11px;color:var(--q-text-muted);margin-top:4px}
+  .steps{display:flex;gap:6px;margin-bottom:20px;font-size:11px;color:var(--q-text-muted)}
+  .steps span{padding:5px 12px;border-radius:99px;border:1px solid var(--q-border)}
+  .steps .cur{background:var(--q-accent-soft);color:var(--q-accent);border-color:transparent;font-weight:700}
+  @media(max-width:760px){aside{display:none}main{padding:16px}}
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="logo">Q<b>data</b>line</div>
+  <div class="modbadge"><span class="wordmark" style="font-size:11px">Q<b>data</b>line</span> · Q-MOC</div>
+  <nav class="nav">
+    <div class="grp">Modüller</div>
+    <a href="#">Ekipman Yönetimi</a>
+    <a href="#" class="on">Q-MOC — Değişiklik Yönetimi</a>
+    <a href="#">Kimyasal</a>
+    <a href="#">Sarf</a>
+    <div class="grp">Q-MOC</div>
+    <a href="#" class="on" onclick="show('dash');return false">Panel</a>
+    <a href="#" onclick="show('form');return false">Yeni Talep</a>
+    <a href="#">Geçici Değişiklikler</a>
+    <a href="#">Onaylarım</a>
+    <a href="#">Raporlar</a>
+  </nav>
+</aside>
+
+<main>
+  <!-- ================= DASHBOARD ================= -->
+  <section class="dash" id="dash">
+    <div class="top">
+      <div><div class="eyebrow wordmark" style="font-size:13px">Q<b>data</b>line</div><h1>Q-MOC Paneli</h1></div>
+      <button class="btn" onclick="show('form')">+ Yeni Talep</button>
+    </div>
+
+    <div class="warnband">⚠️ <b>2 geçici değişikliğin</b> süresi 7 gün içinde doluyor — MOC-2026-0007, MOC-2026-0011</div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="l">Açık MOC</div><div class="v">14</div><div class="s">6 akış toplamı</div></div>
+      <div class="kpi amb"><div class="l">Bekleyen Onayım</div><div class="v">3</div><div class="s">en eski: 4 gün</div></div>
+      <div class="kpi red"><div class="l">Süresi Geçen Geçici</div><div class="v">1</div><div class="s">hedef: 0</div></div>
+      <div class="kpi grn"><div class="l">Ort. Kapanış</div><div class="v">18g</div><div class="s">son 90 gün</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Açık Talepler</h2>
+      <table>
+        <tr><th>MOC No</th><th>Başlık</th><th>Kategori</th><th>Akış</th><th>Risk</th><th>Durum</th><th>Sorumlu</th></tr>
+        <tr><td>MOC-2026-0014</td><td>P-101 pompa kapasite artışı</td><td>Ekipman</td><td>Kalıcı</td><td><span class="risk r-h">12</span></td><td><span class="badge b-app">Onayda</span></td><td>A. Yılmaz</td></tr>
+        <tr><td>MOC-2026-0013</td><td>Yeni ürün deneme reçetesi R-45</td><td>Yeni Ürün</td><td>Kalıcı</td><td><span class="risk r-m">6</span></td><td><span class="badge b-act">Teknik İnceleme</span></td><td>B. Demir</td></tr>
+        <tr><td>MOC-2026-0011</td><td>Hat-3 geçici by-pass</td><td>Proses</td><td>Geçici</td><td><span class="risk r-h">10</span></td><td><span class="badge b-wrn">Süre T-5</span></td><td>C. Kaya</td></tr>
+        <tr><td>MOC-2026-0009</td><td>Acil valf değişimi V-207</td><td>Ekipman</td><td>Acil</td><td><span class="risk r-c">16</span></td><td><span class="badge b-red">Geriye Dönük Dosya</span></td><td>D. Şahin</td></tr>
+        <tr><td>MOC-2026-0006</td><td>İşletme prosedürü rev.4</td><td>Prosedür</td><td>Prosedürel</td><td><span class="risk r-l">3</span></td><td><span class="badge b-ok">PSSR</span></td><td>E. Arslan</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= YENİ TALEP FORMU ================= -->
+  <section class="form" id="form">
+    <div class="top">
+      <h1>Yeni Değişiklik Talebi</h1>
+      <button class="btn ghost" onclick="show('dash')">← Panele dön</button>
+    </div>
+
+    <div class="steps">
+      <span class="cur">1 · Talep</span><span>2 · Ön Tarama</span><span>3 · Risk</span><span>4 · Onay</span><span>5 · Uygulama</span><span>6 · PSSR</span>
+    </div>
+
+    <fieldset>
+      <legend>Değişiklik Bilgisi</legend>
+      <label>Başlık</label>
+      <input placeholder="Örn: P-101 pompa kapasite artışı">
+      <div class="row2">
+        <div>
+          <label>Kategori</label>
+          <select><option>Ekipman</option><option>Proses</option><option>Kimyasal / Hammadde</option><option>Yeni Ürün Geliştirme</option><option>Proje</option><option>Prosedür / Doküman</option><option>Organizasyonel</option><option>Yazılım / Otomasyon</option></select>
+        </div>
+        <div>
+          <label>Akış Türü</label>
+          <select onchange="tmp(this)"><option>Kalıcı Değişiklik</option><option>Geçici Değişiklik</option><option>Acil Değişiklik</option><option>Birebir Yenileme (RIK)</option><option>Organizasyonel (MOOC)</option><option>Prosedürel</option></select>
+        </div>
+      </div>
+      <label>Gerekçe</label>
+      <textarea rows="3" placeholder="Değişiklik neden gerekli?"></textarea>
+    </fieldset>
+
+    <fieldset>
+      <legend>Kapsam</legend>
+      <div class="row2">
+        <div><label>Etkilenen Ünite</label><input placeholder="Örn: Üretim Hat-3"></div>
+        <div><label>İlgili Varlık / Ekipman</label><input placeholder="Ekipman seç veya tag no yaz… (P-101)"><div class="hint">Ekipman modülü lisanslıysa seçici, değilse serbest metin (asset_ref)</div></div>
+      </div>
+      <div class="row2">
+        <div><label>Planlanan Başlangıç</label><input type="date"></div>
+        <div id="endwrap" style="display:none"><label>Bitiş Tarihi <span style="color:var(--q-status-warning)">*geçicide zorunlu</span></label><input type="date"></div>
+      </div>
+    </fieldset>
+
+    <button class="btn">Taramaya Gönder</button>
+    <button class="btn ghost">Taslak Kaydet</button>
+  </section>
+
+  <div class="foot">© 2026 <span class="wordmark" style="font-size:12px">Q<b>data</b>line</span> · <b>Q-MOC</b> Değişiklik Yönetimi Modülü · EKİPMAN · KİMYASAL · SARF · Q-MOC</div>
+</main>
+
+<script>
+function show(id){
+  document.getElementById('dash').classList.toggle('hide', id!=='dash');
+  document.getElementById('form').classList.toggle('show', id==='form');
+}
+function tmp(sel){
+  document.getElementById('endwrap').style.display = sel.value.includes('Geçici') ? 'block' : 'none';
+}
+</script>
+</body>
+</html>

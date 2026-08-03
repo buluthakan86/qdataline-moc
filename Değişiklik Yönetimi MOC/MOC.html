@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Değişiklik Yönetimi · Qdataline</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-104 -185 380 380'%3E%3Ccircle cx='0' cy='0' r='86' fill='none' stroke='%2310B981' stroke-width='20' stroke-linecap='round' stroke-dasharray='470 71' stroke-dashoffset='-38' transform='rotate(45)'/%3E%3Cpath d='M 42 42 L 96 96 L 148 96 L 180 52 L 214 82 L 258 30' fill='none' stroke='%2384CC16' stroke-width='20' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+/* ============================================================================
+   MOC (Değişiklik Yönetimi) — TASARIM_STANDARDI.md §1-§8 birebir uygulanmış
+   ========================================================================= */
+:root{
+  color-scheme:dark;
+  --forest:#10241B; --forest-2:#7CD3AD; --forest-3:#1E6B52;
+  --leaf:#10B981; --leaf-d:#34D399; --lime:#A3E635; --ink-on-accent:#07120C;
+  --sand:#0C1510; --card:#121A15; --mint:#14261C; --mint-2:#101A14;
+  --line:#1E2B22; --line-2:#19241D;
+  --ink:#F2FBF6; --muted:#8FA397; --accent:#D9C06A;
+  --ok:#34D399;   --ok-bg:rgba(16,185,129,.14);
+  --warn:#F0A93B; --warn-bg:rgba(240,169,59,.14);
+  --crit:#F87171; --crit-bg:rgba(248,113,113,.14);
+  --miss:#93A79B; --miss-bg:rgba(147,167,155,.12);
+  --na:#5E7268;   --na-bg:rgba(94,114,104,.18);
+  --blue:#6FABEF;   --blue-bg:rgba(96,165,250,.14);
+  --purple:#B9A5F2; --purple-bg:rgba(167,139,250,.15);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28);
+  --bar-track:#243129; --sb-thumb:#22332A; --sb-thumb-h:#2E4437;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--sand);color:var(--ink);font-family:"Inter","Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.45}
+h1,h2,h3,h4{font-family:"Space Grotesk","Inter","Segoe UI",system-ui,sans-serif;letter-spacing:.2px;margin:0}
+::-webkit-scrollbar{width:11px;height:11px}
+::-webkit-scrollbar-track{background:var(--bar-track)}
+::-webkit-scrollbar-thumb{background:var(--sb-thumb);border-radius:6px}
+::-webkit-scrollbar-thumb:hover{background:var(--sb-thumb-h)}
+
+/* ---- Login ---- */
+#loginScreen{display:flex;min-height:100vh;align-items:center;justify-content:center;background:var(--sand)}
+.login-box{width:340px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:var(--shadow)}
+.login-box h1{font-size:18px;margin-bottom:4px}
+.login-box .s{font-size:12px;color:var(--muted);margin-bottom:18px}
+.login-box label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px}
+.login-box input{width:100%;background:var(--sand);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 11px;font-size:13px;font-family:inherit}
+.login-box input:focus{outline:2px solid var(--leaf);border-color:transparent}
+#loginMsg{font-size:12px;color:var(--warn);min-height:16px;margin-top:10px}
+
+/* ---- Shell ---- */
+#app{display:none;min-height:100vh}
+aside.side{width:248px;flex-shrink:0;background:var(--card);color:var(--ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;border-right:1px solid var(--line);overflow-y:auto;transition:width .18s ease}
+aside.side.collapsed{width:66px}
+.brand{padding:15px 15px 12px;border-bottom:1px solid var(--line-2)}
+.logo-row{display:flex;align-items:center;gap:11px}
+.logo-mark{width:54px;height:32px;flex-shrink:0}
+.logo-txt .n{font-size:16px;font-weight:500;letter-spacing:.5px;color:var(--ink);line-height:1}
+.logo-txt .n b{font-weight:700;background:linear-gradient(90deg,#10B981,#A3E635);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.logo-txt .s{font-size:9.5px;color:var(--muted);letter-spacing:.4px;margin-top:3px;text-transform:uppercase}
+.brand-toggle{cursor:pointer;position:relative}
+.brand-toggle:hover .logo-txt .n{filter:brightness(1.12)}
+.brand-toggle::after{content:"‹‹";position:absolute;top:14px;right:12px;font-size:13px;color:var(--muted);font-weight:800;line-height:1}
+.side.collapsed .brand-toggle::after{content:"››";right:0;left:0;text-align:center;top:auto;bottom:-2px}
+.side.collapsed .logo-txt,.side.collapsed .nav-lbl,.side.collapsed .cnt{display:none}
+.side-search{margin-top:10px}
+.side-search input{width:100%;background:var(--sand);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:7px 10px;font-size:12.5px;font-family:inherit}
+.side.collapsed .side-search{display:none}
+nav.snav{padding:6px 10px 14px}
+.nav-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#5F7266;font-weight:700;padding:12px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;color:#C9D8CF;font-size:13px;font-weight:600;border:none;background:transparent;width:100%;text-align:left;transition:.13s;margin-bottom:2px;cursor:pointer}
+.nav-item .ico{width:19px;height:19px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+.nav-item:hover{background:var(--mint-2)}
+.nav-item.on{background:var(--mint);color:var(--ink);box-shadow:inset 3px 0 0 var(--leaf)}
+.nav-item .cnt{margin-left:auto;font-size:11px;padding:1px 8px;border-radius:20px;font-weight:800;background:#1C2A21;color:#AFC6B8}
+.nav-item .cnt.warn{background:var(--warn-bg);color:var(--warn)}
+.nav-item .cnt.crit{background:var(--crit-bg);color:var(--crit)}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{background:var(--card);border-bottom:1px solid var(--line);padding:14px 26px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:40;flex-wrap:wrap}
+.topbar h1{font-size:16px;font-weight:700}
+.topbar .crumb{font-size:12px;color:var(--muted)}
+.topbar .sp{flex:1}
+#userLabel{font-size:12px;color:var(--muted)}
+.content{padding:24px 26px;max-width:1580px;width:100%}
+
+/* ---- Butonlar ---- */
+button,.btn{font-family:inherit;font-size:12.5px;font-weight:600;border-radius:8px;border:1px solid transparent;padding:8px 14px;transition:.12s;cursor:pointer;white-space:nowrap}
+.btn-leaf{background:linear-gradient(135deg,#059669,#84CC16);color:var(--ink-on-accent);font-weight:700}
+.btn-leaf:hover{background:linear-gradient(135deg,#10B981,#A3E635)}
+.btn-line{background:var(--card);color:var(--ink);border-color:var(--line)}
+.btn-line:hover{border-color:var(--leaf);color:var(--leaf-d)}
+.btn-crit{background:var(--crit);color:#1a0d0d;font-weight:700}
+.btn-crit:hover{filter:brightness(1.1)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.sm{padding:5px 10px;font-size:11.5px}
+
+/* ---- Kartlar ---- */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px}
+.panel .ph{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.panel .ph h2{font-size:15px}
+.panel .pb{padding:16px 18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:15px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--leaf)}
+.kpi.warn::before{background:var(--warn)} .kpi.crit::before{background:var(--crit)}
+.kpi .val{font-size:30px;font-weight:800;letter-spacing:-.5px}
+.kpi .lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:4px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px}
+
+/* ---- Tablo ---- */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line-2)}
+tr:last-child td{border:none}
+tr.rowclk:hover td{background:var(--mint-2);cursor:pointer}
+.empty{padding:30px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ---- Rozet / pill ---- */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.crit{background:var(--crit-bg);color:var(--crit)} .pill.blue{background:var(--blue-bg);color:var(--blue)}
+.pill.purple{background:var(--purple-bg);color:var(--purple)} .pill.na{background:var(--na-bg);color:var(--na)}
+.pill.miss{background:var(--miss-bg);color:var(--miss)}
+
+/* ---- Form ---- */
+fieldset{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:18px;margin-bottom:16px}
+legend{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--leaf-d);padding:0 8px;font-weight:700}
+label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px}
+input,select,textarea{width:100%;background:var(--sand);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:9px 11px;font-size:13px;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--leaf);border-color:transparent}
+textarea{resize:vertical;min-height:70px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.hint{font-size:11px;color:var(--muted);margin-top:4px}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);cursor:pointer;margin-top:8px}
+.chk input{width:auto}
+
+/* ---- Uyarı bandı ---- */
+.alert-chip{display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:12px;font-size:13px;margin-bottom:16px;border-left:4px solid var(--warn);background:var(--warn-bg);color:var(--warn)}
+.alert-chip.crit{border-color:var(--crit);background:var(--crit-bg);color:var(--crit)}
+.alert-chip.blue{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}
+
+/* ---- Modal ---- */
+.overlay{position:fixed;inset:0;background:rgba(3,9,6,.68);display:none;z-index:90}
+.overlay.on{display:block}
+.modal-wrap{position:fixed;inset:0;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:91}
+.modal-wrap.on{display:flex}
+.modal{background:var(--card);border-radius:14px;width:100%;max-width:640px;box-shadow:0 24px 60px rgba(0,0,0,.6);overflow:hidden}
+.modal.wide{max-width:920px}
+.modal .mh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.modal .mh h2{font-size:15px}
+.modal .mb{padding:18px 20px;max-height:70vh;overflow-y:auto}
+.modal .mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+
+.detail-grid{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+@media(max-width:980px){.detail-grid{grid-template-columns:1fr}}
+.step-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:11px;font-weight:800;background:var(--mint);color:var(--muted);flex-shrink:0}
+.step-badge.done{background:var(--ok-bg);color:var(--ok)}
+.step-badge.act{background:var(--leaf);color:var(--ink-on-accent)}
+.approval-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line-2)}
+.approval-row:last-child{border:none}
+.risk-cell{display:inline-flex;width:30px;height:22px;align-items:center;justify-content:center;border-radius:6px;font-weight:800;font-size:11px;color:#07120C}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--card);border:1px solid var(--line);color:var(--ink);padding:10px 18px;border-radius:10px;font-size:13px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.2s;z-index:99}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{border-color:var(--crit);color:var(--crit)}
+
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.view{animation:fade .18s ease}
+</style>
+</head>
+<body>
+
+<!-- ============================ LOGIN ============================ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <h1>Q<b style="background:linear-gradient(90deg,#10B981,#A3E635);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">data</b>line</h1>
+    <div class="s">Değişiklik Yönetimi (MOC)</div>
+    <form id="loginForm">
+      <label>E-posta</label>
+      <input id="loginEmail" type="email" autocomplete="username" required>
+      <label>Şifre</label>
+      <input id="loginPass" type="password" autocomplete="current-password" required>
+      <button type="submit" class="btn-leaf" style="width:100%;margin-top:18px;padding:10px">Giriş Yap</button>
+      <div id="loginMsg"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================ APP ============================ -->
+<div id="app">
+  <aside class="side" id="side">
+    <div class="brand">
+      <div class="logo-row brand-toggle" id="brandToggle" title="Menüyü aç / kapat" role="button" tabindex="0">
+        <svg class="logo-mark" viewBox="-104 -108 384 224" aria-label="Qdataline">
+          <circle cx="0" cy="0" r="86" fill="none" stroke="#10B981" stroke-width="20" stroke-linecap="round" stroke-dasharray="470 71" stroke-dashoffset="-38" transform="rotate(45)"/>
+          <path d="M 42 42 L 96 96 L 148 96 L 180 52 L 214 82 L 258 30" fill="none" stroke="#84CC16" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="logo-txt">
+          <div class="n">Q<b>data</b>line</div>
+          <div class="s">Değişiklik Yönetimi</div>
+        </div>
+      </div>
+      <div class="side-search"><input id="sideSearch" placeholder="MOC no / başlık ara…"></div>
+    </div>
+    <nav class="snav" id="snav"></nav>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="pageTitle">Taleplerim</h1>
+      <span class="crumb" id="pageCrumb"></span>
+      <div class="sp"></div>
+      <button class="btn-leaf" id="btnNewRequest">+ Yeni Değişiklik Talebi</button>
+      <span id="userLabel"></span>
+      <button class="btn-line sm" id="btnLogout">Çıkış</button>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- ============================ MODAL ============================ -->
+<div class="overlay" id="overlay"></div>
+<div class="modal-wrap" id="modalWrap">
+  <div class="modal" id="modalBox">
+    <div class="mh"><h2 id="modalTitle"></h2></div>
+    <div class="mb" id="modalBody"></div>
+    <div class="mf">
+      <button class="btn-line" id="modalCancel">Kapat</button>
+      <button class="btn-leaf" id="modalSave" style="display:none"></button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================================
+   MOC — Config (Ekipman projesiyle AYNI Supabase projesi: bbltvuxxtacrpgrqnfoh)
+   ========================================================================= */
+var SUPABASE_URL = 'https://bbltvuxxtacrpgrqnfoh.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_3UUYAbeaA4tJahYiAAGhLQ_AtDfHkq4';
+var MOC_MODUL = 'moc';
+
+var sb = null;
+try{ if(window.supabase && /^https:\/\//.test(SUPABASE_URL)) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){}
+
+var cloudUser='', cloudUserId=null, cloudTenantId=null, cloudRole='VIEWER', cloudFullName='';
+
+/* ============================================================================
+   RBAC — basitleştirilmiş eşleme (bkz. CLAUDE.md "Bilinen sınırlamalar")
+   Platformun paylaşılan profiles.role kolonu (ADMIN/EDITOR/VIEWER) kullanılır;
+   moc_rbac_matrix_v1.md'deki 14 ayrı izin kodu yerine 3 kademeye indirgendi.
+   Kayıt-seviyesi kurallar (kendi talebini onaylayamama, atanmış onaycı vb.)
+   tam olarak uygulanıyor — bkz. canDecideApproval().
+   ========================================================================= */
+function canDo(action){
+  // action: 'create' | 'screen' | 'coordinate' | 'risk' | 'review' | 'pssr' | 'close' | 'admin' | 'reopen'
+  if(cloudRole==='ADMIN') return true;
+  if(cloudRole==='EDITOR') return action!=='admin' && action!=='reopen';
+  return action==='create'; // VIEWER = taban izin (herkes MOC başlatabilir)
+}
+function isOwner(req){ return req && req.initiator_id===cloudUserId; }
+function canEditDraft(req){ return isOwner(req) || canDo('coordinate'); }
+
+/* ============================================================================
+   DURUM MAKİNESİ — moc_state_machine_v1.md §3 (tek doğruluk kaynağı)
+   Her giriş: { to, action, cond(req,ctx) } — cond opsiyonel.
+   ========================================================================= */
+var TRANSITIONS = {
+  DRAFT:            [ {to:'SCREENING', action:'create', cond:condDraftReady},
+                       {to:'CANCELLED', action:'create'} ],
+  SCREENING:        [ {to:'RISK_ASSESSMENT', action:'screen'},
+                       {to:'CLOSED', action:'screen', cond:function(r){return !!r.is_rik;}},
+                       {to:'REJECTED', action:'screen', cond:function(r){return !!(r.reason&&r.reason.trim());}} ],
+  RISK_ASSESSMENT:  [ {to:'TECHNICAL_REVIEW', action:'risk', cond:function(r,ctx){return (ctx.risks||[]).length>0;}} ],
+  TECHNICAL_REVIEW: [ {to:'APPROVAL', action:'review'},
+                       {to:'RISK_ASSESSMENT', action:'review'} ],
+  APPROVAL:         [ ], // sistem otomatik ilerletir (bkz. checkApprovalAuto)
+  IMPLEMENTATION:   [ {to:'DOC_UPDATE', action:'coordinate', cond:condActionsDone('IMPLEMENTATION')} ],
+  DOC_UPDATE:       [ {to:'TRAINING', action:'coordinate'} ],
+  TRAINING:         [ {to:'PSSR', action:'coordinate', cond:function(r,ctx){return !!(ctx.type&&ctx.type.requires_pssr);}},
+                       {to:'STARTUP', action:'coordinate', cond:function(r,ctx){return !(ctx.type&&ctx.type.requires_pssr);}} ],
+  PSSR:             [ {to:'STARTUP', action:'pssr', cond:function(r,ctx){return ctx.pssr&&ctx.pssr.result==='RELEASED';}},
+                       {to:'IMPLEMENTATION', action:'pssr', cond:function(r,ctx){return ctx.pssr&&ctx.pssr.result==='NOT_RELEASED';}} ],
+  STARTUP:          [ {to:'CLOSED', action:'close', cond:condNoOpenActions} ],
+  CLOSED:[], REJECTED:[], CANCELLED:[]
+};
+function condDraftReady(r){
+  if(!r.title || !r.category_id || !r.type_id) return false;
+  return true; // planned_end zorunluluğu form katmanında ayrıca doğrulanır
+}
+function condActionsDone(phase){
+  return function(r,ctx){
+    var items=(ctx.actions||[]).filter(function(a){return a.phase===phase;});
+    return items.length===0 || items.every(function(a){return a.status==='DONE'||a.status==='CANCELLED';});
+  };
+}
+function condNoOpenActions(r,ctx){
+  return (ctx.actions||[]).every(function(a){return a.status==='DONE'||a.status==='CANCELLED';});
+}
+
+var STATUS_LABEL = {DRAFT:'Taslak',SCREENING:'Ön Tarama',RISK_ASSESSMENT:'Risk Değerlendirme',
+  TECHNICAL_REVIEW:'Teknik İnceleme',APPROVAL:'Onay',IMPLEMENTATION:'Uygulama',DOC_UPDATE:'Doküman Güncelleme',
+  TRAINING:'Eğitim/Bilgilendirme',PSSR:'PSSR',STARTUP:'Devreye Alma',CLOSED:'Kapandı',REJECTED:'Reddedildi',CANCELLED:'İptal'};
+var STATUS_PILL = {DRAFT:'na',SCREENING:'blue',RISK_ASSESSMENT:'warn',TECHNICAL_REVIEW:'warn',
+  APPROVAL:'warn',IMPLEMENTATION:'blue',DOC_UPDATE:'blue',TRAINING:'blue',PSSR:'purple',
+  STARTUP:'blue',CLOSED:'ok',REJECTED:'crit',CANCELLED:'miss'};
+
+/* ============================================================================
+   Auth (Ekipman/Gıda/Q-Tedarikçi ile aynı desen: profiles + modul_yetki)
+   ========================================================================= */
+function loginMsg(t){ var m=document.getElementById('loginMsg'); if(m) m.textContent=t||''; }
+function afterLogin(session){
+  cloudUser=(session&&session.user&&session.user.email)||'';
+  cloudUserId=session&&session.user&&session.user.id;
+  loginMsg('Giriş doğrulanıyor…');
+  sb.from('profiles').select('tenant_id,full_name,role,is_active').eq('id',cloudUserId).maybeSingle().then(function(res){
+    var p=res.data;
+    if(res.error||!p||!p.tenant_id){ loginMsg('Hesabınız bir firmaya bağlı değil.'); return; }
+    if(p.is_active===false){ loginMsg('Hesabınız pasif.'); return; }
+    cloudTenantId=p.tenant_id; cloudRole=p.role||'VIEWER'; cloudFullName=p.full_name||'';
+    sb.from('modul_yetki').select('modul').eq('user_id',cloudUserId).eq('modul',MOC_MODUL).maybeSingle().then(function(mr){
+      if(mr.error||!mr.data){ loginMsg('Bu hesabın Değişiklik Yönetimi (MOC) modülüne erişimi yok.'); return; }
+      loginMsg('Veriler yükleniyor…');
+      loadLookups().then(function(){
+        document.getElementById('loginScreen').style.display='none';
+        document.getElementById('app').style.display='flex';
+        document.getElementById('userLabel').textContent=(cloudFullName?cloudFullName+' · ':'')+cloudUser+' · '+cloudRole;
+        renderNav(); go('mine');
+      });
+    });
+  });
+}
+function cloudInit(){
+  document.getElementById('loginScreen').style.display='flex';
+  if(!sb){ loginMsg('Supabase yapılandırılmadı.'); return; }
+  loginMsg('Bağlanıyor…');
+  sb.auth.getSession().then(function(r){ var s=r.data&&r.data.session; if(s) afterLogin(s); else loginMsg(''); });
+}
+
+/* ============================================================================
+   Lookup verisi (kategoriler, türler)
+   ========================================================================= */
+var CATEGORIES=[], TYPES=[];
+function loadLookups(){
+  return Promise.all([
+    sb.from('moc_change_categories').select('*').eq('is_active',true).order('sort_order'),
+    sb.from('moc_types').select('*').eq('is_active',true)
+  ]).then(function(res){
+    CATEGORIES = res[0].data||[]; TYPES = res[1].data||[];
+  });
+}
+function typeById(id){ return TYPES.find(function(t){return t.id===id;}); }
+function catById(id){ return CATEGORIES.find(function(c){return c.id===id;}); }
+
+/* ============================================================================
+   Nav
+   ========================================================================= */
+var CURRENT_VIEW='mine', CURRENT_ID=null;
+function renderNav(){
+  var html='<div class="nav-lbl">MOC</div>'
+    +navItem('mine','📋','Taleplerim')
+    +navItem('pending','✅','Onay Bekleyenler')
+    +navItem('all','🗂️','Tüm Değişiklikler');
+  if(canDo('admin')) html+=navItem('settings','⚙️','Ayarlar');
+  document.getElementById('snav').innerHTML=html;
+  Array.prototype.forEach.call(document.querySelectorAll('.nav-item[data-v]'),function(el){
+    el.onclick=function(){ go(el.getAttribute('data-v')); };
+  });
+}
+function navItem(v,ico,lbl){ return '<button class="nav-item'+(CURRENT_VIEW===v?' on':'')+'" data-v="'+v+'"><span class="ico">'+ico+'</span>'+lbl+'</button>'; }
+function go(view,id){
+  CURRENT_VIEW=view; CURRENT_ID=id||null;
+  renderNav();
+  if(view==='mine') viewList('mine');
+  else if(view==='pending') viewList('pending');
+  else if(view==='all') viewList('all');
+  else if(view==='settings') viewSettings();
+  else if(view==='detail') viewDetail(id);
+}
+
+/* ============================================================================
+   Liste görünümleri
+   ========================================================================= */
+function viewList(kind){
+  document.getElementById('pageTitle').textContent = kind==='mine'?'Taleplerim':kind==='pending'?'Onay Bekleyenler':'Tüm Değişiklikler';
+  document.getElementById('pageCrumb').textContent='';
+  document.getElementById('content').innerHTML='<div class="empty">Yükleniyor…</div>';
+
+  if(kind==='pending'){
+    sb.from('moc_approvals').select('*, moc_requests(*)').is('decision',null).eq('approver_id',cloudUserId)
+      .then(function(res){ renderApprovalQueue(res.data||[]); });
+    return;
+  }
+  var q = sb.from('moc_requests').select('*').order('created_at',{ascending:false});
+  if(kind==='mine') q = q.eq('initiator_id',cloudUserId);
+  q.then(function(res){ renderRequestTable(res.data||[], kind); });
+}
+function renderApprovalQueue(rows){
+  if(!rows.length){ document.getElementById('content').innerHTML='<div class="panel"><div class="empty">Bekleyen onayınız yok.</div></div>'; return; }
+  var body=rows.map(function(a){
+    var r=a.moc_requests;
+    return '<tr class="rowclk" data-id="'+r.id+'"><td>'+esc(r.moc_no||('#'+r.id))+'</td><td>'+esc(r.title)+'</td>'
+      +'<td>Adım '+a.step_order+' · '+esc(a.role_code)+'</td><td>'+statusPill(r.status)+'</td></tr>';
+  }).join('');
+  document.getElementById('content').innerHTML='<div class="panel"><table><thead><tr><th>MOC No</th><th>Başlık</th><th>Onay Adımı</th><th>Durum</th></tr></thead><tbody>'+body+'</tbody></table></div>';
+  bindRowClicks();
+}
+function renderRequestTable(rows, kind){
+  if(!rows.length){ document.getElementById('content').innerHTML='<div class="panel"><div class="empty">Kayıt yok.</div></div>'; return; }
+  var body=rows.map(function(r){
+    var t=typeById(r.type_id), c=catById(r.category_id);
+    var tempBadge='';
+    if(t&&t.requires_end_date&&r.planned_end&&!['CLOSED','REJECTED','CANCELLED'].includes(r.status)){
+      tempBadge=' '+tempWarnPill(r.planned_end);
+    }
+    return '<tr class="rowclk" data-id="'+r.id+'">'
+      +'<td>'+esc(r.moc_no||('#'+r.id))+'</td>'
+      +'<td>'+esc(r.title)+'</td>'
+      +'<td>'+(c?esc(c.name_tr):'—')+'</td>'
+      +'<td>'+(t?esc(t.name_tr):'—')+'</td>'
+      +'<td>'+statusPill(r.status)+tempBadge+'</td>'
+      +'<td>'+(r.priority==='EMERGENCY'?'<span class="pill crit">Acil</span>':'')+'</td>'
+      +'</tr>';
+  }).join('');
+  document.getElementById('content').innerHTML='<div class="panel"><table><thead><tr><th>MOC No</th><th>Başlık</th><th>Kategori</th><th>Akış Türü</th><th>Durum</th><th></th></tr></thead><tbody>'+body+'</tbody></table></div>';
+  bindRowClicks();
+}
+function bindRowClicks(){
+  Array.prototype.forEach.call(document.querySelectorAll('tr.rowclk'),function(tr){
+    tr.onclick=function(){ go('detail', Number(tr.getAttribute('data-id'))); };
+  });
+}
+function statusPill(s){ return '<span class="pill '+(STATUS_PILL[s]||'na')+'">'+(STATUS_LABEL[s]||s)+'</span>'; }
+function tempWarnPill(expires){
+  var d=daysLeft(expires);
+  if(d<0) return '<span class="pill crit">Süresi geçti ('+Math.abs(d)+' gün)</span>';
+  if(d<=1) return '<span class="pill crit">T-'+d+' · son gün</span>';
+  if(d<=7) return '<span class="pill warn">T-'+d+' gün</span>';
+  return '';
+}
+function daysLeft(iso){ var t=new Date(todayISO()+'T00:00:00'), e=new Date(iso+'T00:00:00'); return Math.round((e-t)/86400000); }
+
+/* ============================================================================
+   Detay görünümü
+   ========================================================================= */
+var DETAIL_CTX={};
+function viewDetail(id){
+  document.getElementById('content').innerHTML='<div class="empty">Yükleniyor…</div>';
+  Promise.all([
+    sb.from('moc_requests').select('*').eq('id',id).maybeSingle(),
+    sb.from('moc_risk_assessments').select('*').eq('moc_id',id).order('created_at'),
+    sb.from('moc_approvals').select('*').eq('moc_id',id).order('step_order'),
+    sb.from('moc_action_items').select('*').eq('moc_id',id).order('created_at'),
+    sb.from('moc_pssr_checklists').select('*').eq('moc_id',id).eq('is_template',false).maybeSingle(),
+    sb.from('moc_temporary_tracking').select('*').eq('moc_id',id).maybeSingle()
+  ]).then(function(res){
+    var req=res[0].data;
+    if(!req){ document.getElementById('content').innerHTML='<div class="empty">Kayıt bulunamadı.</div>'; return; }
+    DETAIL_CTX = { req:req, risks:res[1].data||[], approvals:res[2].data||[], actions:res[3].data||[],
+                   pssr:res[4].data||null, temp:res[5].data||null, type:typeById(req.type_id), category:catById(req.category_id) };
+    document.getElementById('pageTitle').textContent = req.moc_no || ('MOC #'+req.id);
+    document.getElementById('pageCrumb').textContent = req.title;
+    renderDetail();
+  });
+}
+function renderDetail(){
+  var ctx=DETAIL_CTX, req=ctx.req, t=ctx.type, c=ctx.category;
+  var html='<div class="view">';
+
+  if(req.priority==='EMERGENCY'){
+    html+='<div class="alert-chip crit">⚠ ACİL DEĞİŞİKLİK — sözlü ön onayla uygulanmış olabilir. Geriye dönük tam MOC dosyası, oluşturulma anından itibaren '
+      +(t&&t.retro_hours?t.retro_hours:72)+' saat içinde (RISK_ASSESSMENT → APPROVAL) tamamlanmalı. Oluşturulma: '+fmtDT(req.created_at)+'</div>';
+  }
+  if(t&&t.requires_end_date&&req.planned_end&&!['CLOSED','REJECTED','CANCELLED'].includes(req.status)){
+    var d=daysLeft(req.planned_end);
+    var cls=d<0?'crit':(d<=7?'warn':'blue');
+    html+='<div class="alert-chip '+cls+'">⏱ Geçici değişiklik — bitiş: '+esc(req.planned_end)+' · '
+      +(d<0?('Süresi '+Math.abs(d)+' gün geçti, eski duruma dönüş veya uzatma gerekli.'):('Kalan '+d+' gün'))+'</div>';
+  }
+  if(req.previous_moc_id){
+    html+='<div class="alert-chip blue">↩ Bu talep, MOC #'+req.previous_moc_id+'\'in geri alınması amacıyla açıldı.</div>';
+  }
+
+  html+='<div class="detail-grid">';
+
+  // Sol kolon
+  html+='<div>';
+  html+='<div class="panel"><div class="ph"><h2>'+esc(req.title)+'</h2>'+statusPill(req.status)+'</div><div class="pb">';
+  html+='<div class="row2"><div><b>Kategori:</b> '+(c?esc(c.name_tr):'—')+'</div><div><b>Akış Türü:</b> '+(t?esc(t.name_tr):'—')+'</div></div>';
+  html+='<div class="row2" style="margin-top:8px"><div><b>Ünite/Bölüm:</b> '+esc(req.unit_area||'—')+'</div><div><b>RIK:</b> '+(req.is_rik?'Evet':'Hayır')+'</div></div>';
+  html+='<p style="margin-top:12px;color:var(--muted)">'+esc(req.description||'—')+'</p>';
+  html+='<p style="margin-top:8px"><b>Gerekçe:</b> '+esc(req.reason||'—')+'</p>';
+  html+='</div></div>';
+
+  html+=renderTransitionsPanel();
+  html+=renderRiskPanel();
+  html+=renderApprovalsPanel();
+  html+=renderActionsPanel();
+  if(t&&t.requires_pssr) html+=renderPssrPanel();
+  html+='</div>';
+
+  // Sağ kolon
+  html+='<div>';
+  html+='<div class="panel"><div class="ph"><h2>İşlemler</h2></div><div class="pb" style="display:flex;flex-direction:column;gap:8px">';
+  if(canEditDraft(req) && req.status==='DRAFT'){
+    html+='<button class="btn-line" id="btnEditDraft">Taslağı Düzenle</button>';
+  }
+  if(canDo('coordinate') && !['DRAFT','CANCELLED'].includes(req.status)){
+    html+='<button class="btn-line" id="btnRollback">↩ Bu MOC\'u Geri Al</button>';
+  }
+  html+='</div></div>';
+  html+='</div>';
+
+  html+='</div></div>';
+  document.getElementById('content').innerHTML=html;
+  bindDetailEvents();
+}
+
+function renderTransitionsPanel(){
+  var ctx=DETAIL_CTX, req=ctx.req;
+  var opts=(TRANSITIONS[req.status]||[]).filter(function(tr){ return canDo(tr.action); });
+  var html='<div class="panel"><div class="ph"><h2>Durum Geçişi</h2></div><div class="pb">';
+  if(req.status==='APPROVAL'){
+    html+='<p class="hint">Bu durumda geçiş, tüm onay adımları tamamlandığında sistem tarafından otomatik yapılır.</p>';
+  } else if(!opts.length){
+    html+='<p class="hint">Bu durumda ('+STATUS_LABEL[req.status]+') yetkinizle yapabileceğiniz bir geçiş yok, veya terminal durum.</p>';
+  } else {
+    html+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+opts.map(function(tr){
+      var ok = !tr.cond || tr.cond(req, ctx);
+      return '<button class="btn-leaf transbtn" data-to="'+tr.to+'" '+(ok?'':'disabled title="Koşul sağlanmadı"')+'>→ '+(STATUS_LABEL[tr.to]||tr.to)+'</button>';
+    }).join('')+'</div>';
+    if(req.status==='SCREENING'){
+      html+='<label style="margin-top:12px">Red gerekçesi (REJECTED için zorunlu)</label><textarea id="rejectReason">'+esc(req.reason||'')+'</textarea>';
+    }
+  }
+  html+='</div></div>';
+  return html;
+}
+
+function renderRiskPanel(){
+  var ctx=DETAIL_CTX;
+  var rows=ctx.risks.map(function(r){
+    return '<tr><td>'+esc(r.hazard)+'</td><td>'+riskCell(r.risk_before)+'</td><td>'+riskCell(r.risk_after)+'</td><td>'+esc(r.controls||'—')+'</td></tr>';
+  }).join('');
+  var html='<div class="panel"><div class="ph"><h2>Risk Değerlendirmesi (5×5)</h2>';
+  if(canDo('risk')) html+='<button class="btn-line sm" id="btnAddRisk" style="margin-left:auto">+ Risk Ekle</button>';
+  html+='</div><div class="pb">';
+  html+= rows ? '<table><thead><tr><th>Tehlike</th><th>Önce</th><th>Sonra</th><th>Önlemler</th></tr></thead><tbody>'+rows+'</tbody></table>' : '<div class="empty">Henüz risk kaydı yok.</div>';
+  html+='</div></div>';
+  return html;
+}
+function riskCell(score){
+  if(score==null) return '—';
+  var cls = score<=4?'var(--ok)':score<=9?'var(--warn)':score<=14?'#FB923C':'var(--crit)';
+  return '<span class="risk-cell" style="background:'+cls+'">'+score+'</span>';
+}
+
+function renderApprovalsPanel(){
+  var ctx=DETAIL_CTX, req=ctx.req;
+  var html='<div class="panel"><div class="ph"><h2>Onay Zinciri</h2>';
+  if(canDo('coordinate') && req.status==='TECHNICAL_REVIEW') html+='<button class="btn-line sm" id="btnAddApproval" style="margin-left:auto">+ Onay Adımı Ekle</button>';
+  html+='</div><div class="pb">';
+  if(!ctx.approvals.length){ html+='<div class="empty">Onay adımı tanımlanmadı.</div>'; }
+  else{
+    html+=ctx.approvals.map(function(a){
+      var can = canDecideApproval(a);
+      var decLbl = a.decision ? ('<span class="pill '+(a.decision==='APPROVED'?'ok':a.decision==='REJECTED'?'crit':'warn')+'">'+a.decision+'</span> · '+fmtDT(a.decided_at)) : '<span class="pill miss">Bekliyor</span>';
+      var actions='';
+      if(can){
+        actions='<button class="sm btn-leaf apdec" data-id="'+a.id+'" data-dec="APPROVED">Onayla</button>'
+          +'<button class="sm btn-line apdec" data-id="'+a.id+'" data-dec="RETURNED">İade</button>'
+          +'<button class="sm btn-crit apdec" data-id="'+a.id+'" data-dec="REJECTED">Reddet</button>';
+      }
+      return '<div class="approval-row"><div class="step-badge'+(a.decision==='APPROVED'?' done':'')+'">'+a.step_order+'</div>'
+        +'<div style="flex:1"><b>'+esc(a.role_code)+'</b><div class="hint">'+decLbl+'</div></div>'
+        +'<div style="display:flex;gap:6px">'+actions+'</div></div>';
+    }).join('');
+  }
+  html+='</div></div>';
+  return html;
+}
+function canDecideApproval(a){
+  var ctx=DETAIL_CTX, req=ctx.req;
+  if(a.decision) return false;
+  if(!canDo('approve') && cloudRole==='VIEWER') return false; // taban izin onay veremez
+  if(req.initiator_id===cloudUserId) return false; // çıkar çatışması
+  if(a.approver_id && a.approver_id!==cloudUserId) return false; // atanmışsa yalnız o kişi
+  return true;
+}
+
+function renderActionsPanel(){
+  var ctx=DETAIL_CTX;
+  var rows=ctx.actions.map(function(a){
+    return '<tr><td>'+esc(a.title)+'</td><td>'+esc(a.phase)+'</td><td>'+esc(a.due_date||'—')+'</td>'
+      +'<td>'+actionStatusPill(a.status)+'</td>'
+      +'<td>'+(canManageAction(a)&&a.status!=='DONE'?'<button class="sm btn-line actdone" data-id="'+a.id+'">Tamamla</button>':'')+'</td></tr>';
+  }).join('');
+  var html='<div class="panel"><div class="ph"><h2>Aksiyonlar</h2>';
+  if(canDo('coordinate')) html+='<button class="btn-line sm" id="btnAddAction" style="margin-left:auto">+ Aksiyon Ekle</button>';
+  html+='</div><div class="pb">';
+  html+= rows ? '<table><thead><tr><th>Başlık</th><th>Faz</th><th>Termin</th><th>Durum</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>' : '<div class="empty">Aksiyon yok.</div>';
+  html+='</div></div>';
+  return html;
+}
+function canManageAction(a){ return canDo('coordinate') || a.assignee_id===cloudUserId; }
+function actionStatusPill(s){ var m={OPEN:'na',IN_PROGRESS:'blue',DONE:'ok',OVERDUE:'crit',CANCELLED:'miss'}; return '<span class="pill '+(m[s]||'na')+'">'+s+'</span>'; }
+
+function renderPssrPanel(){
+  var ctx=DETAIL_CTX, p=ctx.pssr;
+  var html='<div class="panel"><div class="ph"><h2>PSSR — Devreye Alma Öncesi Güvenlik İncelemesi</h2></div><div class="pb">';
+  if(!p){
+    html+='<div class="empty">Checklist henüz oluşturulmadı.</div>';
+    if(canDo('pssr') && ctx.req.status==='PSSR') html+='<button class="btn-line" id="btnCreatePssr" style="margin-top:10px">Checklist Oluştur</button>';
+  } else {
+    html+='<div class="row2"><div><b>Sonuç:</b> '+(p.result?('<span class="pill '+(p.result==='RELEASED'?'ok':p.result==='CONDITIONAL'?'warn':'crit')+'">'+p.result+'</span>'):'—')+'</div>'
+      +'<div><b>Yapan:</b> '+fmtDT(p.performed_at)+'</div></div>';
+    if(canDo('pssr') && !p.result){
+      html+='<div style="display:flex;gap:8px;margin-top:12px">'
+        +'<button class="btn-leaf pssrres" data-r="RELEASED">Serbest Bırak (RELEASED)</button>'
+        +'<button class="btn-crit pssrres" data-r="NOT_RELEASED">Serbest Bırakma (NOT_RELEASED)</button></div>';
+    }
+  }
+  html+='</div></div>';
+  return html;
+}
+
+/* ============================================================================
+   Event binding — detay ekranı
+   ========================================================================= */
+function bindDetailEvents(){
+  var req=DETAIL_CTX.req;
+  Array.prototype.forEach.call(document.querySelectorAll('.transbtn'),function(b){
+    b.onclick=function(){ doTransition(b.getAttribute('data-to')); };
+  });
+  var er=document.getElementById('btnEditDraft'); if(er) er.onclick=openEditDraft;
+  var rb=document.getElementById('btnRollback'); if(rb) rb.onclick=doRollback;
+  var ar=document.getElementById('btnAddRisk'); if(ar) ar.onclick=openAddRisk;
+  var aa=document.getElementById('btnAddApproval'); if(aa) aa.onclick=openAddApproval;
+  var aac=document.getElementById('btnAddAction'); if(aac) aac.onclick=openAddAction;
+  var cp=document.getElementById('btnCreatePssr'); if(cp) cp.onclick=createPssr;
+  Array.prototype.forEach.call(document.querySelectorAll('.apdec'),function(b){
+    b.onclick=function(){ decideApproval(Number(b.getAttribute('data-id')), b.getAttribute('data-dec')); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.actdone'),function(b){
+    b.onclick=function(){ completeAction(Number(b.getAttribute('data-id'))); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.pssrres'),function(b){
+    b.onclick=function(){ setPssrResult(b.getAttribute('data-r')); };
+  });
+}
+
+/* ---- Durum geçişi ---- */
+function doTransition(to){
+  var req=DETAIL_CTX.req;
+  var opt=(TRANSITIONS[req.status]||[]).find(function(t){return t.to===to;});
+  if(!opt || !canDo(opt.action)){ toast('Bu geçiş için yetkiniz yok.',true); return; }
+  if(opt.cond && !opt.cond(req,DETAIL_CTX)){ toast('Geçiş koşulu sağlanmadı.',true); return; }
+  var patch={status:to};
+  if(to==='REJECTED'){
+    var reason=val('rejectReason');
+    if(!reason.trim()){ toast('Red gerekçesi zorunlu.',true); return; }
+    patch.reason=reason;
+  }
+  if(to==='CLOSED') patch.closed_at=new Date().toISOString();
+  sb.from('moc_requests').update(patch).eq('id',req.id).then(function(res){
+    if(res.error){ toast('Hata: '+res.error.message,true); return; }
+    if(to==='TECHNICAL_REVIEW' && req.status==='RISK_ASSESSMENT'){ /* no-op, kullanıcı APPROVAL'a manuel geçer */ }
+    toast('Durum güncellendi: '+STATUS_LABEL[to]);
+    viewDetail(req.id);
+  });
+}
+
+/* ---- Draft düzenleme ---- */
+function openEditDraft(){
+  var req=DETAIL_CTX.req;
+  modalTitle('Taslağı Düzenle');
+  setModalBody(requestFormHtml(req));
+  fillRequestForm(req);
+  modalFoot('Kaydet','Vazgeç',function(){
+    var patch=readRequestForm();
+    if(!patch) return;
+    sb.from('moc_requests').update(patch).eq('id',req.id).then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      closeModal(); toast('Kaydedildi'); viewDetail(req.id);
+    });
+  });
+  openModal();
+}
+
+/* ---- Rollback ---- */
+function doRollback(){
+  var req=DETAIL_CTX.req;
+  confirmBox('MOC #'+req.id+' ("'+esc(req.title)+'") için geri alma amaçlı yeni bir MOC talebi (DRAFT) oluşturulacak. Devam edilsin mi?','Geri Alma MOC\'u Oluştur',function(){
+    var payload={
+      tenant_id: cloudTenantId,
+      title: '[Geri Alma] '+req.title,
+      description: 'MOC #'+req.id+' ('+(req.moc_no||'')+') geri alınıyor.\n\nÖnceki açıklama: '+(req.description||''),
+      category_id: req.category_id, type_id: req.type_id,
+      initiator_id: cloudUserId, unit_area: req.unit_area,
+      previous_moc_id: req.id, status:'DRAFT'
+    };
+    sb.from('moc_requests').insert(payload).select().single().then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      closeModal(); toast('Geri alma MOC\'u oluşturuldu.'); go('detail', res.data.id);
+    });
+  });
+}
+
+/* ---- Risk ekleme ---- */
+function openAddRisk(){
+  modalTitle('Risk Değerlendirmesi Ekle');
+  setModalBody(
+    '<label>Tehlike Tanımı</label><textarea id="rHazard"></textarea>'
+    +'<div class="row2"><div><label>Olasılık (önce, 1-5)</label><input id="rLb" type="number" min="1" max="5"></div><div><label>Şiddet (önce, 1-5)</label><input id="rSb" type="number" min="1" max="5"></div></div>'
+    +'<div class="row2"><div><label>Olasılık (sonra, 1-5)</label><input id="rLa" type="number" min="1" max="5"></div><div><label>Şiddet (sonra, 1-5)</label><input id="rSa" type="number" min="1" max="5"></div></div>'
+    +'<label>Alınacak Önlemler</label><textarea id="rControls"></textarea>'
+  );
+  modalFoot('Ekle','Vazgeç',function(){
+    var payload={ tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, hazard:val('rHazard'),
+      likelihood_before:num('rLb'), severity_before:num('rSb'), likelihood_after:num('rLa'), severity_after:num('rSa'),
+      controls:val('rControls'), assessed_by:cloudUserId };
+    if(!payload.hazard.trim()){ toast('Tehlike tanımı zorunlu.',true); return; }
+    sb.from('moc_risk_assessments').insert(payload).then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      closeModal(); toast('Risk eklendi'); viewDetail(DETAIL_CTX.req.id);
+    });
+  });
+  openModal();
+}
+
+/* ---- Onay adımı ekleme ---- */
+function openAddApproval(){
+  var nextStep=(DETAIL_CTX.approvals||[]).length+1;
+  modalTitle('Onay Adımı Ekle');
+  setModalBody('<label>Sıra No</label><input id="apStep" type="number" value="'+nextStep+'">'
+    +'<label>Rol Kodu (ör. HSE, ENGINEERING, PLANT_MANAGER)</label><input id="apRole">'
+    +'<p class="hint">Onaycı ataması bu sürümde yapılmıyor — herhangi bir yetkili kullanıcı (talep sahibi hariç) kararı "üstlenerek" verir; karar anında approver_id kendisine set edilir.</p>');
+  modalFoot('Ekle','Vazgeç',function(){
+    var role=val('apRole');
+    if(!role.trim()){ toast('Rol kodu zorunlu.',true); return; }
+    sb.from('moc_approvals').insert({tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, step_order:num('apStep'), role_code:role}).then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      closeModal(); toast('Onay adımı eklendi'); viewDetail(DETAIL_CTX.req.id);
+    });
+  });
+  openModal();
+}
+function decideApproval(id, decision){
+  confirmBox('Bu onay adımı için karar: <b>'+decision+'</b>. Onaylıyor musunuz?','Onayla',function(){
+    var hash=btoa(unescape(encodeURIComponent(DETAIL_CTX.req.id+'|'+id+'|'+cloudUserId+'|'+Date.now())));
+    sb.from('moc_approvals').update({decision:decision, decided_at:new Date().toISOString(), approver_id:cloudUserId, evidence_hash:hash}).eq('id',id).then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      closeModal(); toast('Karar kaydedildi'); checkApprovalAuto();
+    });
+  }, decision==='REJECTED');
+}
+function checkApprovalAuto(){
+  var req=DETAIL_CTX.req;
+  sb.from('moc_approvals').select('*').eq('moc_id',req.id).then(function(res){
+    var rows=res.data||[];
+    var next=null;
+    if(rows.some(function(a){return a.decision==='REJECTED';})) next='REJECTED';
+    else if(rows.some(function(a){return a.decision==='RETURNED';})) next='TECHNICAL_REVIEW';
+    else if(rows.length && rows.every(function(a){return a.decision==='APPROVED';})) next='IMPLEMENTATION';
+    if(next && req.status==='APPROVAL'){
+      sb.from('moc_requests').update({status:next}).eq('id',req.id).then(function(){ viewDetail(req.id); });
+    } else viewDetail(req.id);
+  });
+}
+
+/* ---- Aksiyon ekleme/tamamlama ---- */
+function openAddAction(){
+  modalTitle('Aksiyon Ekle');
+  setModalBody('<label>Başlık</label><input id="acTitle">'
+    +'<label>Faz</label><select id="acPhase"><option value="PRE_APPROVAL">Onay Öncesi</option><option value="IMPLEMENTATION" selected>Uygulama</option><option value="DOC_UPDATE">Doküman Güncelleme</option><option value="TRAINING">Eğitim</option><option value="PSSR">PSSR</option><option value="POST_STARTUP">Devreye Alma Sonrası</option></select>'
+    +'<label>Termin</label><input id="acDue" type="date">');
+  modalFoot('Ekle','Vazgeç',function(){
+    var title=val('acTitle');
+    if(!title.trim()){ toast('Başlık zorunlu.',true); return; }
+    sb.from('moc_action_items').insert({tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, title:title, phase:val('acPhase'), due_date:val('acDue')||null, assignee_id:cloudUserId}).then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      closeModal(); toast('Aksiyon eklendi'); viewDetail(DETAIL_CTX.req.id);
+    });
+  });
+  openModal();
+}
+function completeAction(id){
+  sb.from('moc_action_items').update({status:'DONE', completed_at:new Date().toISOString()}).eq('id',id).then(function(res){
+    if(res.error){ toast('Hata: '+res.error.message,true); return; }
+    toast('Aksiyon tamamlandı'); viewDetail(DETAIL_CTX.req.id);
+  });
+}
+
+/* ---- PSSR ---- */
+function createPssr(){
+  sb.from('moc_pssr_checklists').insert({tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, is_template:false, name:'PSSR — '+DETAIL_CTX.req.title, items:[]}).then(function(res){
+    if(res.error){ toast('Hata: '+res.error.message,true); return; }
+    toast('Checklist oluşturuldu'); viewDetail(DETAIL_CTX.req.id);
+  });
+}
+function setPssrResult(result){
+  sb.from('moc_pssr_checklists').update({result:result, performed_by:cloudUserId, performed_at:new Date().toISOString()}).eq('id',DETAIL_CTX.pssr.id).then(function(res){
+    if(res.error){ toast('Hata: '+res.error.message,true); return; }
+    toast('PSSR sonucu kaydedildi'); viewDetail(DETAIL_CTX.req.id);
+  });
+}
+
+/* ============================================================================
+   Yeni talep formu
+   ========================================================================= */
+function requestFormHtml(){
+  return '<label>Başlık</label><input id="fTitle">'
+    +'<label>Açıklama</label><textarea id="fDesc"></textarea>'
+    +'<div class="row2"><div><label>Kategori</label><select id="fCat">'+CATEGORIES.map(function(c){return '<option value="'+c.id+'">'+esc(c.name_tr)+'</option>';}).join('')+'</select></div>'
+    +'<div><label>Akış Türü</label><select id="fType">'+TYPES.map(function(t){return '<option value="'+t.id+'">'+esc(t.name_tr)+'</option>';}).join('')+'</select></div></div>'
+    +'<div class="row2"><div><label>Ünite/Bölüm</label><input id="fUnit"></div><div><label>Öncelik</label><select id="fPrio"><option value="NORMAL">Normal</option><option value="LOW">Düşük</option><option value="HIGH">Yüksek</option><option value="EMERGENCY">Acil</option></select></div></div>'
+    +'<div id="fEndDateWrap" style="display:none"><label>Planlanan Bitiş (geçici değişiklikte zorunlu)</label><input id="fEnd" type="date"></div>'
+    +'<label class="chk"><input type="checkbox" id="fRik"> Birebir Yenileme (RIK) — aynı spesifikasyonda parça, tam akış gerekmez</label>'
+    +'<label>Gerekçe</label><textarea id="fReason"></textarea>';
+}
+function fillRequestForm(req){
+  if(req){
+    document.getElementById('fTitle').value=req.title||'';
+    document.getElementById('fDesc').value=req.description||'';
+    document.getElementById('fCat').value=req.category_id||'';
+    document.getElementById('fType').value=req.type_id||'';
+    document.getElementById('fUnit').value=req.unit_area||'';
+    document.getElementById('fPrio').value=req.priority||'NORMAL';
+    document.getElementById('fEnd').value=req.planned_end||'';
+    document.getElementById('fRik').checked=!!req.is_rik;
+    document.getElementById('fReason').value=req.reason||'';
+  }
+  toggleEndDate();
+  document.getElementById('fType').onchange=toggleEndDate;
+}
+function toggleEndDate(){
+  var t=typeById(Number(val('fType')));
+  document.getElementById('fEndDateWrap').style.display = (t&&t.requires_end_date)?'':'none';
+}
+function readRequestForm(){
+  var t=typeById(Number(val('fType')));
+  var title=val('fTitle');
+  if(!title.trim()){ toast('Başlık zorunlu.',true); return null; }
+  if(t&&t.requires_end_date&&!val('fEnd')){ toast('Bu akış türünde planlanan bitiş tarihi zorunlu.',true); return null; }
+  return {
+    title:title, description:val('fDesc'), category_id:Number(val('fCat')), type_id:Number(val('fType')),
+    unit_area:val('fUnit'), priority:val('fPrio'), planned_end: val('fEnd')||null,
+    is_rik: document.getElementById('fRik').checked, reason: val('fReason')
+  };
+}
+function openNewRequest(){
+  modalTitle('Yeni Değişiklik Talebi');
+  setModalBody(requestFormHtml());
+  fillRequestForm(null);
+  modalFoot('Oluştur (Taslak)','Vazgeç',function(){
+    var payload=readRequestForm();
+    if(!payload) return;
+    payload.tenant_id=cloudTenantId; payload.initiator_id=cloudUserId; payload.status='DRAFT';
+    sb.from('moc_requests').insert(payload).select().single().then(function(res){
+      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      var req=res.data;
+      var t=typeById(req.type_id);
+      var after=Promise.resolve();
+      if(t&&t.requires_end_date&&req.planned_end){
+        after=sb.from('moc_temporary_tracking').insert({tenant_id:cloudTenantId, moc_id:req.id, expires_at:req.planned_end});
+      }
+      Promise.resolve(after).then(function(){
+        closeModal(); toast('Talep oluşturuldu'); go('detail', req.id);
+      });
+    });
+  });
+  openModal();
+}
+
+/* ============================================================================
+   Ayarlar (salt-okunur özet — CRUD ikinci alt-turda)
+   ========================================================================= */
+function viewSettings(){
+  document.getElementById('pageTitle').textContent='Ayarlar';
+  document.getElementById('pageCrumb').textContent='Kategori ve akış türü tanımları (salt-okunur)';
+  var catRows=CATEGORIES.map(function(c){return '<tr><td>'+esc(c.code)+'</td><td>'+esc(c.name_tr)+'</td><td>'+(c.requires_equipment_link?'Evet':'Hayır')+'</td></tr>';}).join('');
+  var typeRows=TYPES.map(function(t){return '<tr><td>'+esc(t.code)+'</td><td>'+esc(t.name_tr)+'</td><td>'+(t.requires_pssr?'Evet':'Hayır')+'</td><td>'+(t.requires_end_date?'Evet':'Hayır')+'</td><td>'+(t.retro_hours||'—')+'</td></tr>';}).join('');
+  document.getElementById('content').innerHTML=
+    '<div class="panel"><div class="ph"><h2>Değişiklik Kategorileri</h2></div><div class="pb"><table><thead><tr><th>Kod</th><th>Ad</th><th>Ekipman Bağlantısı Zorunlu</th></tr></thead><tbody>'+catRows+'</tbody></table></div></div>'
+    +'<div class="panel"><div class="ph"><h2>Akış Türleri</h2></div><div class="pb"><table><thead><tr><th>Kod</th><th>Ad</th><th>PSSR Gerekli</th><th>Bitiş Tarihi Gerekli</th><th>Geriye Dönük Süre (sa)</th></tr></thead><tbody>'+typeRows+'</tbody></table></div></div>'
+    +'<p class="hint">Kategori/tür ekleme-düzenleme ve moc_ RBAC atama ekranları B2 sprintinde eklenecek.</p>';
+}
+
+/* ============================================================================
+   Modal / util (Ekipman/Gıda desenine uyumlu)
+   ========================================================================= */
+function modalTitle(t){ document.getElementById('modalTitle').textContent=t; }
+function setModalBody(h){ document.getElementById('modalBody').innerHTML=h; }
+function modalFoot(saveLbl,cancelLbl,onSave){
+  var sv=document.getElementById('modalSave'), cn=document.getElementById('modalCancel');
+  sv.className='btn-leaf';
+  if(saveLbl){ sv.style.display=''; sv.textContent=saveLbl; sv.disabled=false; sv.onclick=onSave||null; } else sv.style.display='none';
+  cn.textContent=cancelLbl||'Kapat';
+}
+function openModal(wide){ document.getElementById('modalBox').className='modal'+(wide?' wide':''); document.getElementById('overlay').classList.add('on'); document.getElementById('modalWrap').classList.add('on'); }
+function closeModal(){ document.getElementById('overlay').classList.remove('on'); document.getElementById('modalWrap').classList.remove('on'); }
+function confirmBox(msg,okLbl,onOk,danger){
+  modalTitle('Onay');
+  setModalBody('<div style="font-size:13.5px;line-height:1.55">'+msg+'</div>');
+  var sv=document.getElementById('modalSave'), cn=document.getElementById('modalCancel');
+  sv.style.display=''; sv.textContent=okLbl||'Onayla'; sv.disabled=false; sv.className=danger?'btn-crit':'btn-leaf'; sv.onclick=function(){ onOk&&onOk(); };
+  cn.textContent='Vazgeç';
+  openModal();
+}
+var toastT=null;
+function toast(msg,err){ var t=document.getElementById('toast'); t.textContent=msg; t.className='toast on'+(err?' err':''); clearTimeout(toastT); toastT=setTimeout(function(){t.className='toast';},2800); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function val(id){ var e=document.getElementById(id); return e?e.value:''; }
+function num(id){ var v=val(id); return v===''?null:Number(v); }
+function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
+function p2(n){ return (n<10?'0':'')+n; }
+function fmtDT(iso){ if(!iso) return '—'; var d=new Date(iso); return p2(d.getDate())+'.'+p2(d.getMonth()+1)+'.'+d.getFullYear()+' '+p2(d.getHours())+':'+p2(d.getMinutes()); }
+
+/* ============================================================================
+   Başlat
+   ========================================================================= */
+(function(){
+  var bt=document.getElementById('brandToggle');
+  var navCollapsed=false;
+  try{ navCollapsed=localStorage.getItem('moc_nav_collapsed')==='1'; }catch(e){}
+  document.getElementById('side').classList.toggle('collapsed',navCollapsed);
+  function toggleNav(){ navCollapsed=!navCollapsed; document.getElementById('side').classList.toggle('collapsed',navCollapsed); try{localStorage.setItem('moc_nav_collapsed',navCollapsed?'1':'0');}catch(e){} }
+  if(bt){ bt.onclick=toggleNav; bt.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleNav(); } }; }
+
+  document.getElementById('loginForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    if(!sb){ loginMsg('Supabase yapılandırılmadı.'); return; }
+    loginMsg('Giriş yapılıyor…');
+    sb.auth.signInWithPassword({email:val('loginEmail').trim(),password:val('loginPass')}).then(function(r){
+      if(r.error){ loginMsg('Giriş başarısız: '+r.error.message); return; }
+      loginMsg(''); afterLogin(r.data.session);
+    });
+  });
+  document.getElementById('btnLogout').onclick=function(){ sb.auth.signOut().then(function(){ location.reload(); }); };
+  document.getElementById('btnNewRequest').onclick=openNewRequest;
+  document.getElementById('overlay').onclick=closeModal;
+  document.getElementById('modalCancel').onclick=closeModal;
+
+  cloudInit();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+/* ============================================================================
+   MOC Modülü — Tasarım Tokenları (Qdataline teması)
+   Ankraj: qdataline.com meta-theme-color #0C1510 (koyu yeşil-siyah)
+   Kullanım: Frontend'de global import edin; tüm MOC bileşenleri bu
+   değişkenleri kullanmalı. Ekipman modülünüzün birebir hex'leri farklıysa
+   SADECE bu dosyayı güncelleyin — bileşenlere dokunmayın.
+   ========================================================================= */
+
+:root {
+  /* ---- Marka / Zemin (Qdataline koyu yeşil) ---- */
+  --q-bg-base:        #0C1510;  /* ana zemin (sitenin theme-color'ı) */
+  --q-bg-surface:     #121D16;  /* kart / panel zemini */
+  --q-bg-elevated:    #1A2A20;  /* modal, dropdown, hover zemin */
+  --q-border:         #24382C;  /* ince çizgiler, kart kenarı */
+
+  /* ---- Vurgu (yeşil skala) ---- */
+  --q-accent:         #34D399;  /* birincil buton, aktif menü, linkler */
+  --q-accent-strong:  #10B981;  /* hover / basılı durum */
+  --q-accent-soft:    #34D3991A; /* %10 opak — seçili satır, badge zemini */
+
+  /* ---- Metin ---- */
+  --q-text-primary:   #E8F0EB;  /* ana metin (kırık beyaz, yeşilimsi) */
+  --q-text-secondary: #9DB4A6;  /* ikincil metin, etiketler */
+  --q-text-muted:     #5F7A6B;  /* placeholder, pasif */
+  --q-text-on-accent: #0C1510;  /* yeşil buton üzerindeki koyu metin */
+
+  /* ---- Durum renkleri (MOC status rozetleri) ---- */
+  --q-status-draft:      #9DB4A6;  /* DRAFT — gri-yeşil */
+  --q-status-active:     #38BDF8;  /* SCREENING→PSSR arası süreçte — mavi */
+  --q-status-approval:   #FBBF24;  /* APPROVAL — bekleyen onay, amber */
+  --q-status-success:    #34D399;  /* CLOSED, RELEASED — yeşil */
+  --q-status-danger:     #F87171;  /* REJECTED, süre aşımı — kırmızı */
+  --q-status-warning:    #FB923C;  /* geçici değişiklik T-7/T-1 uyarı — turuncu */
+  --q-status-cancelled:  #5F7A6B;  /* CANCELLED — soluk */
+
+  /* ---- 5x5 Risk Matrisi hücre renkleri (skor = olasılık × şiddet) ---- */
+  --q-risk-low:       #34D399;  /* 1–4   düşük */
+  --q-risk-medium:    #FBBF24;  /* 5–9   orta */
+  --q-risk-high:      #FB923C;  /* 10–14 yüksek */
+  --q-risk-critical:  #F87171;  /* 15–25 kritik */
+
+  /* ---- Grafik paleti (ECharts / dashboard) ---- */
+  --q-chart-1: #34D399;
+  --q-chart-2: #38BDF8;
+  --q-chart-3: #FBBF24;
+  --q-chart-4: #F87171;
+  --q-chart-5: #A78BFA;
+  --q-chart-6: #9DB4A6;
+
+  /* ---- Tipografi & boşluk ---- */
+  --q-font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --q-radius-sm: 6px;
+  --q-radius-md: 10px;
+  --q-radius-lg: 16px;
+  --q-shadow-card: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+/* ---- Açık tema (opsiyonel — kullanıcı tercihi) ---- */
+[data-theme='light'] {
+  --q-bg-base:        #F4F7F5;
+  --q-bg-surface:     #FFFFFF;
+  --q-bg-elevated:    #FFFFFF;
+  --q-border:         #D9E3DD;
+  --q-text-primary:   #0C1510;
+  --q-text-secondary: #3E5548;
+  --q-text-muted:     #7E948A;
+  --q-text-on-accent: #FFFFFF;
+  --q-accent:         #10B981;
+  --q-accent-strong:  #059669;
+  --q-shadow-card:    0 2px 8px rgba(12, 21, 16, 0.08);
+}
+
+/* ============================================================================
+   Örnek kullanım — durum rozeti
+   ========================================================================= */
+.moc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: var(--q-radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--q-accent-soft);
+}
+.moc-badge--draft     { color: var(--q-status-draft); }
+.moc-badge--active    { color: var(--q-status-active); }
+.moc-badge--approval  { color: var(--q-status-approval); }
+.moc-badge--closed    { color: var(--q-status-success); }
+.moc-badge--rejected  { color: var(--q-status-danger); }
+.moc-badge--temp-warn { color: var(--q-status-warning); }
+
+/* Risk matrisi hücresi */
+.risk-cell            { border-radius: var(--q-radius-sm); color: var(--q-text-on-accent); font-weight: 700; }
+.risk-cell--low       { background: var(--q-risk-low); }
+.risk-cell--medium    { background: var(--q-risk-medium); }
+.risk-cell--high      { background: var(--q-risk-high); }
+.risk-cell--critical  { background: var(--q-risk-critical); }
+
+/* ============================================================================
+   NOT: Ekipman Yönetimi modülünüzde tanımlı gerçek hex kodlarınız varsa
+   (örn. tailwind.config veya theme.css), yalnızca :root bloğundaki
+   değerleri onlarla değiştirin. Sınıf isimleri ve bileşenler aynı kalır.
+   ========================================================================= */
