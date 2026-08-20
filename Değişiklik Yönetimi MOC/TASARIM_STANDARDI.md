@@ -152,7 +152,7 @@ HTML iskeleti (sol menünün EN ÜSTÜ):
 <aside class="side">
   <div class="brand">
     <div class="logo-row brand-toggle" id="brandToggle" title="Menüyü aç / kapat" role="button" tabindex="0">
-      <svg class="logo-mark" viewBox="-104 -108 384 224" aria-label="Qdataline">…Q sembolü (§6)…</svg>
+      <svg class="logo-mark" viewBox="-100 -100 200 200" aria-label="Qdataline">…Q sembolü (§6)…</svg>
       <div class="logo-txt">
         <div class="n">Q<b>data</b>line</div>   <!-- wordmark: "data" kalın + degrade -->
         <div class="s">Q-Tedarikçi Yönetimi</div> <!-- MODÜL ADI (her modülde değişir) -->
@@ -255,7 +255,7 @@ if(brandT){
   logosuyla TUTARSIZDI ve terk edildi. Yerine, menü logosundan türetilen aşağıdaki favicon geçti —
   **Q-Tedarikçi'nin kendi kodunda da güncellendi** (artık favicon = menü logosunun küçültülmüş hâli):
 ```html
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-104 -185 380 380'%3E%3Ccircle cx='0' cy='0' r='86' fill='none' stroke='%2310B981' stroke-width='20' stroke-linecap='round' stroke-dasharray='470 71' stroke-dashoffset='-38' transform='rotate(45)'/%3E%3Cpath d='M 42 42 L 96 96 L 148 96 L 180 52 L 214 82 L 258 30' fill='none' stroke='%2384CC16' stroke-width='20' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-100 -100 200 200'%3E%3Ccircle cx='0' cy='0' r='78' fill='none' stroke='%2310B981' stroke-width='18' stroke-linecap='round' stroke-dasharray='425 65' stroke-dashoffset='-34' transform='rotate(45)'/%3E%3Cpath d='M 30 30 L 58 58 L 84 42' fill='none' stroke='%2384CC16' stroke-width='18' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 ```
 - **Hedef:** üç modülün de AYNI bu favicon'u (menü logosunun sadeleştirilmiş hâli) kullanması
   (şu an her modül farklı ikonda).
