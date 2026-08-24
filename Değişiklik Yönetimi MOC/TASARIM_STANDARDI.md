@@ -1,16 +1,53 @@
 # TASARIM STANDARDI — Qdataline Platformu
 
-> **Bu dosya, tüm Qdataline modüllerinin (Ekipman, Q-Kalite, Q-Tedarikçi ve gelecek modüller)
-> ortak görsel kimlik standardıdır.** Değerler **Q-Tedarikçi Yönetimi** modülünün mevcut,
-> onaylı arayüzünden birebir çıkarılmıştır ve REFERANS kabul edilir.
+> **Bu dosya, tüm Qdataline modüllerinin (Ekipman, Q-Kalite, Q-Tedarikçi, Gıda, MOC,
+> Eğitim ve gelecek modüller) ortak görsel kimlik standardıdır.** Değerler **Q-Tedarikçi
+> Yönetimi** modülünün mevcut, onaylı arayüzünden birebir çıkarılmıştır ve REFERANS kabul edilir.
+>
+> **2026-08-24 güncellemesi — OMURGA + VARYANT ayrımı:** Altı modülün görsel olarak
+> ayırt edilemez olması ("hepsi aynı AI şablonundan çıkmış" izlenimi) nedeniyle bu standart
+> ikiye ayrıldı:
+> - **§A ORTAK OMURGA** — layout, tipografi ölçeği, radius, buton/kart yapısı, logo/wordmark,
+>   hover/animasyon dili. **Tüm modüllerde birebir aynı kalır, değiştirilmez.**
+> - **§B MODÜL VARYANTI** — yalnızca vurgu rengi (`--leaf`/`--leaf-d`/`--lime` ve bunlardan
+>   türeyen degrade/aktif-durum renkleri). Her modülün kendi rengi vardır; §B.1'deki tabloya bakın.
+>   Durum renkleri (`--ok/--warn/--crit/--miss/--na/--blue/--purple`) ve nötr paleti
+>   (`--sand/--card/--ink/--muted/--line` vb.) vurgu renginden BAĞIMSIZDIR, tüm modüllerde aynı kalır.
 >
 > **Yeni bir modüle başlarken:** Bu dosyayı Claude Code'a ilk iş olarak okut ve
-> *"bu standarda birebir uy"* de. Mevcut bir modülü hizalarken: aşağıdaki her bölümü
-> tek tek karşılaştır, farklıları bu değerlere çek.
+> *"§A'ya birebir uy, §B'den kendi modülünün vurgu rengini al"* de.
 >
 > **Not (koyu tema):** Q-Tedarikçi'nin CSS'inde taban stiller açık renklidir (beyaz zemin),
 > `</style>` sonundaki "FAZ 1 koyu tema override" bloğu bunları koyuya çevirir.
 > **Aşağıdaki tüm değerler RENDER EDİLEN (nihai, koyu) hâldir** — kopyalarken doğrudan bunları kullan.
+
+---
+
+## B.1 MODÜL VURGU RENKLERİ (varyant tablosu)
+
+| Modül | `--leaf` (ana) | `--leaf-d` (açık) | `--lime` (vurgu) | Gerekçe |
+|---|---|---|---|---|
+| **Tedarikçi Yönetimi** (referans — değişmez) | `#10B981` | `#34D399` | `#A3E635` | Marka kök rengi |
+| **Ekipman (LEYS/EksenPro)** | `#14B8A6` | `#2DD4BF` | `#5EEAD4` | Teal — teknik/mekanik çağrışım |
+| **Gıda Güvenliği Denetim** | `#D97706` | `#F59E0B` | `#FBBF24` | Amber — dikkat/tazelik |
+| **MOC (Değişiklik Yönetimi)** | `#7C3AED` | `#A78BFA` | `#C4B5FD` | Mor — kontrol/yönetişim |
+| **Q-Kalite (Şikayet-DÖF-CAPA)** | `#0284C7` | `#38BDF8` | `#7DD3FC` | Gök mavisi — güven/kalite güvencesi |
+| **Eğitim Platformu** | `#E11D48` | `#FB7185` | `#FDA4AF` | Gül kırmızısı — enerji/öğrenme |
+
+**Uygulama:** §A.1'deki renk paletinde yalnızca `--forest-3` (hover), `--leaf`, `--leaf-d`, `--lime`,
+`--ink-on-accent` değerlerini ve bunlardan türeyen degrade/gradient tanımlarını (buton degradesi,
+wordmark "data" degradesi, logo SVG degradeleri, `.nav-item.on` aktif şerit rengi, `--leaf` referans
+veren diğer tüm yerler) yukarıdaki tabloya göre değiştirin. **Durum renkleri (`--ok/--warn/--crit/
+--miss/--na/--blue/--purple`) ve nötr paleti (`--sand/--card/--ink/--muted/--line` vb.) HİÇBİR
+modülde değişmez** — bunlar §A.1'de sabit.
+
+---
+
+## §A ORTAK OMURGA
+
+Aşağıdaki bölümler (§A.1 hariç renk değerleri, §A.2-§A.9) tüm modüllerde birebir aynıdır.
+§A.1'deki durum/nötr renkleri de sabittir; yalnızca marka yeşilleri (`--leaf` ailesi) B.1 tablosuna
+göre modülden modüle değişir.
 
 ---
 
@@ -28,7 +65,7 @@
 
 ---
 
-## 1. RENK PALETİ
+## A.1 RENK PALETİ
 
 Tümü `:root` altında CSS değişkeni olarak tanımlanır. **Birebir kopyala:**
 
@@ -83,7 +120,7 @@ Tümü `:root` altında CSS değişkeni olarak tanımlanır. **Birebir kopyala:*
 
 ---
 
-## 2. TİPOGRAFİ
+## A.2 TİPOGRAFİ
 
 | Kullanım | Font ailesi |
 |---|---|
@@ -111,7 +148,7 @@ Tümü `:root` altında CSS değişkeni olarak tanımlanır. **Birebir kopyala:*
 
 ---
 
-## 3. ÜST BAR (topbar)
+## A.3 ÜST BAR (topbar)
 
 ```css
 .topbar{
@@ -130,7 +167,7 @@ Tümü `:root` altında CSS değişkeni olarak tanımlanır. **Birebir kopyala:*
 
 ---
 
-## 4. SOL MENÜ (sidebar) + LOGO/BAŞLIK YERLEŞİMİ
+## A.4 SOL MENÜ (sidebar) + LOGO/BAŞLIK YERLEŞİMİ
 
 ### 4.1 Çerçeve
 ```css
@@ -152,7 +189,7 @@ HTML iskeleti (sol menünün EN ÜSTÜ):
 <aside class="side">
   <div class="brand">
     <div class="logo-row brand-toggle" id="brandToggle" title="Menüyü aç / kapat" role="button" tabindex="0">
-      <svg class="logo-mark" viewBox="-100 -100 200 200" aria-label="Qdataline">…Q sembolü (§6)…</svg>
+      <svg class="logo-mark" viewBox="-104 -108 384 224" aria-label="Qdataline">…Q sembolü (§6)…</svg>
       <div class="logo-txt">
         <div class="n">Q<b>data</b>line</div>   <!-- wordmark: "data" kalın + degrade -->
         <div class="s">Q-Tedarikçi Yönetimi</div> <!-- MODÜL ADI (her modülde değişir) -->
@@ -207,7 +244,7 @@ HTML iskeleti (sol menünün EN ÜSTÜ):
 
 ---
 
-## 5. HAMBURGER / LOGO-MENÜ DAVRANIŞI
+## A.5 HAMBURGER / LOGO-MENÜ DAVRANIŞI
 
 > **Ayrı hamburger (☰) butonu YOKTUR.** Sol menünün **logo satırı (`.brand-toggle#brandToggle`)
 > menü aç/kapat düğmesidir.**
@@ -239,7 +276,7 @@ if(brandT){
 
 ---
 
-## 6. FAVICON
+## A.6 FAVICON
 
 - **Kaynak = Q-Tedarikçi'nin sol menüdeki `.logo-mark` SVG'si** (ayrıntılı, takımyıldız noktalı Q
   sembolü: dairesel yeşil yay + yükselen "dataline" zigzag çizgisi + 3 nokta + ince bağlayıcı).
@@ -255,14 +292,14 @@ if(brandT){
   logosuyla TUTARSIZDI ve terk edildi. Yerine, menü logosundan türetilen aşağıdaki favicon geçti —
   **Q-Tedarikçi'nin kendi kodunda da güncellendi** (artık favicon = menü logosunun küçültülmüş hâli):
 ```html
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-100 -100 200 200'%3E%3Ccircle cx='0' cy='0' r='78' fill='none' stroke='%2310B981' stroke-width='18' stroke-linecap='round' stroke-dasharray='425 65' stroke-dashoffset='-34' transform='rotate(45)'/%3E%3Cpath d='M 30 30 L 58 58 L 84 42' fill='none' stroke='%2384CC16' stroke-width='18' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-104 -185 380 380'%3E%3Ccircle cx='0' cy='0' r='86' fill='none' stroke='%2310B981' stroke-width='20' stroke-linecap='round' stroke-dasharray='470 71' stroke-dashoffset='-38' transform='rotate(45)'/%3E%3Cpath d='M 42 42 L 96 96 L 148 96 L 180 52 L 214 82 L 258 30' fill='none' stroke='%2384CC16' stroke-width='20' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 ```
 - **Hedef:** üç modülün de AYNI bu favicon'u (menü logosunun sadeleştirilmiş hâli) kullanması
   (şu an her modül farklı ikonda).
 
 ---
 
-## 7. SEKME BAŞLIĞI (`<title>`) FORMATI
+## A.7 SEKME BAŞLIĞI (`<title>`) FORMATI
 
 - **Standart format:** `[Modül Adı] · Qdataline` (Q-Tedarikçi'nin MEVCUT, doğru kullanımı — referans budur)
   - Q-Tedarikçi → `Q-Tedarikçi Yönetimi · Qdataline`
@@ -273,7 +310,7 @@ if(brandT){
 
 ---
 
-## 8. BUTON / KART STİLLERİ
+## A.8 BUTON / KART STİLLERİ
 
 ### 8.1 Köşe yuvarlaklığı (radius) ölçeği
 | Öğe | radius |
@@ -338,7 +375,7 @@ button,.btn{
 
 ---
 
-## 9. ÖZET — YENİ MODÜLDE İLK 5 İŞ
+## A.9 ÖZET — YENİ MODÜLDE İLK 5 İŞ
 
 1. Head'e Inter + Space Grotesk fontlarını ve **§6 inline favicon**'u ekle.
 2. `<title>` → `[Modül Adı] · Qdataline` (§7).

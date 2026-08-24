@@ -19,7 +19,7 @@
 :root{
   color-scheme:dark;
   --forest:#10241B; --forest-2:#7CD3AD; --forest-3:#1E6B52;
-  --leaf:#10B981; --leaf-d:#34D399; --lime:#A3E635; --ink-on-accent:#07120C;
+  --leaf:#7C3AED; --leaf-d:#A78BFA; --lime:#C4B5FD; --ink-on-accent:#07120C;
   --sand:#0C1510; --card:#121A15; --mint:#14261C; --mint-2:#101A14;
   --line:#1E2B22; --line-2:#19241D;
   --ink:#F2FBF6; --muted:#8FA397; --accent:#D9C06A;
@@ -58,7 +58,7 @@ h1,h2,h3,h4{font-family:"Space Grotesk","Inter","Segoe UI",system-ui,sans-serif;
 .topbar .logo-row{display:flex;align-items:center;gap:9px}
 .topbar .logo-mark{width:28px;height:28px;flex-shrink:0}
 .topbar .logo-txt .n{font-size:14.5px;font-weight:500;letter-spacing:.4px;color:var(--ink);line-height:1}
-.topbar .logo-txt .n b{font-weight:700;background:linear-gradient(90deg,#10B981,#A3E635);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.topbar .logo-txt .n b{font-weight:700;background:linear-gradient(90deg,#7C3AED,#C4B5FD);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .topbar h1{font-size:16px;font-weight:700}
 .topbar .crumb{font-size:12px;color:var(--muted)}
 .topbar .sp{flex:1}
@@ -89,7 +89,7 @@ h1,h2,h3,h4{font-family:"Space Grotesk","Inter","Segoe UI",system-ui,sans-serif;
 .barrow{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12.5px}
 .barrow .barlbl{width:150px;flex-shrink:0;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .barrow .bartrack{flex:1;height:9px;background:var(--bar-track);border-radius:5px;overflow:hidden}
-.barrow .barfill{height:100%;border-radius:5px;background:linear-gradient(90deg,#059669,#84CC16)}
+.barrow .barfill{height:100%;border-radius:5px;background:linear-gradient(90deg,#6D28D9,#8B5CF6)}
 .barrow .barval{width:28px;text-align:right;font-weight:700;flex-shrink:0}
 .dash-list-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line-2);font-size:12.5px}
 .dash-list-row:last-child{border:none}
@@ -97,8 +97,8 @@ h1,h2,h3,h4{font-family:"Space Grotesk","Inter","Segoe UI",system-ui,sans-serif;
 
 /* ---- Butonlar ---- */
 button,.btn{font-family:inherit;font-size:12.5px;font-weight:600;border-radius:8px;border:1px solid transparent;padding:8px 14px;transition:.12s;cursor:pointer;white-space:nowrap}
-.btn-leaf{background:linear-gradient(135deg,#059669,#84CC16);color:var(--ink-on-accent);font-weight:700}
-.btn-leaf:hover{background:linear-gradient(135deg,#10B981,#A3E635)}
+.btn-leaf{background:linear-gradient(135deg,#6D28D9,#8B5CF6);color:var(--ink-on-accent);font-weight:700}
+.btn-leaf:hover{background:linear-gradient(135deg,#7C3AED,#C4B5FD)}
 .btn-line{background:var(--card);color:var(--ink);border-color:var(--line)}
 .btn-line:hover{border-color:var(--leaf);color:var(--leaf-d)}
 .btn-crit{background:var(--crit);color:#1a0d0d;font-weight:700}
@@ -210,7 +210,13 @@ textarea{resize:vertical;min-height:70px}
 <!-- ============================ LOGIN ============================ -->
 <div id="loginScreen">
   <div class="login-box">
-    <h1>Q<b style="background:linear-gradient(90deg,#10B981,#A3E635);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">data</b>line</h1>
+    <div style="display:flex;align-items:center;justify-content:center;gap:11px">
+      <svg viewBox="-100 -100 200 200" aria-label="Qdataline" style="width:34px;height:34px;flex-shrink:0">
+        <circle cx="0" cy="0" r="78" fill="none" stroke="#7C3AED" stroke-width="18" stroke-linecap="round" stroke-dasharray="425 65" stroke-dashoffset="-34" transform="rotate(45)"/>
+        <path d="M 30 30 L 58 58 L 84 42" fill="none" stroke="#8B5CF6" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1 style="margin:0">Q<b style="background:linear-gradient(90deg,#7C3AED,#C4B5FD);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">data</b>line</h1>
+    </div>
     <div class="s">Değişiklik Yönetimi (MOC)</div>
     <form id="loginForm">
       <label>E-posta</label>
@@ -229,8 +235,8 @@ textarea{resize:vertical;min-height:70px}
     <div class="topbar">
       <div class="logo-row">
         <svg class="logo-mark" viewBox="-100 -100 200 200" aria-label="Qdataline">
-          <circle cx="0" cy="0" r="78" fill="none" stroke="#10B981" stroke-width="18" stroke-linecap="round" stroke-dasharray="425 65" stroke-dashoffset="-34" transform="rotate(45)"/>
-          <path d="M 30 30 L 58 58 L 84 42" fill="none" stroke="#84CC16" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="0" cy="0" r="78" fill="none" stroke="#7C3AED" stroke-width="18" stroke-linecap="round" stroke-dasharray="425 65" stroke-dashoffset="-34" transform="rotate(45)"/>
+          <path d="M 30 30 L 58 58 L 84 42" fill="none" stroke="#8B5CF6" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <div class="logo-txt">
           <div class="n">Q<b>data</b>line</div>
@@ -497,7 +503,7 @@ var CURRENT_VIEW='dashboard', CURRENT_ID=null;
 /* ---- Nav kartı 3B-his ikonları (inline SVG, gradyan dolgulu — dış görsel
    bağımlılığı yok, tek dosya kısıtına uygun). ---- */
 var NAV_ICONS = {
-  dashboard:'<svg viewBox="0 0 64 64"><defs><linearGradient id="gB1" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#2563EB"/><stop offset="1" stop-color="#7DB2FF"/></linearGradient><linearGradient id="gB2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#D97706"/><stop offset="1" stop-color="#FCD34D"/></linearGradient><linearGradient id="gB3" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#059669"/><stop offset="1" stop-color="#84CC16"/></linearGradient></defs>'
+  dashboard:'<svg viewBox="0 0 64 64"><defs><linearGradient id="gB1" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#2563EB"/><stop offset="1" stop-color="#7DB2FF"/></linearGradient><linearGradient id="gB2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#D97706"/><stop offset="1" stop-color="#FCD34D"/></linearGradient><linearGradient id="gB3" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#6D28D9"/><stop offset="1" stop-color="#8B5CF6"/></linearGradient></defs>'
     +'<rect x="6" y="30" width="13" height="26" rx="3" fill="url(#gB1)"/>'
     +'<rect x="25" y="16" width="13" height="40" rx="3" fill="url(#gB2)"/>'
     +'<rect x="44" y="24" width="13" height="32" rx="3" fill="url(#gB3)"/></svg>',
@@ -507,7 +513,7 @@ var NAV_ICONS = {
     +'<rect x="19" y="24" width="26" height="4" rx="2" fill="#8FA397"/>'
     +'<rect x="19" y="34" width="26" height="4" rx="2" fill="#8FA397"/>'
     +'<rect x="19" y="44" width="18" height="4" rx="2" fill="#8FA397"/></svg>',
-  pending:'<svg viewBox="0 0 64 64"><defs><linearGradient id="gS1" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#059669"/><stop offset="1" stop-color="#34D399"/></linearGradient></defs>'
+  pending:'<svg viewBox="0 0 64 64"><defs><linearGradient id="gS1" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#6D28D9"/><stop offset="1" stop-color="#A78BFA"/></linearGradient></defs>'
     +'<circle cx="32" cy="32" r="26" fill="url(#gS1)"/>'
     +'<path d="M20 33 L28 41 L45 22" fill="none" stroke="#F2FBF6" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   all:'<svg viewBox="0 0 64 64"><defs><linearGradient id="gF1" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#B45309"/><stop offset="1" stop-color="#FBBF24"/></linearGradient></defs>'
@@ -891,6 +897,7 @@ function renderDetail(){
     html+='<button class="btn-line" id="btnRollback">↩ Bu MOC\'u Geri Al</button>';
   }
   html+='</div></div>';
+  html+=crossRefsPanelHTML();
   html+='</div>';
 
   html+='</div></div>';
@@ -976,6 +983,83 @@ function riskCell(score){
   if(score==null) return '—';
   var cls = score<=4?'var(--ok)':score<=9?'var(--warn)':score<=14?'#FB923C':'var(--crit)';
   return '<span class="risk-cell" style="background:'+cls+'">'+score+'</span>';
+}
+
+/* ============================================================================
+   İlişkili Kayıtlar (qdl_cross_refs — ortak platform tablosu, RLS/tenant_id
+   otomatik). Bir MOC talebinin başka modüllerdeki (DÖF/Q-Kalite, Tedarikçi,
+   Ekipman, Gıda) kayıtlarla ilişkisini gösterir/yönetir. Cross-project lookup
+   yapılamadığından hedef etiket serbest metin — bilinçli MVP kısıtı.
+   Desen Q-Tedarikçi Yönetimi modülündeki crossRefs* fonksiyonlarından
+   taşındı; MOC'un kendi sb/esc/val/toast/pill sınıflarına uyarlandı. */
+var CROSS_REF_MODULES=[{v:'q-kalite',l:'DÖF / Q-Kalite'},{v:'tedarikci',l:'Tedarikçi Yönetimi'},{v:'ekipman',l:'Ekipman'},{v:'gida',l:'Gıda Güvenliği'}];
+function crossRefModuleLabel(v){var m=CROSS_REF_MODULES.find(function(x){return x.v===v;});return m?m.l:(v||'—');}
+function crossRefsPanelHTML(){
+  return '<div class="panel" id="crPanel"><div class="ph"><h2>🔗 İlişkili Kayıtlar</h2>'
+    +'<button type="button" class="btn-line sm" id="crAddBtn" style="margin-left:auto">+ Bağlantı Ekle</button>'
+    +'</div><div class="pb">'
+    +'<div id="crList" class="empty">Yükleniyor…</div>'
+    +'<div id="crAddForm" style="display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:12px">'
+      +'<div class="row2"><div><label>Hedef Modül</label><select id="crMod">'+CROSS_REF_MODULES.map(function(m){return '<option value="'+esc(m.v)+'">'+esc(m.l)+'</option>';}).join('')+'</select></div>'
+      +'<div><label>Kayıt Etiketi</label><input id="crLabel" placeholder="ör. DÖF-2024-045"></div></div>'
+      +'<label>Not (opsiyonel)</label><input id="crNote" placeholder="kısa açıklama">'
+      +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">'
+        +'<button type="button" class="btn-line sm" id="crCancelBtn">Vazgeç</button>'
+        +'<button type="button" class="btn-leaf sm" id="crSaveBtn">Kaydet</button>'
+      +'</div>'
+    +'</div>'
+  +'</div></div>';
+}
+function crossRefsItemHTML(r,mySourceId){
+  var mine=String(r.source_id)===String(mySourceId)&&r.source_table==='moc_requests';
+  var mod=mine?r.target_module:r.source_module,lbl=mine?(r.target_label||r.target_id):(r.source_label||r.source_id);
+  return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line-2)">'
+    +'<div style="font-size:12.5px"><span class="pill blue">'+esc(crossRefModuleLabel(mod))+'</span> '+esc(lbl||'—')+(r.note?' <span style="color:var(--muted)"> — '+esc(r.note)+'</span>':'')+'</div>'
+    +'<button type="button" class="btn-line sm" data-cr-del="'+r.id+'" title="Bağlantıyı sil" style="flex-shrink:0;padding:2px 9px">✕</button>'
+  +'</div>';
+}
+function crossRefsLoad(sourceId){
+  var listEl=document.getElementById('crList'); if(!listEl) return;
+  var q1=sb.from('qdl_cross_refs').select('*').eq('source_module','moc').eq('source_table','moc_requests').eq('source_id',String(sourceId));
+  var q2=sb.from('qdl_cross_refs').select('*').eq('target_module','moc').eq('target_table','moc_requests').eq('target_id',String(sourceId));
+  Promise.all([q1,q2]).then(function(res){
+    if(res[0].error||res[1].error){ listEl.className='empty'; listEl.textContent='Yüklenemedi: '+((res[0].error||res[1].error).message); return; }
+    var rows=(res[0].data||[]).concat(res[1].data||[]);
+    if(!rows.length){ listEl.className='empty'; listEl.textContent='Henüz ilişkili kayıt yok.'; return; }
+    listEl.className=''; listEl.innerHTML=rows.map(function(r){return crossRefsItemHTML(r,sourceId);}).join('');
+    Array.prototype.forEach.call(listEl.querySelectorAll('[data-cr-del]'),function(b){
+      b.onclick=function(){ crossRefsDelete(b.getAttribute('data-cr-del'),sourceId); };
+    });
+  });
+}
+function crossRefsDelete(refId,sourceId){
+  confirmBox('Bu bağlantı silinsin mi?','Sil',function(){
+    sb.from('qdl_cross_refs').delete().eq('id',refId).then(function(res){
+      if(res.error){ toast('Silinemedi: '+res.error.message,true); return; }
+      closeModal(); toast('Bağlantı silindi'); crossRefsLoad(sourceId);
+    });
+  },true);
+}
+function crossRefsBind(sourceId,sourceLabel){
+  crossRefsLoad(sourceId);
+  var addBtn=document.getElementById('crAddBtn'), form=document.getElementById('crAddForm'),
+      cancel=document.getElementById('crCancelBtn'), save=document.getElementById('crSaveBtn');
+  if(addBtn) addBtn.onclick=function(){ form.style.display=form.style.display==='none'?'block':'none'; };
+  if(cancel) cancel.onclick=function(){ form.style.display='none'; };
+  if(save) save.onclick=function(){
+    var mod=val('crMod'), lbl=(val('crLabel')||'').trim(), note=(val('crNote')||'').trim();
+    if(!lbl){ toast('Kayıt etiketi zorunludur',true); return; }
+    sb.from('qdl_cross_refs').insert({
+      source_module:'moc', source_table:'moc_requests', source_id:String(sourceId), source_label:sourceLabel||null,
+      target_module:mod, target_table:'manual', target_id:lbl, target_label:lbl,
+      note:note||null
+    }).then(function(res){
+      if(res.error){ toast('Kaydedilemedi: '+res.error.message,true); return; }
+      toast('Bağlantı eklendi');
+      document.getElementById('crLabel').value=''; document.getElementById('crNote').value=''; form.style.display='none';
+      crossRefsLoad(sourceId);
+    });
+  };
 }
 
 /* ============================================================================
@@ -1319,6 +1403,7 @@ function bindDetailEvents(){
     b.onclick=function(){ setPssrResult(b.getAttribute('data-r')); };
   });
   bindChecklistEvents();
+  crossRefsBind(req.id, req.moc_no?req.moc_no+' — '+req.title:req.title);
 }
 
 /* ---- Durum geçişi ---- */
