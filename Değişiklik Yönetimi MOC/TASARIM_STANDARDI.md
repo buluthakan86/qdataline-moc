@@ -278,24 +278,26 @@ if(brandT){
 
 ## A.6 FAVICON
 
-- **Kaynak = Q-Tedarikçi'nin sol menüdeki `.logo-mark` SVG'si** (ayrıntılı, takımyıldız noktalı Q
-  sembolü: dairesel yeşil yay + yükselen "dataline" zigzag çizgisi + 3 nokta + ince bağlayıcı).
-  Favicon, bu logonun **sadeleştirilmiş** hâlidir: küçük boyutta (16px) kaybolacak ince detaylar
-  (takımyıldız noktaları, ince bağlayıcı çizgi, ok ucu) atılır; **dairesel yay + zigzag "dataline"
-  çizgisi** korunur, düz marka renkleriyle (`#10B981` yay, `#84CC16` çizgi).
-- **Boyutlar:** 16 / 32 / 180px. Küçük boyutta yukarıdaki sadeleştirilmiş hâl; büyük boyutta
-  (180px) tam menü logosuna yaklaşan (degradeli, noktalı) hâl kullanılabilir.
-- **Uygulama biçimi:** SVG'yi `data:image/svg+xml,...` olarak **inline** `<link rel="icon">` içine göm
-  (harici dosya bağımlılığı olmasın; her modül tek dosya). SVG ölçeklendiğinden tek kaynak yeter;
-  gerekirse ondan üretilmiş `.ico`/`.png` eklenir.
-- **⚠️ Terk edilen:** Q-Tedarikçi'nin ESKİ inline favicon'u (basit yay + TEK düz çapraz çizgi) menü
-  logosuyla TUTARSIZDI ve terk edildi. Yerine, menü logosundan türetilen aşağıdaki favicon geçti —
-  **Q-Tedarikçi'nin kendi kodunda da güncellendi** (artık favicon = menü logosunun küçültülmüş hâli):
-```html
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-104 -185 380 380'%3E%3Ccircle cx='0' cy='0' r='86' fill='none' stroke='%2310B981' stroke-width='20' stroke-linecap='round' stroke-dasharray='470 71' stroke-dashoffset='-38' transform='rotate(45)'/%3E%3Cpath d='M 42 42 L 96 96 L 148 96 L 180 52 L 214 82 L 258 30' fill='none' stroke='%2384CC16' stroke-width='20' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-```
-- **Hedef:** üç modülün de AYNI bu favicon'u (menü logosunun sadeleştirilmiş hâli) kullanması
-  (şu an her modül farklı ikonda).
+> **Düzeltme (2026-08-24):** Bu bölüm eskiden ayrıntılı, takımyıldız-noktalı bir "Q sembolü"nü
+> referans gösteriyordu — bu, kodun gerçek durumuyla uyuşmuyordu ve yanlıştı (bkz. ana sentez
+> raporu §6.1). **Gerçek onaylı logo, Ekipman/Tedarikçi/MOC/Gıda/Eğitim'in kullandığı BASİT
+> "halka + tik işareti" tasarımıdır** — tek `circle` (kesikli/yay görünümlü dairesel halka) +
+> 3 noktalı tek bir `path` (tik işareti). Zigzag çizgi, ekstra noktalar, bağlayıcı çizgi YOKTUR.
+
+- **Kaynak = sidebar/menü `.logo-mark` SVG'si**, `viewBox="-100 -100 200 200"`:
+  ```html
+  <svg class="logo-mark" viewBox="-100 -100 200 200" aria-label="Qdataline">
+    <circle cx="0" cy="0" r="78" fill="none" stroke="[MODÜL RENGİ]" stroke-width="18" stroke-linecap="round" stroke-dasharray="425 65" stroke-dashoffset="-34" transform="rotate(45)"/>
+    <path d="M 30 30 L 58 58 L 84 42" fill="none" stroke="[MODÜL RENGİ]" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  ```
+  `[MODÜL RENGİ]` = §B.1 tablosundaki modülün `--leaf` rengi (iki path de aynı renk kullanır,
+  degrade değil — düz renk).
+- **Favicon = aynı SVG, ek sadeleştirme gerekmez** — tasarım zaten 16px'te net okunacak kadar
+  sade (yalnızca 2 basit şekil). `<link rel="icon">` içine `data:image/svg+xml,...` olarak inline
+  gömülür (harici dosya bağımlılığı olmasın).
+- **Boyutlar:** 16 / 32 / 180px, hepsinde aynı SVG (ölçeklenebilir, ayrı bir "büyük boyut" varyantı
+  gerekmez).
 
 ---
 
