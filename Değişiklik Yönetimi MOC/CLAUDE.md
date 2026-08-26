@@ -6,6 +6,14 @@ HTML (`MOC.html`), build yok — Ekipman/Gıda/Q-Tedarikçi/Q-Kalite ile aynı
 desen. Bağımsız modül; ekipman modülüne yumuşak referansla (equipment_id
 veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışır.
 
+## Çapraz-modül referans (2026-08-24)
+MOC talebi detay görünümünde "🔗 İlişkili Kayıtlar" paneli — ortak `qdl_cross_refs`
+tablosuna (aynı proje) manuel etiketle diğer modüllerdeki (Ekipman, Q-Tedarikçi, Gıda)
+kayıtlara bağlantı ekle/listele/sil. Aynı desen 3 modülde daha var, ayrı SQL gerekmedi.
+Not: MOC'un `moc_schema_v1-1.sql` içindeki `tenant_modules` tablosu **kullanılmıyor** —
+opsiyonel/uygulanmamış bir referans taslağı, gerçek modül-yetkilendirme `modul_yetki`
+üzerinden çalışıyor.
+
 ## Supabase
 - Proje: Ekipman Yönetimi projesi (**bbltvuxxtacrpgrqnfoh**) — ayrı proje
   değil, tabloları `moc_` önekiyle aynı projeye eklendi.
