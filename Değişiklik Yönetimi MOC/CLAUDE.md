@@ -6,6 +6,13 @@ HTML (`MOC.html`), build yok — Ekipman/Gıda/Q-Tedarikçi/Q-Kalite ile aynı
 desen. Bağımsız modül; ekipman modülüne yumuşak referansla (equipment_id
 veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışır.
 
+## Faz 3.7 — bildirim üretimi (2026-08-26 gece)
+`crossRefsBind`'daki kaydetme akışına `notifyOwnerOfCrossRef()` eklendi — yeni "İlişkili Kayıt"
+bağlantısı eklenince tenant sahibine (`is_owner=true`) `qdl_notifications` satırı yazılıyor
+(Ekipman `index.html`'deki desenin birebir kopyası). Görüntüleme arayüzü (zil) bu modülde yok —
+merkezi bildirim hub'ı Ekipman'da (SSO sayesinde ayrı giriş gerekmiyor). Detay/gerekçe: Ekipman
+CLAUDE.md.
+
 ## Faz 3.3 — SSO: .qdataline.com paylaşımlı cookie oturumu (2026-08-26)
 `MOC.html`'deki `createClient()` çağrısına `qdlCookieAuthStorage()` eklendi — oturum `localStorage`
 yanında `Domain=.qdataline.com` cookie'sinde de tutuluyor (fail-safe: cookie çalışmazsa localStorage'a

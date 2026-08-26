@@ -1119,6 +1119,25 @@ function crossRefsDelete(refId,sourceId){
     });
   },true);
 }
+/* Faz 3.7 (2026-08-26) — yeni bağlantı eklenince tenant sahibine (is_owner=true) bildirim.
+   Ekipman index.html'deki notifyOwnerOfCrossRef() ile birebir aynı desen. */
+function notifyOwnerOfCrossRef(targetModule,sourceLabel,targetLabel){
+  sb.auth.getUser().then(function(ures){
+    var user=ures&&ures.data&&ures.data.user;if(!user)return;
+    sb.from('profiles').select('tenant_id,is_owner').eq('id',user.id).maybeSingle().then(function(mres){
+      var me=mres&&mres.data;if(!me||!me.tenant_id)return;
+      sb.from('profiles').select('id').eq('tenant_id',me.tenant_id).eq('is_owner',true).maybeSingle().then(function(ores){
+        var owner=ores&&ores.data;if(!owner||owner.id===user.id)return;
+        sb.from('qdl_notifications').insert({
+          tenant_id:me.tenant_id,recipient_user_id:owner.id,module:'moc',
+          title:'Yeni ilişkili kayıt eklendi',
+          body:(sourceLabel||'Bir MOC talebi')+' → '+crossRefModuleLabel(targetModule)+': '+targetLabel,
+          link_module:'moc'
+        });
+      });
+    });
+  }).catch(function(){});
+}
 function crossRefsBind(sourceId,sourceLabel){
   crossRefsLoad(sourceId);
   var addBtn=document.getElementById('crAddBtn'), form=document.getElementById('crAddForm'),
@@ -1137,6 +1156,7 @@ function crossRefsBind(sourceId,sourceLabel){
       toast('Bağlantı eklendi');
       document.getElementById('crLabel').value=''; document.getElementById('crNote').value=''; form.style.display='none';
       crossRefsLoad(sourceId);
+      notifyOwnerOfCrossRef(mod,sourceLabel,lbl);
     });
   };
 }
