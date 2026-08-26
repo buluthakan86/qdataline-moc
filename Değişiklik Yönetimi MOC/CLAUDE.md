@@ -10,9 +10,11 @@ veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışı
 MOC talebi detay görünümünde "🔗 İlişkili Kayıtlar" paneli — ortak `qdl_cross_refs`
 tablosuna (aynı proje) manuel etiketle diğer modüllerdeki (Ekipman, Q-Tedarikçi, Gıda)
 kayıtlara bağlantı ekle/listele/sil. Aynı desen 3 modülde daha var, ayrı SQL gerekmedi.
-Not: MOC'un `moc_schema_v1-1.sql` içindeki `tenant_modules` tablosu **kullanılmıyor** —
-opsiyonel/uygulanmamış bir referans taslağı, gerçek modül-yetkilendirme `modul_yetki`
-üzerinden çalışıyor.
+Not: MOC'un `moc_schema_v1-1.sql` içindeki `tenant_modules` taslağı MOC'ta hiç uygulanmadı,
+ama **aynı adlı gerçek bir tablo başka bir yerde (Q-Kalite migrasyonu, 2026-08-25) zaten
+oluşturulmuş ve şimdi Ekipman hub'ının (`index.html`) paket/görünürlük kontrolü için resmi
+hâle getirildi** (bkz. Ekipman `sql/tenant_modules_v1.sql`, module_code='moc' MOC için de var).
+MOC'un kendi kullanıcı-yetkilendirmesi hâlâ `modul_yetki`/`has_modul('moc')` üzerinden.
 
 ## Supabase
 - Proje: Ekipman Yönetimi projesi (**bbltvuxxtacrpgrqnfoh**) — ayrı proje
