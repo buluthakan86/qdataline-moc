@@ -6,6 +6,13 @@ HTML (`MOC.html`), build yok — Ekipman/Gıda/Q-Tedarikçi/Q-Kalite ile aynı
 desen. Bağımsız modül; ekipman modülüne yumuşak referansla (equipment_id
 veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışır.
 
+## Faz 3.3 — SSO: .qdataline.com paylaşımlı cookie oturumu (2026-08-26)
+`MOC.html`'deki `createClient()` çağrısına `qdlCookieAuthStorage()` eklendi — oturum `localStorage`
+yanında `Domain=.qdataline.com` cookie'sinde de tutuluyor (fail-safe: cookie çalışmazsa localStorage'a
+düşer, login bozulmaz). Kod Ekipman `index.html`'deki ile birebir aynı (detay: Ekipman CLAUDE.md
+§Faz 3.3). Not: MOC'un barındırma platformu (Cloudflare Pages varsayıldı) bu değişiklik sırasında
+bağımsız doğrulanamadı — `document.cookie` yazımı barındırma/CDN ayrımından bağımsız çalışır, engel değil.
+
 ## Çapraz-modül referans (2026-08-24)
 MOC talebi detay görünümünde "🔗 İlişkili Kayıtlar" paneli — ortak `qdl_cross_refs`
 tablosuna (aynı proje) manuel etiketle diğer modüllerdeki (Ekipman, Q-Tedarikçi, Gıda)

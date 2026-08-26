@@ -277,8 +277,45 @@ var SUPABASE_URL = 'https://bbltvuxxtacrpgrqnfoh.supabase.co';
 var SUPABASE_KEY = 'sb_publishable_3UUYAbeaA4tJahYiAAGhLQ_AtDfHkq4';
 var MOC_MODUL = 'moc';
 
+/* Faz 3.3 SSO (2026-08-26): .qdataline.com paylaşımlı cookie oturumu — kod Ekipman index.html ile birebir aynı. */
+function qdlCookieAuthStorage(){
+  var DOMAIN=/(^|\.)qdataline\.com$/.test(location.hostname)?'.qdataline.com':'';
+  var SECURE=location.protocol==='https:'?'; Secure':'';
+  var CHUNK=3500;
+  function setCookie(name,value,days){
+    var attrs='; Path=/; Max-Age='+(days*86400)+'; SameSite=Lax'+SECURE+(DOMAIN?'; Domain='+DOMAIN:'');
+    document.cookie=name+'='+encodeURIComponent(value)+attrs;
+  }
+  function getCookie(name){
+    var re=new RegExp('(?:^|; )'+name.replace(/[.$?*|{}()\[\]\\\/+^]/g,'\\$&')+'=([^;]*)');
+    var m=document.cookie.match(re);
+    return m?decodeURIComponent(m[1]):null;
+  }
+  function delCookie(name){ document.cookie=name+'=; Path=/; Max-Age=0'+(DOMAIN?'; Domain='+DOMAIN:''); }
+  function clearChunks(key){ delCookie(key); for(var i=0;;i++){ if(getCookie(key+'.'+i)==null) break; delCookie(key+'.'+i); } }
+  return {
+    getItem:function(key){
+      var val=getCookie(key);
+      if(val==null){ var p0=getCookie(key+'.0'); if(p0!=null){ var parts=[p0],i=1,p; while((p=getCookie(key+'.'+i))!=null){ parts.push(p); i++; } val=parts.join(''); } }
+      if(val!=null) return val;
+      try{ return localStorage.getItem(key); }catch(e){ return null; }
+    },
+    setItem:function(key,value){
+      try{ localStorage.setItem(key,value); }catch(e){}
+      try{
+        clearChunks(key);
+        if(value.length<=CHUNK){ setCookie(key,value,30); }
+        else{ for(var i=0;i*CHUNK<value.length;i++){ setCookie(key+'.'+i,value.slice(i*CHUNK,(i+1)*CHUNK),30); } }
+      }catch(e){}
+    },
+    removeItem:function(key){
+      try{ localStorage.removeItem(key); }catch(e){}
+      try{ clearChunks(key); }catch(e){}
+    }
+  };
+}
 var sb = null;
-try{ if(window.supabase && /^https:\/\//.test(SUPABASE_URL)) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){}
+try{ if(window.supabase && /^https:\/\//.test(SUPABASE_URL)) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{storage:qdlCookieAuthStorage()}}); }catch(e){}
 
 var cloudUser='', cloudUserId=null, cloudTenantId=null, cloudRole='VIEWER', cloudFullName='';
 
@@ -523,7 +560,7 @@ var NAV_ICONS = {
     +'<circle cx="32" cy="32" r="10" fill="#3A4A41"/></svg>'
 };
 function renderNav(){
-  var html=navItem('dashboard','Genel Bakış')
+  var html=navItem('dashboard','Özet')
     +navItem('mine','Değişiklik Talepleri')
     +navItem('pending','Onay Bekleyenler')
     +navItem('all','Tüm Değişiklikler');
@@ -558,7 +595,7 @@ function go(view,id){
    grafik) ve T-7 içinde biten/geçmiş geçici değişiklikler listesi.
    ========================================================================= */
 function viewDashboard(){
-  document.getElementById('pageTitle').textContent='Genel Bakış';
+  document.getElementById('pageTitle').textContent='Özet';
   document.getElementById('pageCrumb').textContent='';
   document.getElementById('content').innerHTML='<div class="empty">Yükleniyor…</div>';
   var TERMINAL=['CLOSED','REJECTED','CANCELLED'];
@@ -614,7 +651,9 @@ function viewDashboard(){
 }
 function renderDashboardHtml(d){
   var html='<div class="view">';
-  html+='<div class="kpis">'
+  html+='<div style="display:flex;justify-content:flex-end;margin-bottom:8px">'
+    +'<button class="btn-line sm" id="dashCustomBtn" onclick="openDashCustomize()">⚙ Özelleştir</button></div>';
+  html+='<div class="kpis" data-widget="kpi">'
     +'<div class="kpi"><div class="val">'+d.openCount+'</div><div class="lbl">Açık MOC</div></div>'
     +'<div class="kpi'+(d.pendingCount?' warn':'')+'"><div class="val">'+d.pendingCount+'</div><div class="lbl">Onay Bekleyen (Bende)</div></div>'
     +'<div class="kpi"><div class="val">'+fmtMoney(d.costTotalStart)+' ₺</div><div class="lbl">Toplam Başlangıç Bütçesi'+(EXCHANGE_READY?'':' *')+'</div></div>'
@@ -623,7 +662,7 @@ function renderDashboardHtml(d){
   if(!EXCHANGE_READY) html+='<p class="hint" style="margin-top:-12px;margin-bottom:16px">* Güncel kur servisine şu an ulaşılamadı, TRY dışı tutarlar bu toplamlara dahil edilemedi.</p>';
 
   html+='<div class="dash-grid">';
-  html+='<div class="panel"><div class="ph"><h2>Kategoriye Göre Açık MOC Dağılımı</h2></div><div class="pb">';
+  html+='<div class="panel" data-widget="w-cat"><div class="ph"><h2>Kategoriye Göre Açık MOC Dağılımı</h2></div><div class="pb">';
   html+= d.catBars.length ? d.catBars.map(function(b){
     return '<div class="barrow"><div class="barlbl" title="'+esc(b.name)+'">'+esc(b.name)+'</div>'
       +'<div class="bartrack"><div class="barfill" style="width:'+Math.round(b.count/d.maxCat*100)+'%"></div></div>'
@@ -631,7 +670,7 @@ function renderDashboardHtml(d){
   }).join('') : '<div class="empty">Açık MOC yok.</div>';
   html+='</div></div>';
 
-  html+='<div class="panel"><div class="ph"><h2>Geçici Değişiklikler — T-7 / Süresi Geçen</h2></div><div class="pb">';
+  html+='<div class="panel" data-widget="w-temp"><div class="ph"><h2>Geçici Değişiklikler — T-7 / Süresi Geçen</h2></div><div class="pb">';
   html+= d.tempList.length ? d.tempList.map(function(x){
     return '<div class="dash-list-row"><span class="t">'+esc(x.req.moc_no||('#'+x.req.id))+' · '+esc(x.req.title)+'</span>'+tempWarnPill(x.req.planned_end)+'</div>';
   }).join('') : '<div class="empty">Yaklaşan/geçmiş geçici değişiklik yok.</div>';
@@ -640,6 +679,46 @@ function renderDashboardHtml(d){
 
   html+='</div>';
   document.getElementById('content').innerHTML=html;
+  applyMocDashPrefs();
+}
+
+/* ---- Özet özelleştirme (localStorage, Ekipman modülündeki ⚙ Özelleştir
+   mekanizmasıyla aynı desen — data-widget attribute'ları + localStorage
+   listesi ile kart gizleme, iş mantığı/veri sorguları değişmedi). ---- */
+var MOC_DASH_WIDGETS = [
+  ['kpi','Özet kartları (KPI)'],
+  ['w-cat','Panel: Kategoriye Göre Açık MOC Dağılımı'],
+  ['w-temp','Panel: Geçici Değişiklikler (T-7 / Süresi Geçen)']
+];
+function mocDashHidden(){
+  try{ return JSON.parse(localStorage.getItem('moc_dash_hidden')||'[]'); }catch(_){ return []; }
+}
+function applyMocDashPrefs(){
+  var hid=mocDashHidden();
+  Array.prototype.forEach.call(document.querySelectorAll('#content [data-widget]'),function(el){
+    el.style.display = hid.indexOf(el.getAttribute('data-widget'))>=0 ? 'none' : '';
+  });
+}
+function openDashCustomize(){
+  var hid=mocDashHidden();
+  modalTitle('Özet\'i Özelleştir');
+  setModalBody('<p class="hint" style="margin-top:0">Görmek istediğin kartları seç. Seçim bu tarayıcıda saklanır.</p>'
+    +'<div id="mocDashCustomList" style="display:flex;flex-direction:column;gap:2px">'
+    +MOC_DASH_WIDGETS.map(function(w){
+      var k=w[0], lbl=w[1];
+      return '<label style="display:flex;align-items:center;gap:8px;margin:0;padding:7px 4px;border-bottom:1px solid var(--line)">'
+        +'<input type="checkbox" data-w="'+k+'" '+(hid.indexOf(k)>=0?'':'checked')+'><span>'+esc(lbl)+'</span></label>';
+    }).join('')+'</div>');
+  modalFoot('Uygula','Kapat',function(){
+    var hidden=[];
+    Array.prototype.forEach.call(document.querySelectorAll('#mocDashCustomList input:not(:checked)'),function(cb){
+      hidden.push(cb.getAttribute('data-w'));
+    });
+    localStorage.setItem('moc_dash_hidden', JSON.stringify(hidden));
+    closeModal();
+    applyMocDashPrefs();
+  });
+  openModal();
 }
 
 /* ============================================================================
