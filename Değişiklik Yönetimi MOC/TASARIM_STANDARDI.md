@@ -385,3 +385,24 @@ button,.btn{
 4. Sol menü tepesine **§4.2 marka bloğunu** kur (logo + Q**data**line + altında UPPERCASE modül adı) ve
    **§5 logo-menü davranışını** bağla (hamburger yok).
 5. Buton/kart/menü stillerini **§2, §4.3, §8** ölçeğine göre uygula; durum renkleri (§1) DEĞİŞMEZ.
+
+---
+
+## NOT — MOC modülüne özel farklar ve tema güncellemesi (2026-08-27)
+
+- **MOC'un topbar + yatay `.navcard` navigasyonu bilinçli bir farklılaşmadır** —
+  diğer modüllerdeki sol sidebar iskeleti MOC'ta YOK ve bu şekilde kalmalıdır;
+  sidebar'a çevrilmemeli, navigasyon iskeletine dokunulmamalıdır.
+- **Rapor/print/PDF ekranları** (bu modülde ayrı bir sabit-beyaz print scope'u
+  mevcut değil, grep ile teyit edildi) genel açık/koyu temaya bağlı olmaz;
+  ileride eklenirse kendi sabit renklerini korumalı, `data-theme`'e bağlanmamalıdır.
+- **Açık tema eklendi** (`html[data-theme="light"]`, FOUC-önleme script +
+  topbar'da 🌙/☀ toggle butonu, `localStorage.moc_theme`). Marka moru `--leaf`
+  (#7C3AED) DEĞİŞMEDİ; açık temada `--leaf-d:#6D28D9` (koyu temada `#A78BFA` idi).
+- **`--card` bir tık açıldı ve mor aileye kaydırıldı:** `#121A15` → `#1B1626`.
+- **`--sand`'e çok küçük mor-gri hue kayması verildi:** `#0C1510` → `#120E17`
+  (düşük ΔL, marka tonuna uyum için).
+- **`.navcard.on` glow kaldırıldı:** eski
+  `box-shadow:0 0 14px rgba(124,58,237,.35), 0 0 0 1px var(--leaf), var(--shadow)`
+  yerine düz `border:1px solid var(--leaf)` + hafif mor tonlu arka plan
+  gradyanı (`rgba(124,58,237,.20)` katmanı) ve ikon kutusuna hafif dolgu.

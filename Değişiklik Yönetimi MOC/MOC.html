@@ -10,6 +10,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-100 -100 200 200'%3E%3Ccircle cx='0' cy='0' r='78' fill='none' stroke='%2310B981' stroke-width='18' stroke-linecap='round' stroke-dasharray='425 65' stroke-dashoffset='-34' transform='rotate(45)'/%3E%3Cpath d='M 30 30 L 58 58 L 84 42' fill='none' stroke='%2384CC16' stroke-width='18' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 
+<!-- Tema — sayfa boyanmadan ÖNCE localStorage'dan okunup <html>'e uygulanır,
+     yoksa açık tema seçilmişken ilk karede koyu tema "çakıp" sonra değişir (FOUC). -->
+<script>
+  try{
+    var mocTheme = localStorage.getItem('moc_theme');
+    if(mocTheme === 'light'){ document.documentElement.setAttribute('data-theme','light'); }
+  }catch(e){}
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -20,7 +29,7 @@
   color-scheme:dark;
   --forest:#10241B; --forest-2:#7CD3AD; --forest-3:#1E6B52;
   --leaf:#7C3AED; --leaf-d:#A78BFA; --lime:#C4B5FD; --ink-on-accent:#07120C;
-  --sand:#0C1510; --card:#121A15; --mint:#14261C; --mint-2:#101A14;
+  --sand:#120E17; --card:#1B1626; --mint:#14261C; --mint-2:#101A14;
   --line:#1E2B22; --line-2:#19241D;
   --ink:#F2FBF6; --muted:#8FA397; --accent:#D9C06A;
   --ok:#34D399;   --ok-bg:rgba(16,185,129,.14);
@@ -32,6 +41,19 @@
   --purple:#B9A5F2; --purple-bg:rgba(167,139,250,.15);
   --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28);
   --bar-track:#243129; --sb-thumb:#22332A; --sb-thumb-h:#2E4437;
+}
+/* ---- Açık tema (TASARIM_STANDARDI.md ortak paleti; --leaf/--leaf ana mor DEĞİŞMEZ) ---- */
+html[data-theme="light"]{
+  color-scheme:light;
+  --sand:#F2F6F3; --card:#FFFFFF; --mint:#E7F2EC; --mint-2:#EEF5F0;
+  --line:#D8E3DB; --line-2:#E3ECE6;
+  --ink:#101A13; --muted:#54655A;
+  --leaf-d:#6D28D9;
+  --ok:#0C8F5E;   --ok-bg:rgba(16,185,129,.13);
+  --warn:#9C6A0E; --warn-bg:rgba(240,169,59,.16);
+  --crit:#C13D4E; --crit-bg:rgba(248,113,113,.14);
+  --shadow:0 1px 2px rgba(16,30,20,.06),0 8px 20px rgba(16,30,20,.08);
+  --bar-track:#DCE7E0; --sb-thumb:#C3D3C8; --sb-thumb-h:#AEC2B4;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--sand);color:var(--ink);font-family:"Inter","Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.45}
@@ -80,7 +102,8 @@ h1,h2,h3,h4{font-family:"Space Grotesk","Inter","Segoe UI",system-ui,sans-serif;
 .navcard .cnt.warn{background:var(--warn-bg);color:var(--warn)}
 .navcard .cnt.crit{background:var(--crit-bg);color:var(--crit)}
 .navcard:hover{border-color:var(--leaf-d);transform:translateY(-2px)}
-.navcard.on{border-color:var(--leaf);box-shadow:0 0 14px rgba(124,58,237,.35), 0 0 0 1px var(--leaf), var(--shadow)}
+.navcard.on{border:1px solid var(--leaf);background:linear-gradient(150deg,rgba(124,58,237,.20) 0%,#131022 55%,#0D0B18 100%);box-shadow:var(--shadow)}
+.navcard.on .card-ico{background:rgba(124,58,237,.18);border-radius:10px}
 
 /* ---- Dashboard ---- */
 .dash-section-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--leaf-d);font-weight:700;margin:4px 0 10px}
@@ -247,6 +270,7 @@ textarea{resize:vertical;min-height:70px}
       <div class="sp"></div>
       <div class="side-search"><input id="sideSearch" placeholder="MOC no / başlık ara…"></div>
       <button class="btn-leaf" id="btnNewRequest">+ Yeni Değişiklik Talebi</button>
+      <button class="btn-line sm" id="btnThemeToggle" title="Açık/Koyu tema">🌙</button>
       <span id="userLabel"></span>
       <button class="btn-line sm" id="btnLogout">Çıkış</button>
     </div>
@@ -993,9 +1017,10 @@ function renderTransitionsPanel(){
   } else if(!opts.length){
     html+='<p class="hint">Bu durumda ('+STATUS_LABEL[req.status]+') yetkinizle yapabileceğiniz bir geçiş yok, veya terminal durum.</p>';
   } else {
-    html+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+opts.map(function(tr){
+    html+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+opts.map(function(tr,i){
       var ok = !tr.cond || tr.cond(req, ctx);
-      return '<button class="btn-leaf transbtn" data-to="'+tr.to+'" '+(ok?'':'disabled title="Koşul sağlanmadı"')+'>→ '+(STATUS_LABEL[tr.to]||tr.to)+'</button>';
+      var cls = i===0 ? 'btn-leaf' : 'btn-line';
+      return '<button class="'+cls+' transbtn" data-to="'+tr.to+'" '+(ok?'':'disabled title="Koşul sağlanmadı"')+'>→ '+(STATUS_LABEL[tr.to]||tr.to)+'</button>';
     }).join('')+'</div>';
     if(req.status==='SCREENING'){
       html+='<label style="margin-top:12px">Red gerekçesi (REJECTED için zorunlu)</label><textarea id="rejectReason">'+esc(req.reason||'')+'</textarea>';
@@ -2044,6 +2069,23 @@ function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+p2(d.getMonth(
 function p2(n){ return (n<10?'0':'')+n; }
 function fmtDT(iso){ if(!iso) return '—'; var d=new Date(iso); return p2(d.getDate())+'.'+p2(d.getMonth()+1)+'.'+d.getFullYear()+' '+p2(d.getHours())+':'+p2(d.getMinutes()); }
 
+// Koyu (varsayılan) / açık tema seçimi. Marka moru (--leaf) sabit kalır, yalnız
+// zemin/metin ters çevrilir; seçim localStorage'da kalıcıdır (bkz. head'deki
+// FOUC-önleme betiği, html[data-theme="light"] bloğu).
+function initThemeToggle(){
+  var btn=document.getElementById('btnThemeToggle');
+  if(!btn) return;
+  function current(){ try{ return localStorage.getItem('moc_theme')==='light'?'light':'dark'; }catch(e){ return 'dark'; } }
+  function paint(t){ btn.textContent = t==='light' ? '☀' : '🌙'; }
+  paint(current());
+  btn.onclick=function(){
+    var next = current()==='light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next==='light'?'light':'dark');
+    try{ localStorage.setItem('moc_theme', next); }catch(e){}
+    paint(next);
+  };
+}
+
 /* ============================================================================
    Başlat
    ========================================================================= */
@@ -2059,6 +2101,7 @@ function fmtDT(iso){ if(!iso) return '—'; var d=new Date(iso); return p2(d.get
   });
   document.getElementById('btnLogout').onclick=function(){ sb.auth.signOut().then(function(){ location.reload(); }); };
   document.getElementById('btnNewRequest').onclick=openNewRequest;
+  initThemeToggle();
   document.getElementById('overlay').onclick=closeModal;
   document.getElementById('modalCancel').onclick=closeModal;
 
