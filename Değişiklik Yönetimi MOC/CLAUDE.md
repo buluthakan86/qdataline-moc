@@ -6,6 +6,15 @@ HTML (`MOC.html`), build yok — Ekipman/Gıda/Q-Tedarikçi/Q-Kalite ile aynı
 desen. Bağımsız modül; ekipman modülüne yumuşak referansla (equipment_id
 veya asset_ref serbest metin) bağlanır, ekipman modülü olmadan da çalışır.
 
+## Faz 3.4 — Kullanıcılar paneli (persona atama, 2026-08-28)
+Ana sentez raporu §3.4. Ayarlar ekranı (`renderSettings`, zaten `canDo('admin')` ile korunuyor)
+en üste yeni bir **"Kullanıcılar"** paneli aldı (`renderUsersSettingsSection`, `innerHTML`
+atamasından SONRA çağrılır — sırası önemli, önce çağrılırsa panel `renderSettings`'in tam
+`innerHTML` overwrite'ıyla silinir). Ortak `profiles` tablosundan `tenant_id=cloudTenantId`
+kullanıcıları çekilip yalnızca **persona** (saha_operatoru/sorumlu/ust_yonetim/denetci) atanır,
+değişiklik anında kaydedilir. **Rol değişimi BİLİNÇLİ eklenmedi** — Ekipman modülündeki ortak
+"Kullanıcılar" ekranı zaten bu işi yapıyor. Node ile sözdizimi doğrulandı. Kullanıcı henüz test etmedi.
+
 ## Faz 3.7 — bildirim üretimi (2026-08-26 gece)
 `crossRefsBind`'daki kaydetme akışına `notifyOwnerOfCrossRef()` eklendi — yeni "İlişkili Kayıt"
 bağlantısı eklenince tenant sahibine (`is_owner=true`) `qdl_notifications` satırı yazılıyor

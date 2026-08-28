@@ -1791,6 +1791,31 @@ function viewSettings(){
   document.getElementById('content').innerHTML='<div class="empty">Yükleniyor…</div>';
   reloadLookupsAll().then(renderSettings);
 }
+/* Faz 3.4 — Kullanıcılar (persona atama, 2026-08-28). Ayarlar zaten canDo('admin') ile
+   korunuyor. Rol (ADMIN/EDITOR/VIEWER) değişimi BİLİNÇLİ eklenmedi — Ekipman modülündeki
+   ortak "Kullanıcılar" ekranı aynı profiles tablosunu zaten yönetiyor. */
+var PERSONA_TR_MOC={saha_operatoru:'Saha Operatörü',sorumlu:'Sorumlu',ust_yonetim:'Üst Yönetim',denetci:'Denetçi'};
+function renderUsersSettingsSection(){
+  document.getElementById('content').insertAdjacentHTML('afterbegin','<div class="panel" id="usersPanel"><div class="ph"><h2>Kullanıcılar</h2></div><div class="pb"><div class="hint" style="margin-bottom:10px">Yalnızca <b>persona</b> (domain-dili etiket) atanır; rol/yetki değişimi Ekipman modülünden yapılır.</div><div id="usersPanelBody" class="empty">Yükleniyor…</div></div></div>');
+  sb.from('profiles').select('id,full_name,role,is_active,persona').eq('tenant_id',cloudTenantId).order('created_at').then(function(r){
+    var rows=(r&&r.data)||[];
+    var body=document.getElementById('usersPanelBody'); if(!body) return;
+    if(!rows.length){ body.innerHTML='<span class="empty">Kayıt yok.</span>'; return; }
+    var trs=rows.map(function(u){
+      var opts='<option value="">—</option>'+Object.keys(PERSONA_TR_MOC).map(function(k){return '<option value="'+k+'" '+(u.persona===k?'selected':'')+'>'+PERSONA_TR_MOC[k]+'</option>';}).join('');
+      return '<tr><td>'+esc(u.full_name||'(isimsiz)')+'</td><td class="hint">'+esc(u.role||'—')+'</td><td><select data-persona="'+u.id+'">'+opts+'</select></td><td>'+(u.is_active===false?'<span class="pill miss">Pasif</span>':'<span class="pill ok">Aktif</span>')+'</td></tr>';
+    }).join('');
+    body.outerHTML='<table id="usersPanelBody"><thead><tr><th>Ad</th><th>Rol</th><th>Persona</th><th>Durum</th></tr></thead><tbody>'+trs+'</tbody></table>';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-persona]'),function(s){
+      s.onchange=function(){
+        sb.from('profiles').update({persona:s.value||null}).eq('id',s.dataset.persona).then(function(res){
+          if(res.error){ toast('Persona güncellenemedi: '+res.error.message,1); return; }
+          toast('Persona güncellendi');
+        });
+      };
+    });
+  });
+}
 function renderSettings(){
   var catRows=ALL_CATEGORIES.map(function(c){
     var own = c.tenant_id===cloudTenantId;
@@ -1814,6 +1839,7 @@ function renderSettings(){
     +'<p class="hint">Global (tenant\'sız) satırlar platform varsayılanıdır, yalnız kendi tenant\'ınıza ait satırları düzenleyebilirsiniz. Kullanılmış kayıtlar silinemez, yalnız pasifleştirilebilir.</p>'
     +renderChecklistSettingsSection();
   bindSettingsEvents();
+  renderUsersSettingsSection();
 }
 function renderChecklistSettingsSection(){
   var rows=(ALL_CHECKLIST_SETS||[]).map(function(s){
