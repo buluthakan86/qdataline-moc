@@ -33,6 +33,8 @@
 | **MOC (Değişiklik Yönetimi)** | `#7C3AED` | `#A78BFA` | `#C4B5FD` | Mor — kontrol/yönetişim |
 | **Q-Kalite (Şikayet-DÖF-CAPA)** | `#0284C7` | `#38BDF8` | `#7DD3FC` | Gök mavisi — güven/kalite güvencesi |
 | **Eğitim Platformu** | `#E11D48` | `#FB7185` | `#FDA4AF` | Gül kırmızısı — enerji/öğrenme |
+| **Doküman Yönetimi** | `#4F46E5` | `#6366F1` | `#818CF8` | İndigo/slate — nötr, kurumsal, "kayıt/arşiv otoritesi" çağrışımı |
+| **Bakım & Onarım (BOY)** | `#C026D3` | `#E879F9` | `#F0ABFC` | Fuşya/Magenta — bakım/onarım aktif müdahale çağrışımı |
 
 **Uygulama:** §A.1'deki renk paletinde yalnızca `--forest-3` (hover), `--leaf`, `--leaf-d`, `--lime`,
 `--ink-on-accent` değerlerini ve bunlardan türeyen degrade/gradient tanımlarını (buton degradesi,
