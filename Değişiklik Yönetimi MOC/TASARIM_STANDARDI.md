@@ -169,6 +169,14 @@ Tümü `:root` altında CSS değişkeni olarak tanımlanır. **Birebir kopyala:*
 
 ## A.4 SOL MENÜ (sidebar) + LOGO/BAŞLIK YERLEŞİMİ
 
+> **İstisna — MOC (2026-08-24, ana sentez raporu §5 Faz 2.2'de kullanıcı onaylı karar):**
+> MOC'ta sidebar hiç yok — navigasyon bilinçli olarak topbar + altında yatay kayan kart
+> menüsü (`.cardnav`) şeklinde tasarlanmış. Bunu §A.4'teki standart `aside.side` şemasına
+> taşımak tüm navigasyonun yeniden yazılmasını gerektirir; kullanıcı bu istisnayı korumaya
+> karar verdi, yeniden tasarım YAPILMADI. **Bu istisna MOC'un KENDİ dosyası için bile
+> bilgi amaçlıdır** — MOC.html zaten bu deseni kullanıyor, aşağıdaki şema başka bir
+> modülden kopyalanırken referans alınır.
+
 ### 4.1 Çerçeve
 ```css
 aside.side{
