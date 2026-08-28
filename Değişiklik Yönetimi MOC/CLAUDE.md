@@ -13,7 +13,7 @@ atamasından SONRA çağrılır — sırası önemli, önce çağrılırsa panel
 `innerHTML` overwrite'ıyla silinir). Ortak `profiles` tablosundan `tenant_id=cloudTenantId`
 kullanıcıları çekilip yalnızca **persona** (saha_operatoru/sorumlu/ust_yonetim/denetci) atanır,
 değişiklik anında kaydedilir. **Rol değişimi BİLİNÇLİ eklenmedi** — Ekipman modülündeki ortak
-"Kullanıcılar" ekranı zaten bu işi yapıyor. Node ile sözdizimi doğrulandı. Kullanıcı henüz test etmedi.
+"Kullanıcılar" ekranı zaten bu işi yapıyor. Node ile sözdizimi doğrulandı. **✅ Deploy doğrulandı (2026-08-28):** `curl` ile `moc.qdataline.com` canlı bundle'ında `usersPanel` doğrulandı. **Kullanıcı henüz gerçek hesapla test etmedi.**
 
 ## Faz 3.7 — bildirim üretimi (2026-08-26 gece)
 `crossRefsBind`'daki kaydetme akışına `notifyOwnerOfCrossRef()` eklendi — yeni "İlişkili Kayıt"
