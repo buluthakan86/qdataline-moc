@@ -240,15 +240,18 @@ textarea{resize:vertical;min-height:70px}
       </svg>
       <h1 style="margin:0">Q<b style="background:linear-gradient(90deg,#7C3AED,#C4B5FD);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">data</b>line</h1>
     </div>
-    <div class="s">Değişiklik Yönetimi (MOC)</div>
+    <div class="s" id="loSub">Değişiklik Yönetimi (MOC)</div>
     <form id="loginForm">
-      <label>E-posta</label>
+      <label id="loLblEmail">E-posta</label>
       <input id="loginEmail" type="email" autocomplete="username" required>
-      <label>Şifre</label>
+      <label id="loLblPass">Şifre</label>
       <input id="loginPass" type="password" autocomplete="current-password" required>
-      <button type="submit" class="btn-leaf" style="width:100%;margin-top:18px;padding:10px">Giriş Yap</button>
+      <button type="submit" class="btn-leaf" id="loginBtn" style="width:100%;margin-top:18px;padding:10px">Giriş Yap</button>
       <div id="loginMsg"></div>
     </form>
+    <div style="text-align:center;margin-top:14px">
+      <button class="btn-line sm" id="loLangBtn" type="button" style="padding:4px 10px">EN</button>
+    </div>
   </div>
 </div>
 
@@ -271,6 +274,7 @@ textarea{resize:vertical;min-height:70px}
       <div class="side-search"><input id="sideSearch" placeholder="MOC no / başlık ara…"></div>
       <button class="btn-leaf" id="btnNewRequest">+ Yeni Değişiklik Talebi</button>
       <button class="btn-line sm" id="btnThemeToggle" title="Açık/Koyu tema">🌙</button>
+      <button class="btn-line sm" id="langBtn" title="Language">EN</button>
       <span id="userLabel"></span>
       <button class="btn-line sm" id="btnLogout">Çıkış</button>
     </div>
@@ -342,6 +346,163 @@ var sb = null;
 try{ if(window.supabase && /^https:\/\//.test(SUPABASE_URL)) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{storage:qdlCookieAuthStorage()}}); }catch(e){}
 
 var cloudUser='', cloudUserId=null, cloudTenantId=null, cloudRole='VIEWER', cloudFullName='';
+
+/* ============================================================================
+   İngilizce Dil Desteği (29.08.2026) — Doküman Yönetimi CLAUDE.md §"İngilizce
+   Dil Desteği" ile birebir aynı yöntem: anahtar=Türkçe metin, t(anahtar)
+   İngilizce modda karşılığını döner, aksi halde METNİ OLDUĞU GİBİ geri döner
+   (asla boş/hatalı görünmez). KULLANICI VERİSİ (talep başlığı/açıklama/
+   gerekçe/risk notu/checklist gerekçesi/serbest metin — DB'den gelen HER ŞEY)
+   ASLA t() ile sarılmaz, yalnız sabit UI metinleri çevrilir.
+   KRİTİK: `t` global fonksiyon adı olduğu için, zaten "var t=..." ile yerel
+   değişken kullanan fonksiyon gövdelerinde (ör. eski kod tabanında type
+   objesini tutan yerel `t`) DOĞRUDAN t('...') ÇAĞRILMAZ — o kapsamlarda ya
+   yerel değişken farklı adlandırılır (bkz. renderRequestTable→typ) ya da
+   çeviri o kapsamın dışında/ayrı bir yardımcıda yapılır. Yeni t() çağrısı
+   eklerken bu dosyada aynı isim çakışmasına dikkat.
+   ========================================================================= */
+var LANG=localStorage.getItem('moc_lang')||'tr';
+var I18N={
+  'Özet':'Overview','Değişiklik Talepleri':'Change Requests','Onay Bekleyenler':'Pending Approvals',
+  'Tüm Değişiklikler':'All Changes','Ayarlar':'Settings','Değişiklik Yönetimi (MOC)':'Management of Change (MOC)',
+  'E-posta':'Email','Şifre':'Password','Giriş Yap':'Log In','Çıkış':'Log Out','Açık/Koyu tema':'Light/Dark theme',
+  'MOC no / başlık ara…':'MOC no / title search…','+ Yeni Değişiklik Talebi':'+ New Change Request',
+  'Yükleniyor…':'Loading…','Kayıt yok.':'No records.','Kaydet':'Save','Vazgeç':'Cancel','Kapat':'Close',
+  'Ekle':'Add','Sil':'Delete','Düzenle':'Edit','Oluştur':'Create','Onayla':'Confirm','Onay':'Confirmation',
+  'Acil':'Emergency','MOC No':'MOC No','Başlık':'Title','Kategori':'Category','Akış Türü':'Flow Type','Durum':'Status',
+  'Adım':'Step','Onay Adımı':'Approval Step','Bekleyen onayınız yok.':'You have no pending approvals.',
+  'Aktif':'Active','Pasif':'Inactive','Global':'Global','Persona':'Persona','Ad':'Name','Rol':'Role','Kod':'Code',
+  'Kullanıcılar':'Users','Kategori ve akış türü tanımları':'Category and flow type definitions',
+  'kısıtlı':'restricted','Talebi Düzenle':'Edit Request','Süresi geçti':'Overdue','gün':'days','son gün':'last day',
+  'Durum Geçişi':'Status Transition','Bu durumda geçiş, tüm onay adımları tamamlandığında sistem tarafından otomatik yapılır.':
+    'In this status, the transition happens automatically once all approval steps are complete.',
+  'Bu durumda':'In this status','yetkinizle yapabileceğiniz bir geçiş yok, veya terminal durum.':
+    'there is no transition available with your permissions, or this is a terminal status.',
+  'Koşul sağlanmadı':'Condition not met','Red gerekçesi (REJECTED için zorunlu)':'Rejection reason (required for REJECTED)',
+  'Durum güncellendi':'Status updated','İşlemler':'Actions','Taslağı Düzenle':'Edit Draft',
+  'Bu MOC\'u Geri Al':'Roll Back This MOC','Maliyet Takibi':'Cost Tracking','Risk Değerlendirmesi (5×5)':'Risk Assessment (5×5)',
+  '+ Risk Ekle':'+ Add Risk','Tehlike':'Hazard','Önce':'Before','Sonra':'After','Önlemler':'Controls',
+  'Henüz risk kaydı yok.':'No risk records yet.','🔗 İlişkili Kayıtlar':'🔗 Related Records','+ Bağlantı Ekle':'+ Add Link',
+  'Hedef Modül':'Target Module','Kayıt Etiketi':'Record Label','Not (opsiyonel)':'Note (optional)',
+  'Henüz ilişkili kayıt yok.':'No related records yet.','Onay Zinciri':'Approval Chain','+ Onay Adımı Ekle':'+ Add Approval Step',
+  'Onay adımı tanımlanmadı.':'No approval step defined.',
+  'Onay zinciri sıralıdır — bir adım, kendinden önceki tüm adımlar onaylanmadan kararlaştırılamaz.':
+    'The approval chain is sequential — a step cannot be decided until every step before it is approved.',
+  'Bekliyor (sıradaki adım)':'Pending (next step)','Kilitli — önceki adım(lar) tamamlanmadı':'Locked — previous step(s) not complete',
+  'İade':'Return','Reddet':'Reject','Aksiyonlar':'Actions','+ Aksiyon Ekle':'+ Add Action','Aksiyon yok.':'No actions.',
+  'Tamamla':'Complete','Faz':'Phase','Termin':'Due Date',
+  'PSSR — Devreye Alma Öncesi Güvenlik İncelemesi':'PSSR — Pre-Startup Safety Review',
+  'Checklist henüz oluşturulmadı.':'Checklist not created yet.','Checklist Oluştur':'Create Checklist',
+  'Sonuç':'Result','Yapan':'Performed By','Serbest Bırak (RELEASED)':'Release (RELEASED)',
+  'Serbest Bırakma (NOT_RELEASED)':'Do Not Release (NOT_RELEASED)',
+  'Etki Değerlendirme Checklist\'i':'Impact Assessment Checklist',
+  'PSSR Checklist\'i — Devreye Alma Öncesi Güvenlik İncelemesi':'PSSR Checklist — Pre-Startup Safety Review',
+  'yanıtlandı':'answered','✓ Tamamlandı':'✓ Complete',
+  'Bu aşamayı geçmeden önce tüm maddeler yanıtlanmalı, tetikleyici cevabın doğurduğu aksiyonlar kapatılmalıdır.':
+    'Before moving past this stage, every item must be answered and any actions triggered by the answers must be closed.',
+  'Hayır':'No','Evet':'Yes','Aksiyon açık':'Action open','Notu düzenle':'Edit note','+ Not ekle':'+ Add note',
+  'Değişiklik Kategorileri':'Change Categories','+ Kategori Ekle':'+ Add Category','Ekipman Bağlantısı':'Equipment Link',
+  'Akış Türleri':'Flow Types','+ Tür Ekle':'+ Add Type','PSSR':'PSSR','Bitiş Tarihi':'End Date',
+  'Geriye Dönük (sa)':'Retroactive (hrs)','Ek Onay Eşiği':'Extra Approval Threshold','Pasifleştir':'Deactivate','Aktifleştir':'Activate',
+  'Global (tenant\'sız) satırlar platform varsayılanıdır, yalnız kendi tenant\'ınıza ait satırları düzenleyebilirsiniz. Kullanılmış kayıtlar silinemez, yalnız pasifleştirilebilir.':
+    'Global (tenant-less) rows are platform defaults — you can only edit rows belonging to your own tenant. Records already in use cannot be deleted, only deactivated.',
+  'Etki Değerlendirme Checklist Setleri':'Impact Assessment Checklist Sets','+ Yeni Set':'+ New Set',
+  'Kapsam':'Scope','Madde':'Item','Global Şablon':'Global Template','Tesis Kopyası':'Site Copy',
+  'Maddeleri Yönet':'Manage Items','Tesisinizde aktif':'Active at your site','Kullan':'Use','Kopyala ve Özelleştir':'Copy and Customize',
+  'Tüm Kategoriler (zorunlu)':'All Categories (mandatory)',
+  '"Tüm Kategoriler (zorunlu)" setler her talepte otomatik devreye girer. Kategoriye bağlı setler, tesisiniz "Kullan" demeden hiç görünmez. Global şablonlar salt-okunurdur; kopyalayıp kendi tesisinize özel düzenleyebilirsiniz.':
+    '"All Categories (mandatory)" sets apply automatically to every request. Category-linked sets never appear until your site clicks "Use". Global templates are read-only — copy one to customize it for your own site.',
+  'Yeni Checklist Seti':'New Checklist Set','Ad (boş = tüm kategorilerde zorunlu)':'Name (blank = mandatory for all categories)',
+  'Açıklama':'Description','Kategori (boş = tüm kategorilerde zorunlu)':'Category (blank = mandatory for all categories)',
+  'Maddeler':'Items','+ Madde Ekle':'+ Add Item','Sıra':'Order','Bölüm':'Section','Soru':'Question',
+  'Tetikleyen':'Trigger','→Aksiyon':'→Action','Madde yok.':'No items.','Bölüm Başlığı':'Section Title','Soru Metni':'Question Text',
+  'Sıra No':'Order No','Tetikleyen Cevap':'Trigger Answer','Geri':'Back',
+  'Tetikleyen cevap otomatik aksiyon oluştursun':'Trigger answer automatically creates an action',
+  'Yeni Değişiklik Talebi':'New Change Request','Kategori Ekle':'Add Category','Kategori Düzenle':'Edit Category',
+  'Ad (TR)':'Name (TR)','Ad (EN)':'Name (EN)','Ekipman bağlantısı zorunlu':'Equipment link required',
+  'Akış Türü Ekle':'Add Flow Type','Akış Türü Düzenle':'Edit Flow Type','PSSR gerekli':'PSSR required',
+  'Bitiş tarihi gerekli (geçici)':'End date required (temporary)','Geriye Dönük Süre — Acil (saat)':'Retroactive Duration — Emergency (hours)',
+  'Risk Eşiğine Göre Otomatik Ek Onay':'Automatic Extra Approval by Risk Threshold','Ek Onay Rol Kodu':'Extra Approval Role Code',
+  'Maliyet Takibini Düzenle':'Edit Cost Tracking','Para Birimi':'Currency','Başlangıç Maliyeti':'Initial Cost',
+  'Tamamlanma Sonrası Maliyet':'Post-Completion Cost','Risk Değerlendirmesi Ekle':'Add Risk Assessment',
+  'Tehlike Tanımı':'Hazard Description','Alınacak Önlemler':'Controls to Take','Onay Adımı Ekle':'Add Approval Step',
+  'Aksiyon Ekle':'Add Action','Bağlantı Ekle':'Add Link','Özet\'i Özelleştir':'Customize Overview','Uygula':'Apply',
+  'Açık MOC':'Open MOC','Onay Bekleyen (Bende)':'Pending My Approval','Toplam Başlangıç Bütçesi':'Total Initial Budget',
+  'Toplam Sapma':'Total Deviation','Kategoriye Göre Açık MOC Dağılımı':'Open MOC Distribution by Category',
+  'Açık MOC yok.':'No open MOC.','Geçici Değişiklikler — T-7 / Süresi Geçen':'Temporary Changes — T-7 / Overdue',
+  'Yaklaşan/geçmiş geçici değişiklik yok.':'No upcoming/overdue temporary changes.',
+  '⚙ Özelleştir':'⚙ Customize','Özet kartları (KPI)':'Overview cards (KPI)',
+  'Panel: Kategoriye Göre Açık MOC Dağılımı':'Panel: Open MOC Distribution by Category',
+  'Panel: Geçici Değişiklikler (T-7 / Süresi Geçen)':'Panel: Temporary Changes (T-7 / Overdue)',
+  'ACİL DEĞİŞİKLİK — sözlü ön onayla uygulanmış olabilir. Geriye dönük tam MOC dosyası, oluşturulma anından itibaren':
+    'EMERGENCY CHANGE — may have been implemented with verbal pre-approval. The full retroactive MOC file must be completed, starting from creation, within',
+  'saat içinde (RISK_ASSESSMENT → APPROVAL) tamamlanmalı. Oluşturulma:':'hours (RISK_ASSESSMENT → APPROVAL). Created:',
+  'Geçici değişiklik — bitiş:':'Temporary change — end date:','Süresi':'Overdue by','gün geçti, eski duruma dönüş veya uzatma gerekli.':'days, reverting or extending is required.',
+  'Kalan':'Remaining','Bu talep, MOC #':'This request, MOC #','Ünite/Bölüm':'Unit/Area','RIK':'RIK',
+  'Gerekçe':'Reason','Kayıt bulunamadı.':'Record not found.','Tamamlanma Sonrası':'Post-Completion',
+  'Sapma':'Deviation','Özelleştir':'Customize',
+  'silinsin mi? Geçmişin korunması için kayıt yalnızca gizlenecek, veritabanında kalacaktır.':
+    'be deleted? To preserve history, the record will only be hidden — it remains in the database.',
+  'Görmek istediğin kartları seç. Seçim bu tarayıcıda saklanır.':'Choose the cards you want to see. Your selection is saved in this browser.',
+  'Güncel kur servisine şu an ulaşılamadı, TRY dışı tutarlar bu toplamlara dahil edilemedi.':
+    'The current exchange rate service could not be reached — non-TRY amounts are not included in these totals.',
+  'Tamamlanma sonrası maliyet girilince sapma otomatik hesaplanır.':'Once the post-completion cost is entered, the deviation is calculated automatically.',
+  'Bağlantıyı sil':'Delete link',
+  /* STATUS_LABEL değerleri (durum makinesi kodu SABİT kalır, yalnız bu görünen etiketler çevrilir) */
+  'Taslak':'Draft','Ön Tarama':'Screening','Risk Değerlendirme':'Risk Assessment','Teknik İnceleme':'Technical Review',
+  'Uygulama':'Implementation','Doküman Güncelleme':'Document Update','Eğitim/Bilgilendirme':'Training/Awareness',
+  'Devreye Alma':'Startup','Kapandı':'Closed','Reddedildi':'Rejected','İptal':'Cancelled',
+  'Aksiyon eklendi':'Action added','Aksiyon tamamlandı':'Action completed','Bağlantı silindi':'Link deleted',
+  'Birebir Yenileme (RIK) — aynı spesifikasyonda parça, tam akış gerekmez':'Replacement in Kind (RIK) — same-spec part, full workflow not required',
+  'Checklist oluşturuldu':'Checklist created','Devreye Alma Sonrası':'Post-Startup','Düşük':'Low',
+  'Evet (risk tespiti — "X etkileniyor mu?" tarzı)':'Yes (risk detection — "does X affect…?" style)',
+  'Eğitim':'Training','Gerekçe (zorunlu)':'Reason (required)','Güncellendi':'Updated',
+  'Hayır (doğrulama — "X tamamlandı mı?" tarzı)':'No (verification — "is X complete…?" style)',
+  'Karar kaydedildi':'Decision saved','Kaydedildi':'Saved','Maliyet bilgisi kaydedildi':'Cost information saved',
+  'Normal':'Normal','Olasılık (sonra, 1-5)':'Likelihood (after, 1-5)','Olasılık (önce, 1-5)':'Likelihood (before, 1-5)',
+  'Onay adımı eklendi':'Approval step added','Onay Öncesi':'Pre-Approval',
+  'Onaycı ataması bu sürümde yapılmıyor — herhangi bir yetkili kullanıcı (talep sahibi hariç) kararı "üstlenerek" verir; karar anında approver_id kendisine set edilir.':
+    'Approver assignment is not used in this version — any authorized user (other than the requester) can "take" the decision; approver_id is set to that user at decision time.',
+  'PSSR sonucu kaydedildi':'PSSR result saved','Persona güncellendi':'Persona updated',
+  'Planlanan Bitiş (geçici değişiklikte zorunlu)':'Planned End (required for temporary changes)',
+  'Risk Eşiği (risk_after ≥ bu değer, boş = kapalı)':'Risk Threshold (risk_after ≥ this value, blank = off)',
+  'Risk eklendi':'Risk added','Rol Kodu (ör. HSE, ENGINEERING, PLANT_MANAGER)':'Role Code (e.g. HSE, ENGINEERING, PLANT_MANAGER)',
+  'Sapma tutarı/yüzdesi bu iki değerden veritabanında otomatik hesaplanır.':'The deviation amount/percentage is calculated automatically in the database from these two values.',
+  'Set kopyalandı':'Set copied','Set oluşturuldu, madde ekleyin':'Set created, now add items','Set tesisinize kopyalandı':'Set copied to your site',
+  'Silinemedi':'Could not delete',
+  'TECHNICAL_REVIEW → APPROVAL geçişinde, herhangi bir risk kaydının risk_after değeri bu eşiği geçerse belirtilen role otomatik bir onay adımı eklenir.':
+    'On the TECHNICAL_REVIEW → APPROVAL transition, if any risk record\'s risk_after value exceeds this threshold, an approval step is automatically added for the given role.',
+  'Talep oluşturuldu':'Request created',
+  'Tamamlanma sonrası maliyet, MOC detay sayfasından ilerleyen aşamada girilir; sapma tutarı/yüzdesi o zaman otomatik hesaplanır.':
+    'The post-completion cost is entered later from the MOC detail page; the deviation amount/percentage is then calculated automatically.',
+  'Yalnızca persona (domain-dili etiket) atanır; rol/yetki değişimi Ekipman modülünden yapılır.':
+    'Only the persona (domain-language label) is assigned here; role/permission changes are made from the Equipment module.',
+  'Yüklenemedi':'Could not load','Yüksek':'High','Öncelik':'Priority',
+  'Şiddet (sonra, 1-5)':'Severity (after, 1-5)','Şiddet (önce, 1-5)':'Severity (before, 1-5)',
+};
+function t(s){ return (LANG==='en' && Object.prototype.hasOwnProperty.call(I18N,s)) ? I18N[s] : s; }
+function applyMocLangStatic(){
+  var loLang=document.getElementById('loLangBtn');
+  if(loLang){
+    loLang.textContent=LANG==='tr'?'EN':'TR';
+    var loSub=document.getElementById('loSub'); if(loSub) loSub.textContent=t('Değişiklik Yönetimi (MOC)');
+    var loE=document.getElementById('loLblEmail'); if(loE) loE.textContent=t('E-posta');
+    var loP=document.getElementById('loLblPass'); if(loP) loP.textContent=t('Şifre');
+    var loB=document.getElementById('loginBtn'); if(loB) loB.textContent=t('Giriş Yap');
+  }
+  var appLang=document.getElementById('langBtn');
+  if(appLang){
+    appLang.textContent=LANG==='tr'?'EN':'TR';
+    var tt=document.getElementById('btnThemeToggle'); if(tt) tt.title=t('Açık/Koyu tema');
+    var lo=document.getElementById('btnLogout'); if(lo) lo.textContent=t('Çıkış');
+    var nr=document.getElementById('btnNewRequest'); if(nr) nr.textContent=t('+ Yeni Değişiklik Talebi');
+    var ss=document.getElementById('sideSearch'); if(ss) ss.placeholder=t('MOC no / başlık ara…');
+    try{ renderNav(); }catch(e){}
+    try{ if(typeof CURRENT_VIEW!=='undefined') go(CURRENT_VIEW, CURRENT_ID); }catch(e){}
+  }
+}
+function toggleLoginLang(){ LANG=LANG==='tr'?'en':'tr'; try{localStorage.setItem('moc_lang',LANG);}catch(e){} applyMocLangStatic(); }
+function toggleMocLang(){ LANG=LANG==='tr'?'en':'tr'; try{localStorage.setItem('moc_lang',LANG);}catch(e){} applyMocLangStatic(); }
 
 /* ============================================================================
    RBAC — basitleştirilmiş eşleme (bkz. CLAUDE.md "Bilinen sınırlamalar")
@@ -596,7 +757,7 @@ function renderNav(){
 }
 function navItem(v,lbl){
   return '<button class="navcard'+(CURRENT_VIEW===v?' on':'')+'" data-v="'+v+'">'
-    +'<span class="lbl">'+lbl+'</span>'
+    +'<span class="lbl">'+t(lbl)+'</span>'
     +'<span class="card-ico">'+(NAV_ICONS[v]||'')+'</span>'
     +'</button>';
 }
@@ -619,9 +780,9 @@ function go(view,id){
    grafik) ve T-7 içinde biten/geçmiş geçici değişiklikler listesi.
    ========================================================================= */
 function viewDashboard(){
-  document.getElementById('pageTitle').textContent='Özet';
+  document.getElementById('pageTitle').textContent=t('Özet');
   document.getElementById('pageCrumb').textContent='';
-  document.getElementById('content').innerHTML='<div class="empty">Yükleniyor…</div>';
+  document.getElementById('content').innerHTML='<div class="empty">'+t('Yükleniyor…')+'</div>';
   var TERMINAL=['CLOSED','REJECTED','CANCELLED'];
   Promise.all([
     sb.from('moc_requests').select('*').is('deleted_at',null),
@@ -676,28 +837,28 @@ function viewDashboard(){
 function renderDashboardHtml(d){
   var html='<div class="view">';
   html+='<div style="display:flex;justify-content:flex-end;margin-bottom:8px">'
-    +'<button class="btn-line sm" id="dashCustomBtn" onclick="openDashCustomize()">⚙ Özelleştir</button></div>';
+    +'<button class="btn-line sm" id="dashCustomBtn" onclick="openDashCustomize()">⚙ '+t('Özelleştir')+'</button></div>';
   html+='<div class="kpis" data-widget="kpi">'
-    +'<div class="kpi"><div class="val">'+d.openCount+'</div><div class="lbl">Açık MOC</div></div>'
-    +'<div class="kpi'+(d.pendingCount?' warn':'')+'"><div class="val">'+d.pendingCount+'</div><div class="lbl">Onay Bekleyen (Bende)</div></div>'
-    +'<div class="kpi"><div class="val">'+fmtMoney(d.costTotalStart)+' ₺</div><div class="lbl">Toplam Başlangıç Bütçesi'+(EXCHANGE_READY?'':' *')+'</div></div>'
-    +'<div class="kpi'+(d.costTotalDeviation>0?' crit':(d.costTotalDeviation<0?'':''))+'"><div class="val">'+(d.costTotalDeviation>0?'+':'')+fmtMoney(d.costTotalDeviation)+' ₺</div><div class="lbl">Toplam Sapma'+(EXCHANGE_READY?'':' *')+'</div></div>'
+    +'<div class="kpi"><div class="val">'+d.openCount+'</div><div class="lbl">'+t('Açık MOC')+'</div></div>'
+    +'<div class="kpi'+(d.pendingCount?' warn':'')+'"><div class="val">'+d.pendingCount+'</div><div class="lbl">'+t('Onay Bekleyen (Bende)')+'</div></div>'
+    +'<div class="kpi"><div class="val">'+fmtMoney(d.costTotalStart)+' ₺</div><div class="lbl">'+t('Toplam Başlangıç Bütçesi')+(EXCHANGE_READY?'':' *')+'</div></div>'
+    +'<div class="kpi'+(d.costTotalDeviation>0?' crit':(d.costTotalDeviation<0?'':''))+'"><div class="val">'+(d.costTotalDeviation>0?'+':'')+fmtMoney(d.costTotalDeviation)+' ₺</div><div class="lbl">'+t('Toplam Sapma')+(EXCHANGE_READY?'':' *')+'</div></div>'
     +'</div>';
-  if(!EXCHANGE_READY) html+='<p class="hint" style="margin-top:-12px;margin-bottom:16px">* Güncel kur servisine şu an ulaşılamadı, TRY dışı tutarlar bu toplamlara dahil edilemedi.</p>';
+  if(!EXCHANGE_READY) html+='<p class="hint" style="margin-top:-12px;margin-bottom:16px">* '+t('Güncel kur servisine şu an ulaşılamadı, TRY dışı tutarlar bu toplamlara dahil edilemedi.')+'</p>';
 
   html+='<div class="dash-grid">';
-  html+='<div class="panel" data-widget="w-cat"><div class="ph"><h2>Kategoriye Göre Açık MOC Dağılımı</h2></div><div class="pb">';
+  html+='<div class="panel" data-widget="w-cat"><div class="ph"><h2>'+t('Kategoriye Göre Açık MOC Dağılımı')+'</h2></div><div class="pb">';
   html+= d.catBars.length ? d.catBars.map(function(b){
     return '<div class="barrow"><div class="barlbl" title="'+esc(b.name)+'">'+esc(b.name)+'</div>'
       +'<div class="bartrack"><div class="barfill" style="width:'+Math.round(b.count/d.maxCat*100)+'%"></div></div>'
       +'<div class="barval">'+b.count+'</div></div>';
-  }).join('') : '<div class="empty">Açık MOC yok.</div>';
+  }).join('') : '<div class="empty">'+t('Açık MOC yok.')+'</div>';
   html+='</div></div>';
 
-  html+='<div class="panel" data-widget="w-temp"><div class="ph"><h2>Geçici Değişiklikler — T-7 / Süresi Geçen</h2></div><div class="pb">';
+  html+='<div class="panel" data-widget="w-temp"><div class="ph"><h2>'+t('Geçici Değişiklikler — T-7 / Süresi Geçen')+'</h2></div><div class="pb">';
   html+= d.tempList.length ? d.tempList.map(function(x){
     return '<div class="dash-list-row"><span class="t">'+esc(x.req.moc_no||('#'+x.req.id))+' · '+esc(x.req.title)+'</span>'+tempWarnPill(x.req.planned_end)+'</div>';
-  }).join('') : '<div class="empty">Yaklaşan/geçmiş geçici değişiklik yok.</div>';
+  }).join('') : '<div class="empty">'+t('Yaklaşan/geçmiş geçici değişiklik yok.')+'</div>';
   html+='</div></div>';
   html+='</div>'; // dash-grid
 
@@ -725,13 +886,13 @@ function applyMocDashPrefs(){
 }
 function openDashCustomize(){
   var hid=mocDashHidden();
-  modalTitle('Özet\'i Özelleştir');
-  setModalBody('<p class="hint" style="margin-top:0">Görmek istediğin kartları seç. Seçim bu tarayıcıda saklanır.</p>'
+  document.getElementById('modalTitle').textContent=t('Özet')+'\'i '+t('Özelleştir');
+  setModalBody('<p class="hint" style="margin-top:0">'+t('Görmek istediğin kartları seç. Seçim bu tarayıcıda saklanır.')+'</p>'
     +'<div id="mocDashCustomList" style="display:flex;flex-direction:column;gap:2px">'
     +MOC_DASH_WIDGETS.map(function(w){
       var k=w[0], lbl=w[1];
       return '<label style="display:flex;align-items:center;gap:8px;margin:0;padding:7px 4px;border-bottom:1px solid var(--line)">'
-        +'<input type="checkbox" data-w="'+k+'" '+(hid.indexOf(k)>=0?'':'checked')+'><span>'+esc(lbl)+'</span></label>';
+        +'<input type="checkbox" data-w="'+k+'" '+(hid.indexOf(k)>=0?'':'checked')+'><span>'+esc(t(lbl))+'</span></label>';
     }).join('')+'</div>');
   modalFoot('Uygula','Kapat',function(){
     var hidden=[];
@@ -749,9 +910,9 @@ function openDashCustomize(){
    Liste görünümleri
    ========================================================================= */
 function viewList(kind){
-  document.getElementById('pageTitle').textContent = kind==='mine'?'Değişiklik Talepleri':kind==='pending'?'Onay Bekleyenler':'Tüm Değişiklikler';
+  document.getElementById('pageTitle').textContent = t(kind==='mine'?'Değişiklik Talepleri':kind==='pending'?'Onay Bekleyenler':'Tüm Değişiklikler');
   document.getElementById('pageCrumb').textContent='';
-  document.getElementById('content').innerHTML='<div class="empty">Yükleniyor…</div>';
+  document.getElementById('content').innerHTML='<div class="empty">'+t('Yükleniyor…')+'</div>';
 
   if(kind==='pending'){
     /* Kök sebep düzeltmesi: eskiden `approver_id = cloudUserId` filtreleniyordu,
@@ -787,39 +948,39 @@ function viewList(kind){
   q.then(function(res){ renderRequestTable(res.data||[], kind); });
 }
 function renderApprovalQueue(rows){
-  if(!rows.length){ document.getElementById('content').innerHTML='<div class="panel"><div class="empty">Bekleyen onayınız yok.</div></div>'; return; }
+  if(!rows.length){ document.getElementById('content').innerHTML='<div class="panel"><div class="empty">'+t('Bekleyen onayınız yok.')+'</div></div>'; return; }
   var body=rows.map(function(a){
     var r=a.moc_requests;
     return '<tr class="rowclk" data-id="'+r.id+'"><td>'+esc(r.moc_no||('#'+r.id))+'</td><td>'+esc(r.title)+'</td>'
-      +'<td>Adım '+a.step_order+' · '+esc(a.role_code)+'</td><td>'+statusPill(r.status)+'</td></tr>';
+      +'<td>'+t('Adım')+' '+a.step_order+' · '+esc(a.role_code)+'</td><td>'+statusPill(r.status)+'</td></tr>';
   }).join('');
-  document.getElementById('content').innerHTML='<div class="panel"><table><thead><tr><th>MOC No</th><th>Başlık</th><th>Onay Adımı</th><th>Durum</th></tr></thead><tbody>'+body+'</tbody></table></div>';
+  document.getElementById('content').innerHTML='<div class="panel"><table><thead><tr><th>'+t('MOC No')+'</th><th>'+t('Başlık')+'</th><th>'+t('Onay Adımı')+'</th><th>'+t('Durum')+'</th></tr></thead><tbody>'+body+'</tbody></table></div>';
   bindRowClicks();
 }
 function renderRequestTable(rows, kind){
-  if(!rows.length){ document.getElementById('content').innerHTML='<div class="panel"><div class="empty">Kayıt yok.</div></div>'; return; }
+  if(!rows.length){ document.getElementById('content').innerHTML='<div class="panel"><div class="empty">'+t('Kayıt yok.')+'</div></div>'; return; }
   var body=rows.map(function(r){
-    var t=typeById(r.type_id), c=catById(r.category_id);
+    var typ=typeById(r.type_id), c=catById(r.category_id);
     var tempBadge='';
-    if(t&&t.requires_end_date&&r.planned_end&&!['CLOSED','REJECTED','CANCELLED'].includes(r.status)){
+    if(typ&&typ.requires_end_date&&r.planned_end&&!['CLOSED','REJECTED','CANCELLED'].includes(r.status)){
       tempBadge=' '+tempWarnPill(r.planned_end);
     }
     var rowActions='';
     if(canManageRequest(r)){
-      rowActions='<button class="sm btn-line rowedit" data-id="'+r.id+'">Düzenle</button> '
-        +'<button class="sm btn-crit rowdel" data-id="'+r.id+'">Sil</button>';
+      rowActions='<button class="sm btn-line rowedit" data-id="'+r.id+'">'+t('Düzenle')+'</button> '
+        +'<button class="sm btn-crit rowdel" data-id="'+r.id+'">'+t('Sil')+'</button>';
     }
     return '<tr class="rowclk" data-id="'+r.id+'">'
       +'<td>'+esc(r.moc_no||('#'+r.id))+'</td>'
       +'<td>'+esc(r.title)+'</td>'
       +'<td>'+(c?esc(c.name_tr):'—')+'</td>'
-      +'<td>'+(t?esc(t.name_tr):'—')+'</td>'
+      +'<td>'+(typ?esc(typ.name_tr):'—')+'</td>'
       +'<td>'+statusPill(r.status)+tempBadge+'</td>'
-      +'<td>'+(r.priority==='EMERGENCY'?'<span class="pill crit">Acil</span>':'')+'</td>'
+      +'<td>'+(r.priority==='EMERGENCY'?'<span class="pill crit">'+t('Acil')+'</span>':'')+'</td>'
       +'<td>'+rowActions+'</td>'
       +'</tr>';
   }).join('');
-  document.getElementById('content').innerHTML='<div class="panel"><table><thead><tr><th>MOC No</th><th>Başlık</th><th>Kategori</th><th>Akış Türü</th><th>Durum</th><th></th><th></th></tr></thead><tbody>'+body+'</tbody></table></div>';
+  document.getElementById('content').innerHTML='<div class="panel"><table><thead><tr><th>'+t('MOC No')+'</th><th>'+t('Başlık')+'</th><th>'+t('Kategori')+'</th><th>'+t('Akış Türü')+'</th><th>'+t('Durum')+'</th><th></th><th></th></tr></thead><tbody>'+body+'</tbody></table></div>';
   bindRowClicks(rows);
 }
 function bindRowClicks(rows){
@@ -853,11 +1014,11 @@ function canManageRequest(r){
 }
 function editRequestFlow(req){
   if(['CLOSED','REJECTED','CANCELLED'].includes(req.status)){
-    toast('Terminal durumdaki ('+STATUS_LABEL[req.status]+') bir talep düzenlenemez.',true);
+    toast('Terminal durumdaki ('+t(STATUS_LABEL[req.status])+') bir talep düzenlenemez.',true);
     return;
   }
   var locked = req.status!=='DRAFT';
-  modalTitle(locked?'Talebi Düzenle (kısıtlı — '+STATUS_LABEL[req.status]+')':'Talebi Düzenle');
+  document.getElementById('modalTitle').textContent = locked?(t('Talebi Düzenle')+' ('+t('kısıtlı')+' — '+t(STATUS_LABEL[req.status])+')'):t('Talebi Düzenle');
   if(locked){
     setModalBody(
       '<p class="hint" style="margin-bottom:12px">Bu talebin akışı başlamış durumda — kategori/tür/öncelik gibi checklist ve onay zincirini belirleyen alanlar kilitli. Yalnız başlık/açıklama/gerekçe ve maliyet alanları düzenlenebilir.</p>'
@@ -905,7 +1066,7 @@ function deleteRequestFlow(req){
     var hardDelete = req.status==='DRAFT';
     var msg = hardDelete
       ? 'Taslak "<b>'+esc(req.title)+'</b>" kalıcı olarak silinsin mi? Bu işlem geri alınamaz.'
-      : '"<b>'+esc(req.title)+'</b>" ('+STATUS_LABEL[req.status]+') silinsin mi? Geçmişin korunması için kayıt yalnızca gizlenecek, veritabanında kalacaktır.';
+      : '"<b>'+esc(req.title)+'</b>" ('+t(STATUS_LABEL[req.status])+') '+t('silinsin mi? Geçmişin korunması için kayıt yalnızca gizlenecek, veritabanında kalacaktır.');
     confirmBox(msg,'Sil',function(){
       var op = hardDelete
         ? sb.from('moc_requests').delete().eq('id',req.id)
@@ -917,12 +1078,12 @@ function deleteRequestFlow(req){
     },true);
   });
 }
-function statusPill(s){ return '<span class="pill '+(STATUS_PILL[s]||'na')+'">'+(STATUS_LABEL[s]||s)+'</span>'; }
+function statusPill(s){ return '<span class="pill '+(STATUS_PILL[s]||'na')+'">'+t(STATUS_LABEL[s]||s)+'</span>'; }
 function tempWarnPill(expires){
   var d=daysLeft(expires);
-  if(d<0) return '<span class="pill crit">Süresi geçti ('+Math.abs(d)+' gün)</span>';
-  if(d<=1) return '<span class="pill crit">T-'+d+' · son gün</span>';
-  if(d<=7) return '<span class="pill warn">T-'+d+' gün</span>';
+  if(d<0) return '<span class="pill crit">'+t('Süresi geçti')+' ('+Math.abs(d)+' '+t('gün')+')</span>';
+  if(d<=1) return '<span class="pill crit">T-'+d+' · '+t('son gün')+'</span>';
+  if(d<=7) return '<span class="pill warn">T-'+d+' '+t('gün')+'</span>';
   return '';
 }
 function daysLeft(iso){ var t=new Date(todayISO()+'T00:00:00'), e=new Date(iso+'T00:00:00'); return Math.round((e-t)/86400000); }
@@ -932,7 +1093,7 @@ function daysLeft(iso){ var t=new Date(todayISO()+'T00:00:00'), e=new Date(iso+'
    ========================================================================= */
 var DETAIL_CTX={};
 function viewDetail(id){
-  document.getElementById('content').innerHTML='<div class="empty">Yükleniyor…</div>';
+  document.getElementById('content').innerHTML='<div class="empty">'+t('Yükleniyor…')+'</div>';
   Promise.all([
     sb.from('moc_requests').select('*').eq('id',id).maybeSingle(),
     sb.from('moc_risk_assessments').select('*').eq('moc_id',id).order('created_at'),
@@ -943,7 +1104,7 @@ function viewDetail(id){
     sb.from('moc_etki_checklist_yanitlari').select('*').eq('moc_request_id',id)
   ]).then(function(res){
     var req=res[0].data;
-    if(!req){ document.getElementById('content').innerHTML='<div class="empty">Kayıt bulunamadı.</div>'; return; }
+    if(!req){ document.getElementById('content').innerHTML='<div class="empty">'+t('Kayıt bulunamadı.')+'</div>'; return; }
     DETAIL_CTX = { req:req, risks:res[1].data||[], approvals:res[2].data||[], actions:res[3].data||[],
                    pssr:res[4].data||null, temp:res[5].data||null, checklistAnswers:res[6].data||[],
                    type:typeById(req.type_id), category:catById(req.category_id) };
@@ -953,21 +1114,21 @@ function viewDetail(id){
   });
 }
 function renderDetail(){
-  var ctx=DETAIL_CTX, req=ctx.req, t=ctx.type, c=ctx.category;
+  var ctx=DETAIL_CTX, req=ctx.req, typ=ctx.type, c=ctx.category;
   var html='<div class="view">';
 
   if(req.priority==='EMERGENCY'){
-    html+='<div class="alert-chip crit">⚠ ACİL DEĞİŞİKLİK — sözlü ön onayla uygulanmış olabilir. Geriye dönük tam MOC dosyası, oluşturulma anından itibaren '
-      +(t&&t.retro_hours?t.retro_hours:72)+' saat içinde (RISK_ASSESSMENT → APPROVAL) tamamlanmalı. Oluşturulma: '+fmtDT(req.created_at)+'</div>';
+    html+='<div class="alert-chip crit">⚠ '+t('ACİL DEĞİŞİKLİK — sözlü ön onayla uygulanmış olabilir. Geriye dönük tam MOC dosyası, oluşturulma anından itibaren')+' '
+      +(typ&&typ.retro_hours?typ.retro_hours:72)+' '+t('saat içinde (RISK_ASSESSMENT → APPROVAL) tamamlanmalı. Oluşturulma:')+' '+fmtDT(req.created_at)+'</div>';
   }
-  if(t&&t.requires_end_date&&req.planned_end&&!['CLOSED','REJECTED','CANCELLED'].includes(req.status)){
+  if(typ&&typ.requires_end_date&&req.planned_end&&!['CLOSED','REJECTED','CANCELLED'].includes(req.status)){
     var d=daysLeft(req.planned_end);
     var cls=d<0?'crit':(d<=7?'warn':'blue');
-    html+='<div class="alert-chip '+cls+'">⏱ Geçici değişiklik — bitiş: '+esc(req.planned_end)+' · '
-      +(d<0?('Süresi '+Math.abs(d)+' gün geçti, eski duruma dönüş veya uzatma gerekli.'):('Kalan '+d+' gün'))+'</div>';
+    html+='<div class="alert-chip '+cls+'">⏱ '+t('Geçici değişiklik — bitiş:')+' '+esc(req.planned_end)+' · '
+      +(d<0?(t('Süresi')+' '+Math.abs(d)+' '+t('gün geçti, eski duruma dönüş veya uzatma gerekli.')):(t('Kalan')+' '+d+' '+t('gün')))+'</div>';
   }
   if(req.previous_moc_id){
-    html+='<div class="alert-chip blue">↩ Bu talep, MOC #'+req.previous_moc_id+'\'in geri alınması amacıyla açıldı.</div>';
+    html+='<div class="alert-chip blue">↩ '+t('Bu talep, MOC #')+req.previous_moc_id+t('\'in geri alınması amacıyla açıldı.')+'</div>';
   }
 
   html+='<div class="detail-grid">';
@@ -975,10 +1136,10 @@ function renderDetail(){
   // Sol kolon
   html+='<div>';
   html+='<div class="panel"><div class="ph"><h2>'+esc(req.title)+'</h2>'+statusPill(req.status)+'</div><div class="pb">';
-  html+='<div class="row2"><div><b>Kategori:</b> '+(c?esc(c.name_tr):'—')+'</div><div><b>Akış Türü:</b> '+(t?esc(t.name_tr):'—')+'</div></div>';
-  html+='<div class="row2" style="margin-top:8px"><div><b>Ünite/Bölüm:</b> '+esc(req.unit_area||'—')+'</div><div><b>RIK:</b> '+(req.is_rik?'Evet':'Hayır')+'</div></div>';
+  html+='<div class="row2"><div><b>'+t('Kategori')+':</b> '+(c?esc(c.name_tr):'—')+'</div><div><b>'+t('Akış Türü')+':</b> '+(typ?esc(typ.name_tr):'—')+'</div></div>';
+  html+='<div class="row2" style="margin-top:8px"><div><b>'+t('Ünite/Bölüm')+':</b> '+esc(req.unit_area||'—')+'</div><div><b>'+t('RIK')+':</b> '+(req.is_rik?t('Evet'):t('Hayır'))+'</div></div>';
   html+='<p style="margin-top:12px;color:var(--muted)">'+esc(req.description||'—')+'</p>';
-  html+='<p style="margin-top:8px"><b>Gerekçe:</b> '+esc(req.reason||'—')+'</p>';
+  html+='<p style="margin-top:8px"><b>'+t('Gerekçe')+':</b> '+esc(req.reason||'—')+'</p>';
   html+='</div></div>';
 
   html+=renderTransitionsPanel();
@@ -987,17 +1148,17 @@ function renderDetail(){
   html+=renderRiskPanel();
   html+=renderApprovalsPanel();
   html+=renderActionsPanel();
-  if(t&&t.requires_pssr) html+=renderPssrPanel();
+  if(typ&&typ.requires_pssr) html+=renderPssrPanel();
   html+='</div>';
 
   // Sağ kolon
   html+='<div>';
-  html+='<div class="panel"><div class="ph"><h2>İşlemler</h2></div><div class="pb" style="display:flex;flex-direction:column;gap:8px">';
+  html+='<div class="panel"><div class="ph"><h2>'+t('İşlemler')+'</h2></div><div class="pb" style="display:flex;flex-direction:column;gap:8px">';
   if(canEditDraft(req) && req.status==='DRAFT'){
-    html+='<button class="btn-line" id="btnEditDraft">Taslağı Düzenle</button>';
+    html+='<button class="btn-line" id="btnEditDraft">'+t('Taslağı Düzenle')+'</button>';
   }
   if(canDo('coordinate') && !['DRAFT','CANCELLED'].includes(req.status)){
-    html+='<button class="btn-line" id="btnRollback">↩ Bu MOC\'u Geri Al</button>';
+    html+='<button class="btn-line" id="btnRollback">↩ '+t('Bu MOC\'u Geri Al')+'</button>';
   }
   html+='</div></div>';
   html+=crossRefsPanelHTML();
@@ -1011,19 +1172,19 @@ function renderDetail(){
 function renderTransitionsPanel(){
   var ctx=DETAIL_CTX, req=ctx.req;
   var opts=(TRANSITIONS[req.status]||[]).filter(function(tr){ return canDo(tr.action); });
-  var html='<div class="panel" id="transitionsPanel"><div class="ph"><h2>Durum Geçişi</h2></div><div class="pb">';
+  var html='<div class="panel" id="transitionsPanel"><div class="ph"><h2>'+t('Durum Geçişi')+'</h2></div><div class="pb">';
   if(req.status==='APPROVAL'){
-    html+='<p class="hint">Bu durumda geçiş, tüm onay adımları tamamlandığında sistem tarafından otomatik yapılır.</p>';
+    html+='<p class="hint">'+t('Bu durumda geçiş, tüm onay adımları tamamlandığında sistem tarafından otomatik yapılır.')+'</p>';
   } else if(!opts.length){
-    html+='<p class="hint">Bu durumda ('+STATUS_LABEL[req.status]+') yetkinizle yapabileceğiniz bir geçiş yok, veya terminal durum.</p>';
+    html+='<p class="hint">'+t('Bu durumda')+' ('+t(STATUS_LABEL[req.status])+') '+t('yetkinizle yapabileceğiniz bir geçiş yok, veya terminal durum.')+'</p>';
   } else {
     html+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+opts.map(function(tr,i){
       var ok = !tr.cond || tr.cond(req, ctx);
       var cls = i===0 ? 'btn-leaf' : 'btn-line';
-      return '<button class="'+cls+' transbtn" data-to="'+tr.to+'" '+(ok?'':'disabled title="Koşul sağlanmadı"')+'>→ '+(STATUS_LABEL[tr.to]||tr.to)+'</button>';
+      return '<button class="'+cls+' transbtn" data-to="'+tr.to+'" '+(ok?'':'disabled title="'+t('Koşul sağlanmadı')+'"')+'>→ '+t(STATUS_LABEL[tr.to]||tr.to)+'</button>';
     }).join('')+'</div>';
     if(req.status==='SCREENING'){
-      html+='<label style="margin-top:12px">Red gerekçesi (REJECTED için zorunlu)</label><textarea id="rejectReason">'+esc(req.reason||'')+'</textarea>';
+      html+='<label style="margin-top:12px">'+t('Red gerekçesi (REJECTED için zorunlu)')+'</label><textarea id="rejectReason">'+esc(req.reason||'')+'</textarea>';
     }
   }
   html+='</div></div>';
@@ -1038,18 +1199,18 @@ function renderTransitionsPanel(){
    ========================================================================= */
 function renderCostPanel(){
   var req=DETAIL_CTX.req;
-  var html='<div class="panel" id="costPanel"><div class="ph"><h2>Maliyet Takibi</h2>';
-  if(canDo('coordinate')) html+='<button class="btn-line sm" id="btnEditCost" style="margin-left:auto">Düzenle</button>';
+  var html='<div class="panel" id="costPanel"><div class="ph"><h2>'+t('Maliyet Takibi')+'</h2>';
+  if(canDo('coordinate')) html+='<button class="btn-line sm" id="btnEditCost" style="margin-left:auto">'+t('Düzenle')+'</button>';
   html+='</div><div class="pb">';
-  html+='<div class="row2"><div><b>Başlangıç Maliyeti:</b> '+(req.baslangic_maliyeti!=null?fmtCostTRY(req.baslangic_maliyeti,req.para_birimi):'—')+'</div>'
-    +'<div><b>Tamamlanma Sonrası:</b> '+(req.tamamlanma_sonrasi_maliyet!=null?fmtCostTRY(req.tamamlanma_sonrasi_maliyet,req.para_birimi):'—')+'</div></div>';
+  html+='<div class="row2"><div><b>'+t('Başlangıç Maliyeti')+':</b> '+(req.baslangic_maliyeti!=null?fmtCostTRY(req.baslangic_maliyeti,req.para_birimi):'—')+'</div>'
+    +'<div><b>'+t('Tamamlanma Sonrası')+':</b> '+(req.tamamlanma_sonrasi_maliyet!=null?fmtCostTRY(req.tamamlanma_sonrasi_maliyet,req.para_birimi):'—')+'</div></div>';
   if(req.sapma_tutari!=null){
     var sapmaCls = req.sapma_tutari>0?'crit':(req.sapma_tutari<0?'ok':'na');
-    html+='<div style="margin-top:10px"><b>Sapma:</b> <span class="pill '+sapmaCls+'">'
+    html+='<div style="margin-top:10px"><b>'+t('Sapma')+':</b> <span class="pill '+sapmaCls+'">'
       +(req.sapma_tutari>0?'+':'')+fmtMoney(req.sapma_tutari)+' '+req.para_birimi
       +(req.sapma_yuzdesi!=null?' · '+(req.sapma_yuzdesi>0?'+':'')+req.sapma_yuzdesi+'%':'')+'</span></div>';
   } else {
-    html+='<p class="hint" style="margin-top:8px">Tamamlanma sonrası maliyet girilince sapma otomatik hesaplanır.</p>';
+    html+='<p class="hint" style="margin-top:8px">'+t('Tamamlanma sonrası maliyet girilince sapma otomatik hesaplanır.')+'</p>';
   }
   html+='</div></div>';
   return html;
@@ -1058,15 +1219,15 @@ function openEditCost(){
   var req=DETAIL_CTX.req;
   modalTitle('Maliyet Takibini Düzenle');
   setModalBody(
-    '<div class="row2"><div><label>Para Birimi</label><select id="ecCurrency">'+MOC_CURRENCIES.map(function(c){return '<option value="'+c+'"'+(c===(req.para_birimi||'TRY')?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'
-    +'<div><label>Başlangıç Maliyeti</label><input id="ecStart" type="number" step="0.01" min="0" value="'+(req.baslangic_maliyeti!=null?req.baslangic_maliyeti:'')+'"></div></div>'
-    +'<label>Tamamlanma Sonrası Maliyet</label><input id="ecEnd" type="number" step="0.01" min="0" value="'+(req.tamamlanma_sonrasi_maliyet!=null?req.tamamlanma_sonrasi_maliyet:'')+'">'
-    +'<p class="hint">Sapma tutarı/yüzdesi bu iki değerden veritabanında otomatik hesaplanır.</p>'
+    '<div class="row2"><div><label>'+t('Para Birimi')+'</label><select id="ecCurrency">'+MOC_CURRENCIES.map(function(c){return '<option value="'+c+'"'+(c===(req.para_birimi||'TRY')?' selected':'')+'>'+c+'</option>';}).join('')+'</select></div>'
+    +'<div><label>'+t('Başlangıç Maliyeti')+'</label><input id="ecStart" type="number" step="0.01" min="0" value="'+(req.baslangic_maliyeti!=null?req.baslangic_maliyeti:'')+'"></div></div>'
+    +'<label>'+t('Tamamlanma Sonrası Maliyet')+'</label><input id="ecEnd" type="number" step="0.01" min="0" value="'+(req.tamamlanma_sonrasi_maliyet!=null?req.tamamlanma_sonrasi_maliyet:'')+'">'
+    +'<p class="hint">'+t('Sapma tutarı/yüzdesi bu iki değerden veritabanında otomatik hesaplanır.')+'</p>'
   );
   modalFoot('Kaydet','Vazgeç',function(){
     sb.from('moc_requests').update({para_birimi:val('ecCurrency')||'TRY', baslangic_maliyeti:num('ecStart'), tamamlanma_sonrasi_maliyet:num('ecEnd')}).eq('id',req.id).then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return; }
-      closeModal(); toast('Maliyet bilgisi kaydedildi'); viewDetail(req.id);
+      closeModal(); toast(t('Maliyet bilgisi kaydedildi')); viewDetail(req.id);
     });
   });
   openModal();
@@ -1076,10 +1237,10 @@ function renderRiskPanel(){
   var rows=ctx.risks.map(function(r){
     return '<tr><td>'+esc(r.hazard)+'</td><td>'+riskCell(r.risk_before)+'</td><td>'+riskCell(r.risk_after)+'</td><td>'+esc(r.controls||'—')+'</td></tr>';
   }).join('');
-  var html='<div class="panel"><div class="ph"><h2>Risk Değerlendirmesi (5×5)</h2>';
-  if(canDo('risk')) html+='<button class="btn-line sm" id="btnAddRisk" style="margin-left:auto">+ Risk Ekle</button>';
+  var html='<div class="panel"><div class="ph"><h2>'+t('Risk Değerlendirmesi (5×5)')+'</h2>';
+  if(canDo('risk')) html+='<button class="btn-line sm" id="btnAddRisk" style="margin-left:auto">'+t('+ Risk Ekle')+'</button>';
   html+='</div><div class="pb">';
-  html+= rows ? '<table><thead><tr><th>Tehlike</th><th>Önce</th><th>Sonra</th><th>Önlemler</th></tr></thead><tbody>'+rows+'</tbody></table>' : '<div class="empty">Henüz risk kaydı yok.</div>';
+  html+= rows ? '<table><thead><tr><th>'+t('Tehlike')+'</th><th>'+t('Önce')+'</th><th>'+t('Sonra')+'</th><th>'+t('Önlemler')+'</th></tr></thead><tbody>'+rows+'</tbody></table>' : '<div class="empty">'+t('Henüz risk kaydı yok.')+'</div>';
   html+='</div></div>';
   return html;
 }
@@ -1097,19 +1258,19 @@ function riskCell(score){
    Desen Q-Tedarikçi Yönetimi modülündeki crossRefs* fonksiyonlarından
    taşındı; MOC'un kendi sb/esc/val/toast/pill sınıflarına uyarlandı. */
 var CROSS_REF_MODULES=[{v:'q-kalite',l:'DÖF / Q-Kalite'},{v:'tedarikci',l:'Tedarikçi Yönetimi'},{v:'ekipman',l:'Ekipman'},{v:'gida',l:'Gıda Güvenliği'}];
-function crossRefModuleLabel(v){var m=CROSS_REF_MODULES.find(function(x){return x.v===v;});return m?m.l:(v||'—');}
+function crossRefModuleLabel(v){var m=CROSS_REF_MODULES.find(function(x){return x.v===v;});return m?t(m.l):(v||'—');}
 function crossRefsPanelHTML(){
-  return '<div class="panel" id="crPanel"><div class="ph"><h2>🔗 İlişkili Kayıtlar</h2>'
-    +'<button type="button" class="btn-line sm" id="crAddBtn" style="margin-left:auto">+ Bağlantı Ekle</button>'
+  return '<div class="panel" id="crPanel"><div class="ph"><h2>'+t('🔗 İlişkili Kayıtlar')+'</h2>'
+    +'<button type="button" class="btn-line sm" id="crAddBtn" style="margin-left:auto">'+t('+ Bağlantı Ekle')+'</button>'
     +'</div><div class="pb">'
-    +'<div id="crList" class="empty">Yükleniyor…</div>'
+    +'<div id="crList" class="empty">'+t('Yükleniyor…')+'</div>'
     +'<div id="crAddForm" style="display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:12px">'
-      +'<div class="row2"><div><label>Hedef Modül</label><select id="crMod">'+CROSS_REF_MODULES.map(function(m){return '<option value="'+esc(m.v)+'">'+esc(m.l)+'</option>';}).join('')+'</select></div>'
-      +'<div><label>Kayıt Etiketi</label><input id="crLabel" placeholder="ör. DÖF-2024-045"></div></div>'
-      +'<label>Not (opsiyonel)</label><input id="crNote" placeholder="kısa açıklama">'
+      +'<div class="row2"><div><label>'+t('Hedef Modül')+'</label><select id="crMod">'+CROSS_REF_MODULES.map(function(m){return '<option value="'+esc(m.v)+'">'+esc(m.l)+'</option>';}).join('')+'</select></div>'
+      +'<div><label>'+t('Kayıt Etiketi')+'</label><input id="crLabel" placeholder="ör. DÖF-2024-045"></div></div>'
+      +'<label>'+t('Not (opsiyonel)')+'</label><input id="crNote" placeholder="kısa açıklama">'
       +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">'
-        +'<button type="button" class="btn-line sm" id="crCancelBtn">Vazgeç</button>'
-        +'<button type="button" class="btn-leaf sm" id="crSaveBtn">Kaydet</button>'
+        +'<button type="button" class="btn-line sm" id="crCancelBtn">'+t('Vazgeç')+'</button>'
+        +'<button type="button" class="btn-leaf sm" id="crSaveBtn">'+t('Kaydet')+'</button>'
       +'</div>'
     +'</div>'
   +'</div></div>';
@@ -1119,7 +1280,7 @@ function crossRefsItemHTML(r,mySourceId){
   var mod=mine?r.target_module:r.source_module,lbl=mine?(r.target_label||r.target_id):(r.source_label||r.source_id);
   return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line-2)">'
     +'<div style="font-size:12.5px"><span class="pill blue">'+esc(crossRefModuleLabel(mod))+'</span> '+esc(lbl||'—')+(r.note?' <span style="color:var(--muted)"> — '+esc(r.note)+'</span>':'')+'</div>'
-    +'<button type="button" class="btn-line sm" data-cr-del="'+r.id+'" title="Bağlantıyı sil" style="flex-shrink:0;padding:2px 9px">✕</button>'
+    +'<button type="button" class="btn-line sm" data-cr-del="'+r.id+'" title="'+t('Bağlantıyı sil')+'" style="flex-shrink:0;padding:2px 9px">✕</button>'
   +'</div>';
 }
 function crossRefsLoad(sourceId){
@@ -1127,9 +1288,9 @@ function crossRefsLoad(sourceId){
   var q1=sb.from('qdl_cross_refs').select('*').eq('source_module','moc').eq('source_table','moc_requests').eq('source_id',String(sourceId));
   var q2=sb.from('qdl_cross_refs').select('*').eq('target_module','moc').eq('target_table','moc_requests').eq('target_id',String(sourceId));
   Promise.all([q1,q2]).then(function(res){
-    if(res[0].error||res[1].error){ listEl.className='empty'; listEl.textContent='Yüklenemedi: '+((res[0].error||res[1].error).message); return; }
+    if(res[0].error||res[1].error){ listEl.className='empty'; listEl.textContent=t('Yüklenemedi')+': '+((res[0].error||res[1].error).message); return; }
     var rows=(res[0].data||[]).concat(res[1].data||[]);
-    if(!rows.length){ listEl.className='empty'; listEl.textContent='Henüz ilişkili kayıt yok.'; return; }
+    if(!rows.length){ listEl.className='empty'; listEl.textContent=t('Henüz ilişkili kayıt yok.'); return; }
     listEl.className=''; listEl.innerHTML=rows.map(function(r){return crossRefsItemHTML(r,sourceId);}).join('');
     Array.prototype.forEach.call(listEl.querySelectorAll('[data-cr-del]'),function(b){
       b.onclick=function(){ crossRefsDelete(b.getAttribute('data-cr-del'),sourceId); };
@@ -1139,8 +1300,8 @@ function crossRefsLoad(sourceId){
 function crossRefsDelete(refId,sourceId){
   confirmBox('Bu bağlantı silinsin mi?','Sil',function(){
     sb.from('qdl_cross_refs').delete().eq('id',refId).then(function(res){
-      if(res.error){ toast('Silinemedi: '+res.error.message,true); return; }
-      closeModal(); toast('Bağlantı silindi'); crossRefsLoad(sourceId);
+      if(res.error){ toast(t('Silinemedi')+': '+res.error.message,true); return; }
+      closeModal(); toast(t('Bağlantı silindi')); crossRefsLoad(sourceId);
     });
   },true);
 }
@@ -1209,10 +1370,10 @@ function crossRefsBind(sourceId,sourceLabel){
    ========================================================================= */
 var CHECKLIST_MANUAL_OVERRIDE={}, CHECKLIST_OVERRIDE_REQ=null;
 function renderChecklistPanel(){
-  return renderChecklistPanelGeneric(applicableChecklistItems(DETAIL_CTX.req.category_id), 'checklistPanel', 'Etki Değerlendirme Checklist\'i');
+  return renderChecklistPanelGeneric(applicableChecklistItems(DETAIL_CTX.req.category_id), 'checklistPanel', t('Etki Değerlendirme Checklist\'i'));
 }
 function renderPssrChecklistPanel(){
-  return renderChecklistPanelGeneric(applicablePssrChecklistItems(), 'pssrChecklistPanel', 'PSSR Checklist\'i — Devreye Alma Öncesi Güvenlik İncelemesi');
+  return renderChecklistPanelGeneric(applicablePssrChecklistItems(), 'pssrChecklistPanel', t('PSSR Checklist\'i — Devreye Alma Öncesi Güvenlik İncelemesi'));
 }
 function renderChecklistPanelGeneric(items, panelId, heading){
   var ctx=DETAIL_CTX, req=ctx.req;
@@ -1241,8 +1402,8 @@ function renderChecklistPanelGeneric(items, panelId, heading){
     var open = hasOverride ? CHECKLIST_MANUAL_OVERRIDE[s.name] : (idx===firstIncompleteIdx);
     var rows = s.items.map(function(m){ return renderChecklistRow(m, answersByMadde[m.id], canAnswer); }).join('');
     var statusBadge = s.complete
-      ? '<span class="pill ok">✓ Tamamlandı</span>'
-      : '<span class="pill '+(s.answered?'warn':'na')+'">'+s.answered+'/'+s.total+' yanıtlandı</span>';
+      ? '<span class="pill ok">'+t('✓ Tamamlandı')+'</span>'
+      : '<span class="pill '+(s.answered?'warn':'na')+'">'+s.answered+'/'+s.total+' '+t('yanıtlandı')+'</span>';
     return '<div class="chk-section'+(open?' open':'')+'">'
       +'<button type="button" class="chk-section-hd" data-section="'+esc(s.name)+'">'
         +'<span class="chk-section-chevron">'+(open?'▾':'▸')+'</span>'
@@ -1255,9 +1416,9 @@ function renderChecklistPanelGeneric(items, panelId, heading){
 
   var answered=items.filter(function(m){return answersByMadde[m.id]&&answersByMadde[m.id].cevap;}).length;
   var html='<div class="panel" id="'+panelId+'"><div class="ph"><h2>'+heading+'</h2>'
-    +'<span class="pill '+(answered===items.length?'ok':'warn')+'" style="margin-left:auto">'+answered+'/'+items.length+' yanıtlandı</span></div><div class="pb">';
+    +'<span class="pill '+(answered===items.length?'ok':'warn')+'" style="margin-left:auto">'+answered+'/'+items.length+' '+t('yanıtlandı')+'</span></div><div class="pb">';
   html+=body;
-  html+='<p class="hint">Bu aşamayı geçmeden önce tüm maddeler yanıtlanmalı, tetikleyici cevabın doğurduğu aksiyonlar kapatılmalıdır.</p>';
+  html+='<p class="hint">'+t('Bu aşamayı geçmeden önce tüm maddeler yanıtlanmalı, tetikleyici cevabın doğurduğu aksiyonlar kapatılmalıdır.')+'</p>';
   html+='</div></div>';
   return html;
 }
@@ -1276,17 +1437,17 @@ function renderChecklistRow(m, a, canAnswer){
     var active = cevap===val;
     return '<button type="button" class="sm chkchip'+(active?' active-'+val:'')+'" data-id="'+m.id+'" data-cevap="'+val+'"'+(canAnswer?'':' disabled')+'>'+lbl+'</button>';
   }
-  var actionBadge = (a&&a.action_id) ? ' <span class="pill warn">Aksiyon açık</span>' : '';
+  var actionBadge = (a&&a.action_id) ? ' <span class="pill warn">'+t('Aksiyon açık')+'</span>' : '';
   var showGerekce = cevap===trigger;
   var gerekceBox = '<div class="chk-gerekce" data-gid="'+m.id+'" style="'+(showGerekce?'':'display:none')+'">'
-    +'<textarea class="chkGerekceInput" data-id="'+m.id+'" placeholder="Gerekçe (zorunlu)">'+(a?esc(a.gerekce||''):'')+'</textarea>'
-    +(canAnswer?'<button type="button" class="sm btn-leaf chkGerekceSave" data-id="'+m.id+'">Kaydet</button>':'')
+    +'<textarea class="chkGerekceInput" data-id="'+m.id+'" placeholder="'+t('Gerekçe (zorunlu)')+'">'+(a?esc(a.gerekce||''):'')+'</textarea>'
+    +(canAnswer?'<button type="button" class="sm btn-leaf chkGerekceSave" data-id="'+m.id+'">'+t('Kaydet')+'</button>':'')
     +'</div>';
   var noteLink = (canAnswer && cevap && cevap!==trigger)
-    ? '<div class="hint"><a href="#" class="chkNoteLink" data-id="'+m.id+'">'+(a&&a.gerekce?'Notu düzenle':'+ Not ekle')+'</a></div>' : '';
+    ? '<div class="hint"><a href="#" class="chkNoteLink" data-id="'+m.id+'">'+(a&&a.gerekce?t('Notu düzenle'):t('+ Not ekle'))+'</a></div>' : '';
   return '<div class="chk-row" data-row-id="'+m.id+'">'
     +'<div class="chk-q">'+esc(m.soru_metni)+actionBadge+'</div>'
-    +'<div class="chk-chips">'+chip('HAYIR','Hayır')+chip('EVET','Evet')+chip('NA','N/A')+'</div>'
+    +'<div class="chk-chips">'+chip('HAYIR',t('Hayır'))+chip('EVET',t('Evet'))+chip('NA','N/A')+'</div>'
     +gerekceBox+noteLink
     +'</div>';
 }
@@ -1426,27 +1587,27 @@ function activeApprovalStep(approvals){
 function renderApprovalsPanel(){
   var ctx=DETAIL_CTX, req=ctx.req;
   var active=activeApprovalStep(ctx.approvals);
-  var html='<div class="panel"><div class="ph"><h2>Onay Zinciri</h2>';
-  if(canDo('coordinate') && req.status==='TECHNICAL_REVIEW') html+='<button class="btn-line sm" id="btnAddApproval" style="margin-left:auto">+ Onay Adımı Ekle</button>';
+  var html='<div class="panel"><div class="ph"><h2>'+t('Onay Zinciri')+'</h2>';
+  if(canDo('coordinate') && req.status==='TECHNICAL_REVIEW') html+='<button class="btn-line sm" id="btnAddApproval" style="margin-left:auto">'+t('+ Onay Adımı Ekle')+'</button>';
   html+='</div><div class="pb">';
-  if(!ctx.approvals.length){ html+='<div class="empty">Onay adımı tanımlanmadı.</div>'; }
+  if(!ctx.approvals.length){ html+='<div class="empty">'+t('Onay adımı tanımlanmadı.')+'</div>'; }
   else{
-    html+='<p class="hint" style="margin-bottom:10px">Onay zinciri sıralıdır — bir adım, kendinden önceki tüm adımlar onaylanmadan kararlaştırılamaz.</p>';
+    html+='<p class="hint" style="margin-bottom:10px">'+t('Onay zinciri sıralıdır — bir adım, kendinden önceki tüm adımlar onaylanmadan kararlaştırılamaz.')+'</p>';
     html+=ctx.approvals.slice().sort(function(a,b){return a.step_order-b.step_order;}).map(function(a){
       var can = canDecideApproval(a);
       var decLbl;
       if(a.decision){
         decLbl = '<span class="pill '+(a.decision==='APPROVED'?'ok':a.decision==='REJECTED'?'crit':'warn')+'">'+a.decision+'</span> · '+fmtDT(a.decided_at);
       } else if(active && active.id===a.id){
-        decLbl = '<span class="pill warn">Bekliyor (sıradaki adım)</span>';
+        decLbl = '<span class="pill warn">'+t('Bekliyor (sıradaki adım)')+'</span>';
       } else {
-        decLbl = '<span class="pill miss">Kilitli — önceki adım(lar) tamamlanmadı</span>';
+        decLbl = '<span class="pill miss">'+t('Kilitli — önceki adım(lar) tamamlanmadı')+'</span>';
       }
       var actions='';
       if(can){
-        actions='<button class="sm btn-leaf apdec" data-id="'+a.id+'" data-dec="APPROVED">Onayla</button>'
-          +'<button class="sm btn-line apdec" data-id="'+a.id+'" data-dec="RETURNED">İade</button>'
-          +'<button class="sm btn-crit apdec" data-id="'+a.id+'" data-dec="REJECTED">Reddet</button>';
+        actions='<button class="sm btn-leaf apdec" data-id="'+a.id+'" data-dec="APPROVED">'+t('Onayla')+'</button>'
+          +'<button class="sm btn-line apdec" data-id="'+a.id+'" data-dec="RETURNED">'+t('İade')+'</button>'
+          +'<button class="sm btn-crit apdec" data-id="'+a.id+'" data-dec="REJECTED">'+t('Reddet')+'</button>';
       }
       return '<div class="approval-row"><div class="step-badge'+(a.decision==='APPROVED'?' done':'')+'">'+a.step_order+'</div>'
         +'<div style="flex:1"><b>'+esc(a.role_code)+'</b><div class="hint">'+decLbl+'</div></div>'
@@ -1472,12 +1633,12 @@ function renderActionsPanel(){
   var rows=ctx.actions.map(function(a){
     return '<tr><td>'+esc(a.title)+'</td><td>'+esc(a.phase)+'</td><td>'+esc(a.due_date||'—')+'</td>'
       +'<td>'+actionStatusPill(a.status)+'</td>'
-      +'<td>'+(canManageAction(a)&&a.status!=='DONE'?'<button class="sm btn-line actdone" data-id="'+a.id+'">Tamamla</button>':'')+'</td></tr>';
+      +'<td>'+(canManageAction(a)&&a.status!=='DONE'?'<button class="sm btn-line actdone" data-id="'+a.id+'">'+t('Tamamla')+'</button>':'')+'</td></tr>';
   }).join('');
-  var html='<div class="panel"><div class="ph"><h2>Aksiyonlar</h2>';
-  if(canDo('coordinate')) html+='<button class="btn-line sm" id="btnAddAction" style="margin-left:auto">+ Aksiyon Ekle</button>';
+  var html='<div class="panel"><div class="ph"><h2>'+t('Aksiyonlar')+'</h2>';
+  if(canDo('coordinate')) html+='<button class="btn-line sm" id="btnAddAction" style="margin-left:auto">'+t('+ Aksiyon Ekle')+'</button>';
   html+='</div><div class="pb">';
-  html+= rows ? '<table><thead><tr><th>Başlık</th><th>Faz</th><th>Termin</th><th>Durum</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>' : '<div class="empty">Aksiyon yok.</div>';
+  html+= rows ? '<table><thead><tr><th>'+t('Başlık')+'</th><th>'+t('Faz')+'</th><th>'+t('Termin')+'</th><th>'+t('Durum')+'</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>' : '<div class="empty">'+t('Aksiyon yok.')+'</div>';
   html+='</div></div>';
   return html;
 }
@@ -1486,18 +1647,18 @@ function actionStatusPill(s){ var m={OPEN:'na',IN_PROGRESS:'blue',DONE:'ok',OVER
 
 function renderPssrPanel(){
   var ctx=DETAIL_CTX, p=ctx.pssr;
-  var html='<div class="panel"><div class="ph"><h2>PSSR — Devreye Alma Öncesi Güvenlik İncelemesi</h2></div><div class="pb">';
+  var html='<div class="panel"><div class="ph"><h2>'+t('PSSR — Devreye Alma Öncesi Güvenlik İncelemesi')+'</h2></div><div class="pb">';
   html+=renderPssrChecklistPanel();
   if(!p){
-    html+='<div class="empty">Checklist henüz oluşturulmadı.</div>';
-    if(canDo('pssr') && ctx.req.status==='PSSR') html+='<button class="btn-line" id="btnCreatePssr" style="margin-top:10px">Checklist Oluştur</button>';
+    html+='<div class="empty">'+t('Checklist henüz oluşturulmadı.')+'</div>';
+    if(canDo('pssr') && ctx.req.status==='PSSR') html+='<button class="btn-line" id="btnCreatePssr" style="margin-top:10px">'+t('Checklist Oluştur')+'</button>';
   } else {
-    html+='<div class="row2"><div><b>Sonuç:</b> '+(p.result?('<span class="pill '+(p.result==='RELEASED'?'ok':p.result==='CONDITIONAL'?'warn':'crit')+'">'+p.result+'</span>'):'—')+'</div>'
-      +'<div><b>Yapan:</b> '+fmtDT(p.performed_at)+'</div></div>';
+    html+='<div class="row2"><div><b>'+t('Sonuç')+':</b> '+(p.result?('<span class="pill '+(p.result==='RELEASED'?'ok':p.result==='CONDITIONAL'?'warn':'crit')+'">'+p.result+'</span>'):'—')+'</div>'
+      +'<div><b>'+t('Yapan')+':</b> '+fmtDT(p.performed_at)+'</div></div>';
     if(canDo('pssr') && !p.result){
       html+='<div style="display:flex;gap:8px;margin-top:12px">'
-        +'<button class="btn-leaf pssrres" data-r="RELEASED">Serbest Bırak (RELEASED)</button>'
-        +'<button class="btn-crit pssrres" data-r="NOT_RELEASED">Serbest Bırakma (NOT_RELEASED)</button></div>';
+        +'<button class="btn-leaf pssrres" data-r="RELEASED">'+t('Serbest Bırak (RELEASED)')+'</button>'
+        +'<button class="btn-crit pssrres" data-r="NOT_RELEASED">'+t('Serbest Bırakma (NOT_RELEASED)')+'</button></div>';
     }
   }
   html+='</div></div>';
@@ -1547,7 +1708,7 @@ function doTransition(to){
   pre.then(function(){
     sb.from('moc_requests').update(patch).eq('id',req.id).then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return; }
-      toast('Durum güncellendi: '+STATUS_LABEL[to]);
+      toast(t('Durum güncellendi')+': '+t(STATUS_LABEL[to]));
       viewDetail(req.id);
     });
   });
@@ -1579,7 +1740,7 @@ function openEditDraft(){
     if(!patch) return;
     sb.from('moc_requests').update(patch).eq('id',req.id).then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return; }
-      closeModal(); toast('Kaydedildi'); viewDetail(req.id);
+      closeModal(); toast(t('Kaydedildi')); viewDetail(req.id);
     });
   });
   openModal();
@@ -1608,10 +1769,10 @@ function doRollback(){
 function openAddRisk(){
   modalTitle('Risk Değerlendirmesi Ekle');
   setModalBody(
-    '<label>Tehlike Tanımı</label><textarea id="rHazard"></textarea>'
-    +'<div class="row2"><div><label>Olasılık (önce, 1-5)</label><input id="rLb" type="number" min="1" max="5"></div><div><label>Şiddet (önce, 1-5)</label><input id="rSb" type="number" min="1" max="5"></div></div>'
-    +'<div class="row2"><div><label>Olasılık (sonra, 1-5)</label><input id="rLa" type="number" min="1" max="5"></div><div><label>Şiddet (sonra, 1-5)</label><input id="rSa" type="number" min="1" max="5"></div></div>'
-    +'<label>Alınacak Önlemler</label><textarea id="rControls"></textarea>'
+    '<label>'+t('Tehlike Tanımı')+'</label><textarea id="rHazard"></textarea>'
+    +'<div class="row2"><div><label>'+t('Olasılık (önce, 1-5)')+'</label><input id="rLb" type="number" min="1" max="5"></div><div><label>'+t('Şiddet (önce, 1-5)')+'</label><input id="rSb" type="number" min="1" max="5"></div></div>'
+    +'<div class="row2"><div><label>'+t('Olasılık (sonra, 1-5)')+'</label><input id="rLa" type="number" min="1" max="5"></div><div><label>'+t('Şiddet (sonra, 1-5)')+'</label><input id="rSa" type="number" min="1" max="5"></div></div>'
+    +'<label>'+t('Alınacak Önlemler')+'</label><textarea id="rControls"></textarea>'
   );
   modalFoot('Ekle','Vazgeç',function(){
     var payload={ tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, hazard:val('rHazard'),
@@ -1620,7 +1781,7 @@ function openAddRisk(){
     if(!payload.hazard.trim()){ toast('Tehlike tanımı zorunlu.',true); return; }
     sb.from('moc_risk_assessments').insert(payload).then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return; }
-      closeModal(); toast('Risk eklendi'); viewDetail(DETAIL_CTX.req.id);
+      closeModal(); toast(t('Risk eklendi')); viewDetail(DETAIL_CTX.req.id);
     });
   });
   openModal();
@@ -1630,15 +1791,15 @@ function openAddRisk(){
 function openAddApproval(){
   var nextStep=(DETAIL_CTX.approvals||[]).length+1;
   modalTitle('Onay Adımı Ekle');
-  setModalBody('<label>Sıra No</label><input id="apStep" type="number" value="'+nextStep+'">'
-    +'<label>Rol Kodu (ör. HSE, ENGINEERING, PLANT_MANAGER)</label><input id="apRole">'
-    +'<p class="hint">Onaycı ataması bu sürümde yapılmıyor — herhangi bir yetkili kullanıcı (talep sahibi hariç) kararı "üstlenerek" verir; karar anında approver_id kendisine set edilir.</p>');
+  setModalBody('<label>'+t('Sıra No')+'</label><input id="apStep" type="number" value="'+nextStep+'">'
+    +'<label>'+t('Rol Kodu (ör. HSE, ENGINEERING, PLANT_MANAGER)')+'</label><input id="apRole">'
+    +'<p class="hint">'+t('Onaycı ataması bu sürümde yapılmıyor — herhangi bir yetkili kullanıcı (talep sahibi hariç) kararı "üstlenerek" verir; karar anında approver_id kendisine set edilir.')+'</p>');
   modalFoot('Ekle','Vazgeç',function(){
     var role=val('apRole');
     if(!role.trim()){ toast('Rol kodu zorunlu.',true); return; }
     sb.from('moc_approvals').insert({tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, step_order:num('apStep'), role_code:role}).then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return; }
-      closeModal(); toast('Onay adımı eklendi'); viewDetail(DETAIL_CTX.req.id);
+      closeModal(); toast(t('Onay adımı eklendi')); viewDetail(DETAIL_CTX.req.id);
     });
   });
   openModal();
@@ -1648,7 +1809,7 @@ function decideApproval(id, decision){
     var hash=btoa(unescape(encodeURIComponent(DETAIL_CTX.req.id+'|'+id+'|'+cloudUserId+'|'+Date.now())));
     sb.from('moc_approvals').update({decision:decision, decided_at:new Date().toISOString(), approver_id:cloudUserId, evidence_hash:hash}).eq('id',id).then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return; }
-      closeModal(); toast('Karar kaydedildi'); checkApprovalAuto();
+      closeModal(); toast(t('Karar kaydedildi')); checkApprovalAuto();
     });
   }, decision==='REJECTED');
 }
@@ -1669,15 +1830,15 @@ function checkApprovalAuto(){
 /* ---- Aksiyon ekleme/tamamlama ---- */
 function openAddAction(){
   modalTitle('Aksiyon Ekle');
-  setModalBody('<label>Başlık</label><input id="acTitle">'
-    +'<label>Faz</label><select id="acPhase"><option value="PRE_APPROVAL">Onay Öncesi</option><option value="IMPLEMENTATION" selected>Uygulama</option><option value="DOC_UPDATE">Doküman Güncelleme</option><option value="TRAINING">Eğitim</option><option value="PSSR">PSSR</option><option value="POST_STARTUP">Devreye Alma Sonrası</option></select>'
-    +'<label>Termin</label><input id="acDue" type="date">');
+  setModalBody('<label>'+t('Başlık')+'</label><input id="acTitle">'
+    +'<label>'+t('Faz')+'</label><select id="acPhase"><option value="PRE_APPROVAL">'+t('Onay Öncesi')+'</option><option value="IMPLEMENTATION" selected>'+t('Uygulama')+'</option><option value="DOC_UPDATE">'+t('Doküman Güncelleme')+'</option><option value="TRAINING">'+t('Eğitim')+'</option><option value="PSSR">PSSR</option><option value="POST_STARTUP">'+t('Devreye Alma Sonrası')+'</option></select>'
+    +'<label>'+t('Termin')+'</label><input id="acDue" type="date">');
   modalFoot('Ekle','Vazgeç',function(){
     var title=val('acTitle');
     if(!title.trim()){ toast('Başlık zorunlu.',true); return; }
     sb.from('moc_action_items').insert({tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, title:title, phase:val('acPhase'), due_date:val('acDue')||null, assignee_id:cloudUserId}).then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return; }
-      closeModal(); toast('Aksiyon eklendi'); viewDetail(DETAIL_CTX.req.id);
+      closeModal(); toast(t('Aksiyon eklendi')); viewDetail(DETAIL_CTX.req.id);
     });
   });
   openModal();
@@ -1685,7 +1846,7 @@ function openAddAction(){
 function completeAction(id){
   sb.from('moc_action_items').update({status:'DONE', completed_at:new Date().toISOString()}).eq('id',id).then(function(res){
     if(res.error){ toast('Hata: '+res.error.message,true); return; }
-    toast('Aksiyon tamamlandı'); viewDetail(DETAIL_CTX.req.id);
+    toast(t('Aksiyon tamamlandı')); viewDetail(DETAIL_CTX.req.id);
   });
 }
 
@@ -1693,13 +1854,13 @@ function completeAction(id){
 function createPssr(){
   sb.from('moc_pssr_checklists').insert({tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, is_template:false, name:'PSSR — '+DETAIL_CTX.req.title, items:[]}).then(function(res){
     if(res.error){ toast('Hata: '+res.error.message,true); return; }
-    toast('Checklist oluşturuldu'); viewDetail(DETAIL_CTX.req.id);
+    toast(t('Checklist oluşturuldu')); viewDetail(DETAIL_CTX.req.id);
   });
 }
 function setPssrResult(result){
   sb.from('moc_pssr_checklists').update({result:result, performed_by:cloudUserId, performed_at:new Date().toISOString()}).eq('id',DETAIL_CTX.pssr.id).then(function(res){
     if(res.error){ toast('Hata: '+res.error.message,true); return; }
-    toast('PSSR sonucu kaydedildi'); viewDetail(DETAIL_CTX.req.id);
+    toast(t('PSSR sonucu kaydedildi')); viewDetail(DETAIL_CTX.req.id);
   });
 }
 
@@ -1707,18 +1868,18 @@ function setPssrResult(result){
    Yeni talep formu
    ========================================================================= */
 function requestFormHtml(){
-  return '<label>Başlık</label><input id="fTitle">'
-    +'<label>Açıklama</label><textarea id="fDesc"></textarea>'
-    +'<div class="row2"><div><label>Kategori</label><select id="fCat">'+CATEGORIES.map(function(c){return '<option value="'+c.id+'">'+esc(c.name_tr)+'</option>';}).join('')+'</select></div>'
-    +'<div><label>Akış Türü</label><select id="fType">'+TYPES.map(function(t){return '<option value="'+t.id+'">'+esc(t.name_tr)+'</option>';}).join('')+'</select></div></div>'
-    +'<div class="row2"><div><label>Ünite/Bölüm</label><input id="fUnit"></div><div><label>Öncelik</label><select id="fPrio"><option value="NORMAL">Normal</option><option value="LOW">Düşük</option><option value="HIGH">Yüksek</option><option value="EMERGENCY">Acil</option></select></div></div>'
-    +'<div id="fEndDateWrap" style="display:none"><label>Planlanan Bitiş (geçici değişiklikte zorunlu)</label><input id="fEnd" type="date"></div>'
-    +'<label class="chk"><input type="checkbox" id="fRik"> Birebir Yenileme (RIK) — aynı spesifikasyonda parça, tam akış gerekmez</label>'
-    +'<label>Gerekçe</label><textarea id="fReason"></textarea>'
-    +'<fieldset><legend>Maliyet Takibi</legend>'
-    +'<div class="row2"><div><label>Para Birimi</label><select id="fCurrency">'+MOC_CURRENCIES.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('')+'</select></div>'
-    +'<div><label>Başlangıç Maliyeti</label><input id="fCostStart" type="number" step="0.01" min="0" placeholder="0.00"></div></div>'
-    +'<p class="hint">Tamamlanma sonrası maliyet, MOC detay sayfasından ilerleyen aşamada girilir; sapma tutarı/yüzdesi o zaman otomatik hesaplanır.</p>'
+  return '<label>'+t('Başlık')+'</label><input id="fTitle">'
+    +'<label>'+t('Açıklama')+'</label><textarea id="fDesc"></textarea>'
+    +'<div class="row2"><div><label>'+t('Kategori')+'</label><select id="fCat">'+CATEGORIES.map(function(c){return '<option value="'+c.id+'">'+esc(c.name_tr)+'</option>';}).join('')+'</select></div>'
+    +'<div><label>'+t('Akış Türü')+'</label><select id="fType">'+TYPES.map(function(tp){return '<option value="'+tp.id+'">'+esc(tp.name_tr)+'</option>';}).join('')+'</select></div></div>'
+    +'<div class="row2"><div><label>'+t('Ünite/Bölüm')+'</label><input id="fUnit"></div><div><label>'+t('Öncelik')+'</label><select id="fPrio"><option value="NORMAL">'+t('Normal')+'</option><option value="LOW">'+t('Düşük')+'</option><option value="HIGH">'+t('Yüksek')+'</option><option value="EMERGENCY">'+t('Acil')+'</option></select></div></div>'
+    +'<div id="fEndDateWrap" style="display:none"><label>'+t('Planlanan Bitiş (geçici değişiklikte zorunlu)')+'</label><input id="fEnd" type="date"></div>'
+    +'<label class="chk"><input type="checkbox" id="fRik"> '+t('Birebir Yenileme (RIK) — aynı spesifikasyonda parça, tam akış gerekmez')+'</label>'
+    +'<label>'+t('Gerekçe')+'</label><textarea id="fReason"></textarea>'
+    +'<fieldset><legend>'+t('Maliyet Takibi')+'</legend>'
+    +'<div class="row2"><div><label>'+t('Para Birimi')+'</label><select id="fCurrency">'+MOC_CURRENCIES.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('')+'</select></div>'
+    +'<div><label>'+t('Başlangıç Maliyeti')+'</label><input id="fCostStart" type="number" step="0.01" min="0" placeholder="0.00"></div></div>'
+    +'<p class="hint">'+t('Tamamlanma sonrası maliyet, MOC detay sayfasından ilerleyen aşamada girilir; sapma tutarı/yüzdesi o zaman otomatik hesaplanır.')+'</p>'
     +'</fieldset>';
 }
 function fillRequestForm(req){
@@ -1771,7 +1932,7 @@ function openNewRequest(){
         after=sb.from('moc_temporary_tracking').insert({tenant_id:cloudTenantId, moc_id:req.id, expires_at:req.planned_end});
       }
       Promise.resolve(after).then(function(){
-        closeModal(); toast('Talep oluşturuldu'); go('detail', req.id);
+        closeModal(); toast(t('Talep oluşturuldu')); go('detail', req.id);
       });
     });
   });
@@ -1786,9 +1947,9 @@ function openNewRequest(){
    fiziksel silinmiyor (bkz. moc_schema_faz_b2.sql).
    ========================================================================= */
 function viewSettings(){
-  document.getElementById('pageTitle').textContent='Ayarlar';
-  document.getElementById('pageCrumb').textContent='Kategori ve akış türü tanımları';
-  document.getElementById('content').innerHTML='<div class="empty">Yükleniyor…</div>';
+  document.getElementById('pageTitle').textContent=t('Ayarlar');
+  document.getElementById('pageCrumb').textContent=t('Kategori ve akış türü tanımları');
+  document.getElementById('content').innerHTML='<div class="empty">'+t('Yükleniyor…')+'</div>';
   reloadLookupsAll().then(renderSettings);
 }
 /* Faz 3.4 — Kullanıcılar (persona atama, 2026-08-28). Ayarlar zaten canDo('admin') ile
@@ -1796,21 +1957,21 @@ function viewSettings(){
    ortak "Kullanıcılar" ekranı aynı profiles tablosunu zaten yönetiyor. */
 var PERSONA_TR_MOC={saha_operatoru:'Saha Operatörü',sorumlu:'Sorumlu',ust_yonetim:'Üst Yönetim',denetci:'Denetçi'};
 function renderUsersSettingsSection(){
-  document.getElementById('content').insertAdjacentHTML('afterbegin','<div class="panel" id="usersPanel"><div class="ph"><h2>Kullanıcılar</h2></div><div class="pb"><div class="hint" style="margin-bottom:10px">Yalnızca <b>persona</b> (domain-dili etiket) atanır; rol/yetki değişimi Ekipman modülünden yapılır.</div><div id="usersPanelBody" class="empty">Yükleniyor…</div></div></div>');
+  document.getElementById('content').insertAdjacentHTML('afterbegin','<div class="panel" id="usersPanel"><div class="ph"><h2>'+t('Kullanıcılar')+'</h2></div><div class="pb"><div class="hint" style="margin-bottom:10px">'+t('Yalnızca persona (domain-dili etiket) atanır; rol/yetki değişimi Ekipman modülünden yapılır.')+'</div><div id="usersPanelBody" class="empty">'+t('Yükleniyor…')+'</div></div></div>');
   sb.from('profiles').select('id,full_name,role,is_active,persona').eq('tenant_id',cloudTenantId).order('created_at').then(function(r){
     var rows=(r&&r.data)||[];
     var body=document.getElementById('usersPanelBody'); if(!body) return;
-    if(!rows.length){ body.innerHTML='<span class="empty">Kayıt yok.</span>'; return; }
+    if(!rows.length){ body.innerHTML='<span class="empty">'+t('Kayıt yok.')+'</span>'; return; }
     var trs=rows.map(function(u){
-      var opts='<option value="">—</option>'+Object.keys(PERSONA_TR_MOC).map(function(k){return '<option value="'+k+'" '+(u.persona===k?'selected':'')+'>'+PERSONA_TR_MOC[k]+'</option>';}).join('');
-      return '<tr><td>'+esc(u.full_name||'(isimsiz)')+'</td><td class="hint">'+esc(u.role||'—')+'</td><td><select data-persona="'+u.id+'">'+opts+'</select></td><td>'+(u.is_active===false?'<span class="pill miss">Pasif</span>':'<span class="pill ok">Aktif</span>')+'</td></tr>';
+      var opts='<option value="">—</option>'+Object.keys(PERSONA_TR_MOC).map(function(k){return '<option value="'+k+'" '+(u.persona===k?'selected':'')+'>'+esc(PERSONA_TR_MOC[k])+'</option>';}).join('');
+      return '<tr><td>'+esc(u.full_name||'(isimsiz)')+'</td><td class="hint">'+esc(u.role||'—')+'</td><td><select data-persona="'+u.id+'">'+opts+'</select></td><td>'+(u.is_active===false?'<span class="pill miss">'+t('Pasif')+'</span>':'<span class="pill ok">'+t('Aktif')+'</span>')+'</td></tr>';
     }).join('');
-    body.outerHTML='<table id="usersPanelBody"><thead><tr><th>Ad</th><th>Rol</th><th>Persona</th><th>Durum</th></tr></thead><tbody>'+trs+'</tbody></table>';
+    body.outerHTML='<table id="usersPanelBody"><thead><tr><th>'+t('Ad')+'</th><th>'+t('Rol')+'</th><th>'+t('Persona')+'</th><th>'+t('Durum')+'</th></tr></thead><tbody>'+trs+'</tbody></table>';
     Array.prototype.forEach.call(document.querySelectorAll('[data-persona]'),function(s){
       s.onchange=function(){
         sb.from('profiles').update({persona:s.value||null}).eq('id',s.dataset.persona).then(function(res){
           if(res.error){ toast('Persona güncellenemedi: '+res.error.message,1); return; }
-          toast('Persona güncellendi');
+          toast(t('Persona güncellendi'));
         });
       };
     });
@@ -1820,23 +1981,23 @@ function renderSettings(){
   var catRows=ALL_CATEGORIES.map(function(c){
     var own = c.tenant_id===cloudTenantId;
     return '<tr'+(c.is_active?'':' style="opacity:.5"')+'><td>'+esc(c.code)+'</td><td>'+esc(c.name_tr)+'</td>'
-      +'<td>'+(c.requires_equipment_link?'Evet':'Hayır')+'</td>'
-      +'<td>'+(c.is_active?'<span class="pill ok">Aktif</span>':'<span class="pill miss">Pasif</span>')+'</td>'
-      +'<td>'+(own?'<button class="sm btn-line editcat" data-id="'+c.id+'">Düzenle</button> <button class="sm btn-line togglecat" data-id="'+c.id+'" data-v="'+(!c.is_active)+'">'+(c.is_active?'Pasifleştir':'Aktifleştir')+'</button>':'<span class="hint">Global</span>')+'</td></tr>';
+      +'<td>'+(c.requires_equipment_link?t('Evet'):t('Hayır'))+'</td>'
+      +'<td>'+(c.is_active?'<span class="pill ok">'+t('Aktif')+'</span>':'<span class="pill miss">'+t('Pasif')+'</span>')+'</td>'
+      +'<td>'+(own?'<button class="sm btn-line editcat" data-id="'+c.id+'">'+t('Düzenle')+'</button> <button class="sm btn-line togglecat" data-id="'+c.id+'" data-v="'+(!c.is_active)+'">'+(c.is_active?t('Pasifleştir'):t('Aktifleştir'))+'</button>':'<span class="hint">'+t('Global')+'</span>')+'</td></tr>';
   }).join('');
-  var typeRows=ALL_TYPES.map(function(t){
-    var own = t.tenant_id===cloudTenantId;
-    return '<tr'+(t.is_active?'':' style="opacity:.5"')+'><td>'+esc(t.code)+'</td><td>'+esc(t.name_tr)+'</td>'
-      +'<td>'+(t.requires_pssr?'Evet':'Hayır')+'</td><td>'+(t.requires_end_date?'Evet':'Hayır')+'</td>'
-      +'<td>'+(t.retro_hours||'—')+'</td>'
-      +'<td>'+(t.extra_approval_risk_threshold?('≥'+t.extra_approval_risk_threshold+' → '+esc(t.extra_approval_role_code||'—')):'—')+'</td>'
-      +'<td>'+(t.is_active?'<span class="pill ok">Aktif</span>':'<span class="pill miss">Pasif</span>')+'</td>'
-      +'<td>'+(own?'<button class="sm btn-line edittype" data-id="'+t.id+'">Düzenle</button> <button class="sm btn-line toggletype" data-id="'+t.id+'" data-v="'+(!t.is_active)+'">'+(t.is_active?'Pasifleştir':'Aktifleştir')+'</button>':'<span class="hint">Global</span>')+'</td></tr>';
+  var typeRows=ALL_TYPES.map(function(tp){
+    var own = tp.tenant_id===cloudTenantId;
+    return '<tr'+(tp.is_active?'':' style="opacity:.5"')+'><td>'+esc(tp.code)+'</td><td>'+esc(tp.name_tr)+'</td>'
+      +'<td>'+(tp.requires_pssr?t('Evet'):t('Hayır'))+'</td><td>'+(tp.requires_end_date?t('Evet'):t('Hayır'))+'</td>'
+      +'<td>'+(tp.retro_hours||'—')+'</td>'
+      +'<td>'+(tp.extra_approval_risk_threshold?('≥'+tp.extra_approval_risk_threshold+' → '+esc(tp.extra_approval_role_code||'—')):'—')+'</td>'
+      +'<td>'+(tp.is_active?'<span class="pill ok">'+t('Aktif')+'</span>':'<span class="pill miss">'+t('Pasif')+'</span>')+'</td>'
+      +'<td>'+(own?'<button class="sm btn-line edittype" data-id="'+tp.id+'">'+t('Düzenle')+'</button> <button class="sm btn-line toggletype" data-id="'+tp.id+'" data-v="'+(!tp.is_active)+'">'+(tp.is_active?t('Pasifleştir'):t('Aktifleştir'))+'</button>':'<span class="hint">'+t('Global')+'</span>')+'</td></tr>';
   }).join('');
   document.getElementById('content').innerHTML=
-    '<div class="panel"><div class="ph"><h2>Değişiklik Kategorileri</h2><button class="btn-line sm" id="btnAddCat" style="margin-left:auto">+ Kategori Ekle</button></div><div class="pb"><table><thead><tr><th>Kod</th><th>Ad</th><th>Ekipman Bağlantısı</th><th>Durum</th><th></th></tr></thead><tbody>'+(catRows||'<tr><td colspan="5" class="empty">Kayıt yok.</td></tr>')+'</tbody></table></div></div>'
-    +'<div class="panel"><div class="ph"><h2>Akış Türleri</h2><button class="btn-line sm" id="btnAddType" style="margin-left:auto">+ Tür Ekle</button></div><div class="pb"><table><thead><tr><th>Kod</th><th>Ad</th><th>PSSR</th><th>Bitiş Tarihi</th><th>Geriye Dönük (sa)</th><th>Ek Onay Eşiği</th><th>Durum</th><th></th></tr></thead><tbody>'+(typeRows||'<tr><td colspan="8" class="empty">Kayıt yok.</td></tr>')+'</tbody></table></div></div>'
-    +'<p class="hint">Global (tenant\'sız) satırlar platform varsayılanıdır, yalnız kendi tenant\'ınıza ait satırları düzenleyebilirsiniz. Kullanılmış kayıtlar silinemez, yalnız pasifleştirilebilir.</p>'
+    '<div class="panel"><div class="ph"><h2>'+t('Değişiklik Kategorileri')+'</h2><button class="btn-line sm" id="btnAddCat" style="margin-left:auto">'+t('+ Kategori Ekle')+'</button></div><div class="pb"><table><thead><tr><th>'+t('Kod')+'</th><th>'+t('Ad')+'</th><th>'+t('Ekipman Bağlantısı')+'</th><th>'+t('Durum')+'</th><th></th></tr></thead><tbody>'+(catRows||'<tr><td colspan="5" class="empty">'+t('Kayıt yok.')+'</td></tr>')+'</tbody></table></div></div>'
+    +'<div class="panel"><div class="ph"><h2>'+t('Akış Türleri')+'</h2><button class="btn-line sm" id="btnAddType" style="margin-left:auto">'+t('+ Tür Ekle')+'</button></div><div class="pb"><table><thead><tr><th>'+t('Kod')+'</th><th>'+t('Ad')+'</th><th>'+t('PSSR')+'</th><th>'+t('Bitiş Tarihi')+'</th><th>'+t('Geriye Dönük (sa)')+'</th><th>'+t('Ek Onay Eşiği')+'</th><th>'+t('Durum')+'</th><th></th></tr></thead><tbody>'+(typeRows||'<tr><td colspan="8" class="empty">'+t('Kayıt yok.')+'</td></tr>')+'</tbody></table></div></div>'
+    +'<p class="hint">'+t('Global (tenant\'sız) satırlar platform varsayılanıdır, yalnız kendi tenant\'ınıza ait satırları düzenleyebilirsiniz. Kullanılmış kayıtlar silinemez, yalnız pasifleştirilebilir.')+'</p>'
     +renderChecklistSettingsSection();
   bindSettingsEvents();
   renderUsersSettingsSection();
@@ -1845,27 +2006,27 @@ function renderChecklistSettingsSection(){
   var rows=(ALL_CHECKLIST_SETS||[]).map(function(s){
     var own = s.tenant_id===cloudTenantId;
     var isGlobal = s.tenant_id===null;
-    var katName = s.kategori_id ? ((catByIdAny(s.kategori_id)||{}).name_tr || '—') : 'Tüm Kategoriler (zorunlu)';
+    var katName = s.kategori_id ? ((catByIdAny(s.kategori_id)||{}).name_tr || '—') : t('Tüm Kategoriler (zorunlu)');
     var itemCount=(ALL_CHECKLIST_ITEMS||[]).filter(function(m){return m.set_id===s.id;}).length;
-    var scope = isGlobal ? '<span class="pill blue">Global Şablon</span>' : '<span class="pill purple">Tesis Kopyası</span>';
+    var scope = isGlobal ? '<span class="pill blue">'+t('Global Şablon')+'</span>' : '<span class="pill purple">'+t('Tesis Kopyası')+'</span>';
     var actions='';
     if(own){
-      actions='<button class="sm btn-line editchkset" data-id="'+s.id+'">Maddeleri Yönet</button> '
-        +'<button class="sm btn-line togglechkset" data-id="'+s.id+'" data-v="'+(!s.aktif)+'">'+(s.aktif?'Pasifleştir':'Aktifleştir')+'</button>';
+      actions='<button class="sm btn-line editchkset" data-id="'+s.id+'">'+t('Maddeleri Yönet')+'</button> '
+        +'<button class="sm btn-line togglechkset" data-id="'+s.id+'" data-v="'+(!s.aktif)+'">'+(s.aktif?t('Pasifleştir'):t('Aktifleştir'))+'</button>';
     } else if(isGlobal && s.kategori_id!==null){
       var already = (ALL_CHECKLIST_SETS||[]).some(function(x){return x.tenant_id===cloudTenantId && x.kategori_id===s.kategori_id && x.ad===s.ad;});
-      actions = already ? '<span class="hint">Tesisinizde aktif</span>' : '<button class="sm btn-leaf usechkset" data-id="'+s.id+'">Kullan</button>';
+      actions = already ? '<span class="hint">'+t('Tesisinizde aktif')+'</span>' : '<button class="sm btn-leaf usechkset" data-id="'+s.id+'">'+t('Kullan')+'</button>';
     } else if(isGlobal && s.kategori_id===null){
-      actions='<button class="sm btn-line copychkset" data-id="'+s.id+'">Kopyala ve Özelleştir</button>';
+      actions='<button class="sm btn-line copychkset" data-id="'+s.id+'">'+t('Kopyala ve Özelleştir')+'</button>';
     }
     return '<tr'+(s.aktif?'':' style="opacity:.5"')+'><td>'+esc(s.ad)+'</td><td>'+esc(katName)+'</td><td>'+scope+'</td><td>'+itemCount+'</td>'
-      +'<td>'+(s.aktif?'<span class="pill ok">Aktif</span>':'<span class="pill miss">Pasif</span>')+'</td><td>'+actions+'</td></tr>';
+      +'<td>'+(s.aktif?'<span class="pill ok">'+t('Aktif')+'</span>':'<span class="pill miss">'+t('Pasif')+'</span>')+'</td><td>'+actions+'</td></tr>';
   }).join('');
-  return '<div class="panel"><div class="ph"><h2>Etki Değerlendirme Checklist Setleri</h2>'
-    +(canDo('admin')?'<button class="btn-line sm" id="btnAddChkSet" style="margin-left:auto">+ Yeni Set</button>':'')
-    +'</div><div class="pb"><table><thead><tr><th>Ad</th><th>Kategori</th><th>Kapsam</th><th>Madde</th><th>Durum</th><th></th></tr></thead><tbody>'
-    +(rows||'<tr><td colspan="6" class="empty">Kayıt yok.</td></tr>')+'</tbody></table>'
-    +'<p class="hint">"Tüm Kategoriler (zorunlu)" setler her talepte otomatik devreye girer. Kategoriye bağlı setler, tesisiniz "Kullan" demeden hiç görünmez. Global şablonlar salt-okunurdur; kopyalayıp kendi tesisinize özel düzenleyebilirsiniz.</p>'
+  return '<div class="panel"><div class="ph"><h2>'+t('Etki Değerlendirme Checklist Setleri')+'</h2>'
+    +(canDo('admin')?'<button class="btn-line sm" id="btnAddChkSet" style="margin-left:auto">'+t('+ Yeni Set')+'</button>':'')
+    +'</div><div class="pb"><table><thead><tr><th>'+t('Ad')+'</th><th>'+t('Kategori')+'</th><th>'+t('Kapsam')+'</th><th>'+t('Madde')+'</th><th>'+t('Durum')+'</th><th></th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="6" class="empty">'+t('Kayıt yok.')+'</td></tr>')+'</tbody></table>'
+    +'<p class="hint">'+t('"Tüm Kategoriler (zorunlu)" setler her talepte otomatik devreye girer. Kategoriye bağlı setler, tesisiniz "Kullan" demeden hiç görünmez. Global şablonlar salt-okunurdur; kopyalayıp kendi tesisinize özel düzenleyebilirsiniz.')+'</p>'
     +'</div></div>';
 }
 function bindSettingsEvents(){
@@ -1878,7 +2039,7 @@ function bindSettingsEvents(){
     b.onclick=function(){
       sb.from('moc_change_categories').update({is_active: b.getAttribute('data-v')==='true'}).eq('id',Number(b.getAttribute('data-id'))).then(function(res){
         if(res.error){ toast('Hata: '+res.error.message,true); return; }
-        toast('Güncellendi'); viewSettings();
+        toast(t('Güncellendi')); viewSettings();
       });
     };
   });
@@ -1889,7 +2050,7 @@ function bindSettingsEvents(){
     b.onclick=function(){
       sb.from('moc_types').update({is_active: b.getAttribute('data-v')==='true'}).eq('id',Number(b.getAttribute('data-id'))).then(function(res){
         if(res.error){ toast('Hata: '+res.error.message,true); return; }
-        toast('Güncellendi'); viewSettings();
+        toast(t('Güncellendi')); viewSettings();
       });
     };
   });
@@ -1901,7 +2062,7 @@ function bindSettingsEvents(){
     b.onclick=function(){
       sb.from('moc_etki_checklist_setleri').update({aktif:b.getAttribute('data-v')==='true'}).eq('id',Number(b.getAttribute('data-id'))).then(function(res){
         if(res.error){ toast('Hata: '+res.error.message,true); return; }
-        toast('Güncellendi'); viewSettings();
+        toast(t('Güncellendi')); viewSettings();
       });
     };
   });
@@ -1917,22 +2078,22 @@ function cloneChecklistSet(setId){
     if(res.error){ toast('Hata: '+res.error.message,true); return; }
     var newSetId=res.data.id;
     var items=(ALL_CHECKLIST_ITEMS||[]).filter(function(m){return m.set_id===setId;});
-    if(!items.length){ toast('Set kopyalandı'); viewSettings(); return; }
+    if(!items.length){ toast(t('Set kopyalandı')); viewSettings(); return; }
     var payload=items.map(function(m){
       return {set_id:newSetId, bolum_baslik:m.bolum_baslik, soru_metni:m.soru_metni, sira_no:m.sira_no, evet_aksiyon_gerekli:m.evet_aksiyon_gerekli, tetikleyen_cevap:m.tetikleyen_cevap||'Evet'};
     });
     sb.from('moc_etki_checklist_maddeleri').insert(payload).then(function(res2){
       if(res2.error){ toast('Hata: '+res2.error.message,true); return; }
-      toast('Set tesisinize kopyalandı'); viewSettings();
+      toast(t('Set tesisinize kopyalandı')); viewSettings();
     });
   });
 }
 function openNewChecklistSetModal(){
   modalTitle('Yeni Checklist Seti');
   setModalBody(
-    '<label>Ad</label><input id="csAd">'
-    +'<label>Açıklama</label><textarea id="csAciklama"></textarea>'
-    +'<label>Kategori (boş = tüm kategorilerde zorunlu)</label><select id="csKat"><option value="">Tüm Kategoriler (zorunlu)</option>'
+    '<label>'+t('Ad')+'</label><input id="csAd">'
+    +'<label>'+t('Açıklama')+'</label><textarea id="csAciklama"></textarea>'
+    +'<label>'+t('Kategori (boş = tüm kategorilerde zorunlu)')+'</label><select id="csKat"><option value="">'+t('Tüm Kategoriler (zorunlu)')+'</option>'
     +CATEGORIES.map(function(c){return '<option value="'+c.id+'">'+esc(c.name_tr)+'</option>';}).join('')+'</select>'
   );
   modalFoot('Oluştur','Vazgeç',function(){
@@ -1941,7 +2102,7 @@ function openNewChecklistSetModal(){
     var kat=val('csKat');
     sb.from('moc_etki_checklist_setleri').insert({tenant_id:cloudTenantId, kategori_id: kat?Number(kat):null, ad:ad, aciklama:val('csAciklama'), aktif:true}).then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return; }
-      closeModal(); toast('Set oluşturuldu, madde ekleyin'); viewSettings();
+      closeModal(); toast(t('Set oluşturuldu, madde ekleyin')); viewSettings();
     });
   });
   openModal();
@@ -1949,9 +2110,9 @@ function openNewChecklistSetModal(){
 /* ---- Checklist madde yönetimi (nested modal) ---- */
 function openChecklistItemsModal(setId){
   var s=(ALL_CHECKLIST_SETS||[]).find(function(x){return x.id===setId;});
-  modalTitle('Maddeler — '+(s?esc(s.ad):''));
+  document.getElementById('modalTitle').textContent = t('Maddeler')+' — '+(s?esc(s.ad):'');
   document.getElementById('modalSave').style.display='none';
-  document.getElementById('modalCancel').textContent='Kapat';
+  document.getElementById('modalCancel').textContent=t('Kapat');
   renderChecklistItemsModalBody(setId);
   openModal(true);
 }
@@ -1959,15 +2120,15 @@ function renderChecklistItemsModalBody(setId){
   var items=(ALL_CHECKLIST_ITEMS||[]).filter(function(m){return m.set_id===setId;}).sort(function(a,b){return a.sira_no-b.sira_no;});
   var rows=items.map(function(m){
     return '<tr'+(m.is_active?'':' style="opacity:.5"')+'><td>'+m.sira_no+'</td><td>'+esc(m.bolum_baslik)+'</td><td>'+esc(m.soru_metni)+'</td>'
-      +'<td>'+(m.tetikleyen_cevap==='Hayır'?'Hayır':'Evet')+'</td>'
-      +'<td>'+(m.evet_aksiyon_gerekli?'Evet':'Hayır')+'</td>'
-      +'<td><button class="sm btn-line editchkitem" data-id="'+m.id+'">Düzenle</button> '
-      +'<button class="sm btn-line togglechkitem" data-id="'+m.id+'" data-v="'+(!m.is_active)+'">'+(m.is_active?'Pasifleştir':'Aktifleştir')+'</button></td></tr>';
+      +'<td>'+(m.tetikleyen_cevap==='Hayır'?t('Hayır'):t('Evet'))+'</td>'
+      +'<td>'+(m.evet_aksiyon_gerekli?t('Evet'):t('Hayır'))+'</td>'
+      +'<td><button class="sm btn-line editchkitem" data-id="'+m.id+'">'+t('Düzenle')+'</button> '
+      +'<button class="sm btn-line togglechkitem" data-id="'+m.id+'" data-v="'+(!m.is_active)+'">'+(m.is_active?t('Pasifleştir'):t('Aktifleştir'))+'</button></td></tr>';
   }).join('');
   setModalBody(
-    '<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn-line sm" id="btnAddChkItem">+ Madde Ekle</button></div>'
-    +'<table><thead><tr><th>Sıra</th><th>Bölüm</th><th>Soru</th><th>Tetikleyen</th><th>→Aksiyon</th><th></th></tr></thead><tbody>'
-    +(rows||'<tr><td colspan="6" class="empty">Madde yok.</td></tr>')+'</tbody></table>'
+    '<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn-line sm" id="btnAddChkItem">'+t('+ Madde Ekle')+'</button></div>'
+    +'<table><thead><tr><th>'+t('Sıra')+'</th><th>'+t('Bölüm')+'</th><th>'+t('Soru')+'</th><th>'+t('Tetikleyen')+'</th><th>'+t('→Aksiyon')+'</th><th></th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="6" class="empty">'+t('Madde yok.')+'</td></tr>')+'</tbody></table>'
   );
   var ac=document.getElementById('btnAddChkItem'); if(ac) ac.onclick=function(){ openChecklistItemForm(setId,null); };
   Array.prototype.forEach.call(document.querySelectorAll('.editchkitem'),function(b){
@@ -1984,17 +2145,17 @@ function renderChecklistItemsModalBody(setId){
 }
 function openChecklistItemForm(setId, m){
   setModalBody(
-    '<label>Bölüm Başlığı</label><input id="ciBolum" value="'+(m?esc(m.bolum_baslik):'')+'">'
-    +'<label>Soru Metni</label><textarea id="ciSoru">'+(m?esc(m.soru_metni):'')+'</textarea>'
-    +'<div class="row2"><div><label>Sıra No</label><input id="ciSira" type="number" value="'+(m?m.sira_no:0)+'"></div>'
-    +'<div><label>Tetikleyen Cevap</label><select id="ciTetikleyen">'
-      +'<option value="Evet"'+((!m||m.tetikleyen_cevap!=='Hayır')?' selected':'')+'>Evet (risk tespiti — "X etkileniyor mu?" tarzı)</option>'
-      +'<option value="Hayır"'+(m&&m.tetikleyen_cevap==='Hayır'?' selected':'')+'>Hayır (doğrulama — "X tamamlandı mı?" tarzı)</option>'
+    '<label>'+t('Bölüm Başlığı')+'</label><input id="ciBolum" value="'+(m?esc(m.bolum_baslik):'')+'">'
+    +'<label>'+t('Soru Metni')+'</label><textarea id="ciSoru">'+(m?esc(m.soru_metni):'')+'</textarea>'
+    +'<div class="row2"><div><label>'+t('Sıra No')+'</label><input id="ciSira" type="number" value="'+(m?m.sira_no:0)+'"></div>'
+    +'<div><label>'+t('Tetikleyen Cevap')+'</label><select id="ciTetikleyen">'
+      +'<option value="Evet"'+((!m||m.tetikleyen_cevap!=='Hayır')?' selected':'')+'>'+t('Evet (risk tespiti — "X etkileniyor mu?" tarzı)')+'</option>'
+      +'<option value="Hayır"'+(m&&m.tetikleyen_cevap==='Hayır'?' selected':'')+'>'+t('Hayır (doğrulama — "X tamamlandı mı?" tarzı)')+'</option>'
       +'</select></div></div>'
-    +'<label class="chk" style="margin-top:10px"><input type="checkbox" id="ciEvetAksiyon" '+(m&&m.evet_aksiyon_gerekli?'checked':'')+'> Tetikleyen cevap otomatik aksiyon oluştursun</label>'
+    +'<label class="chk" style="margin-top:10px"><input type="checkbox" id="ciEvetAksiyon" '+(m&&m.evet_aksiyon_gerekli?'checked':'')+'> '+t('Tetikleyen cevap otomatik aksiyon oluştursun')+'</label>'
     +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
-    +'<button class="btn-line" id="btnChkItemBack">Geri</button>'
-    +'<button class="btn-leaf" id="btnChkItemSave">Kaydet</button></div>'
+    +'<button class="btn-line" id="btnChkItemBack">'+t('Geri')+'</button>'
+    +'<button class="btn-leaf" id="btnChkItemSave">'+t('Kaydet')+'</button></div>'
   );
   document.getElementById('btnChkItemBack').onclick=function(){ renderChecklistItemsModalBody(setId); };
   document.getElementById('btnChkItemSave').onclick=function(){
@@ -2005,7 +2166,7 @@ function openChecklistItemForm(setId, m){
                : sb.from('moc_etki_checklist_maddeleri').insert(Object.assign({set_id:setId},payload));
     op.then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return; }
-      toast('Kaydedildi');
+      toast(t('Kaydedildi'));
       reloadLookupsAll().then(function(){ renderChecklistItemsModalBody(setId); });
     });
   };
@@ -2013,11 +2174,11 @@ function openChecklistItemForm(setId, m){
 function openCategoryModal(c){
   modalTitle(c?'Kategori Düzenle':'Kategori Ekle');
   setModalBody(
-    '<label>Kod</label><input id="ccCode" value="'+(c?esc(c.code):'')+'">'
-    +'<label>Ad (TR)</label><input id="ccNameTr" value="'+(c?esc(c.name_tr):'')+'">'
-    +'<label>Ad (EN)</label><input id="ccNameEn" value="'+(c?esc(c.name_en):'')+'">'
-    +'<label class="chk"><input type="checkbox" id="ccEq" '+(c&&c.requires_equipment_link?'checked':'')+'> Ekipman bağlantısı zorunlu</label>'
-    +'<label>Sıra No</label><input id="ccSort" type="number" value="'+(c?c.sort_order:0)+'">'
+    '<label>'+t('Kod')+'</label><input id="ccCode" value="'+(c?esc(c.code):'')+'">'
+    +'<label>'+t('Ad (TR)')+'</label><input id="ccNameTr" value="'+(c?esc(c.name_tr):'')+'">'
+    +'<label>'+t('Ad (EN)')+'</label><input id="ccNameEn" value="'+(c?esc(c.name_en):'')+'">'
+    +'<label class="chk"><input type="checkbox" id="ccEq" '+(c&&c.requires_equipment_link?'checked':'')+'> '+t('Ekipman bağlantısı zorunlu')+'</label>'
+    +'<label>'+t('Sıra No')+'</label><input id="ccSort" type="number" value="'+(c?c.sort_order:0)+'">'
   );
   modalFoot('Kaydet','Vazgeç',function(){
     var code=val('ccCode'), nameTr=val('ccNameTr'), nameEn=val('ccNameEn');
@@ -2027,24 +2188,24 @@ function openCategoryModal(c){
                : sb.from('moc_change_categories').insert(Object.assign({tenant_id:cloudTenantId},payload));
     op.then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return; }
-      closeModal(); toast('Kaydedildi'); viewSettings();
+      closeModal(); toast(t('Kaydedildi')); viewSettings();
     });
   });
   openModal();
 }
-function openTypeModal(t){
-  modalTitle(t?'Akış Türü Düzenle':'Akış Türü Ekle');
+function openTypeModal(tp){
+  modalTitle(tp?'Akış Türü Düzenle':'Akış Türü Ekle');
   setModalBody(
-    '<label>Kod</label><input id="tcCode" value="'+(t?esc(t.code):'')+'">'
-    +'<label>Ad (TR)</label><input id="tcNameTr" value="'+(t?esc(t.name_tr):'')+'">'
-    +'<label>Ad (EN)</label><input id="tcNameEn" value="'+(t?esc(t.name_en):'')+'">'
-    +'<div class="row2"><label class="chk"><input type="checkbox" id="tcPssr" '+(t&&t.requires_pssr?'checked':'')+'> PSSR gerekli</label>'
-    +'<label class="chk"><input type="checkbox" id="tcEnd" '+(t&&t.requires_end_date?'checked':'')+'> Bitiş tarihi gerekli (geçici)</label></div>'
-    +'<label>Geriye Dönük Süre — Acil (saat)</label><input id="tcRetro" type="number" value="'+(t&&t.retro_hours!=null?t.retro_hours:'')+'">'
-    +'<fieldset><legend>Risk Eşiğine Göre Otomatik Ek Onay</legend>'
-    +'<label>Risk Eşiği (risk_after ≥ bu değer, boş = kapalı)</label><input id="tcThresh" type="number" min="1" max="25" value="'+(t&&t.extra_approval_risk_threshold!=null?t.extra_approval_risk_threshold:'')+'">'
-    +'<label>Ek Onay Rol Kodu</label><input id="tcRole" value="'+(t&&t.extra_approval_role_code?esc(t.extra_approval_role_code):'')+'" placeholder="ör. PLANT_MANAGER">'
-    +'<p class="hint">TECHNICAL_REVIEW → APPROVAL geçişinde, herhangi bir risk kaydının risk_after değeri bu eşiği geçerse belirtilen role otomatik bir onay adımı eklenir.</p>'
+    '<label>'+t('Kod')+'</label><input id="tcCode" value="'+(tp?esc(tp.code):'')+'">'
+    +'<label>'+t('Ad (TR)')+'</label><input id="tcNameTr" value="'+(tp?esc(tp.name_tr):'')+'">'
+    +'<label>'+t('Ad (EN)')+'</label><input id="tcNameEn" value="'+(tp?esc(tp.name_en):'')+'">'
+    +'<div class="row2"><label class="chk"><input type="checkbox" id="tcPssr" '+(tp&&tp.requires_pssr?'checked':'')+'> '+t('PSSR gerekli')+'</label>'
+    +'<label class="chk"><input type="checkbox" id="tcEnd" '+(tp&&tp.requires_end_date?'checked':'')+'> '+t('Bitiş tarihi gerekli (geçici)')+'</label></div>'
+    +'<label>'+t('Geriye Dönük Süre — Acil (saat)')+'</label><input id="tcRetro" type="number" value="'+(tp&&tp.retro_hours!=null?tp.retro_hours:'')+'">'
+    +'<fieldset><legend>'+t('Risk Eşiğine Göre Otomatik Ek Onay')+'</legend>'
+    +'<label>'+t('Risk Eşiği (risk_after ≥ bu değer, boş = kapalı)')+'</label><input id="tcThresh" type="number" min="1" max="25" value="'+(tp&&tp.extra_approval_risk_threshold!=null?tp.extra_approval_risk_threshold:'')+'">'
+    +'<label>'+t('Ek Onay Rol Kodu')+'</label><input id="tcRole" value="'+(tp&&tp.extra_approval_role_code?esc(tp.extra_approval_role_code):'')+'" placeholder="ör. PLANT_MANAGER">'
+    +'<p class="hint">'+t('TECHNICAL_REVIEW → APPROVAL geçişinde, herhangi bir risk kaydının risk_after değeri bu eşiği geçerse belirtilen role otomatik bir onay adımı eklenir.')+'</p>'
     +'</fieldset>'
   );
   modalFoot('Kaydet','Vazgeç',function(){
@@ -2055,11 +2216,11 @@ function openTypeModal(t){
     var payload={ code:code, name_tr:nameTr, name_en:nameEn,
       requires_pssr:document.getElementById('tcPssr').checked, requires_end_date:document.getElementById('tcEnd').checked,
       retro_hours:num('tcRetro'), extra_approval_risk_threshold: thresh||null, extra_approval_role_code: thresh?role:null };
-    var op = t ? sb.from('moc_types').update(payload).eq('id',t.id)
+    var op = tp ? sb.from('moc_types').update(payload).eq('id',tp.id)
                : sb.from('moc_types').insert(Object.assign({tenant_id:cloudTenantId},payload));
     op.then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return; }
-      closeModal(); toast('Kaydedildi'); viewSettings();
+      closeModal(); toast(t('Kaydedildi')); viewSettings();
     });
   });
   openModal();
@@ -2068,13 +2229,13 @@ function openTypeModal(t){
 /* ============================================================================
    Modal / util (Ekipman/Gıda desenine uyumlu)
    ========================================================================= */
-function modalTitle(t){ document.getElementById('modalTitle').textContent=t; }
+function modalTitle(ttl){ document.getElementById('modalTitle').textContent=t(ttl); }
 function setModalBody(h){ document.getElementById('modalBody').innerHTML=h; }
 function modalFoot(saveLbl,cancelLbl,onSave){
   var sv=document.getElementById('modalSave'), cn=document.getElementById('modalCancel');
   sv.className='btn-leaf';
-  if(saveLbl){ sv.style.display=''; sv.textContent=saveLbl; sv.disabled=false; sv.onclick=onSave||null; } else sv.style.display='none';
-  cn.textContent=cancelLbl||'Kapat';
+  if(saveLbl){ sv.style.display=''; sv.textContent=t(saveLbl); sv.disabled=false; sv.onclick=onSave||null; } else sv.style.display='none';
+  cn.textContent=t(cancelLbl||'Kapat');
 }
 function openModal(wide){ document.getElementById('modalBox').className='modal'+(wide?' wide':''); document.getElementById('overlay').classList.add('on'); document.getElementById('modalWrap').classList.add('on'); }
 function closeModal(){ document.getElementById('overlay').classList.remove('on'); document.getElementById('modalWrap').classList.remove('on'); }
@@ -2082,12 +2243,12 @@ function confirmBox(msg,okLbl,onOk,danger){
   modalTitle('Onay');
   setModalBody('<div style="font-size:13.5px;line-height:1.55">'+msg+'</div>');
   var sv=document.getElementById('modalSave'), cn=document.getElementById('modalCancel');
-  sv.style.display=''; sv.textContent=okLbl||'Onayla'; sv.disabled=false; sv.className=danger?'btn-crit':'btn-leaf'; sv.onclick=function(){ onOk&&onOk(); };
-  cn.textContent='Vazgeç';
+  sv.style.display=''; sv.textContent=t(okLbl||'Onayla'); sv.disabled=false; sv.className=danger?'btn-crit':'btn-leaf'; sv.onclick=function(){ onOk&&onOk(); };
+  cn.textContent=t('Vazgeç');
   openModal();
 }
 var toastT=null;
-function toast(msg,err){ var t=document.getElementById('toast'); t.textContent=msg; t.className='toast on'+(err?' err':''); clearTimeout(toastT); toastT=setTimeout(function(){t.className='toast';},2800); }
+function toast(msg,err){ var tEl=document.getElementById('toast'); tEl.textContent=msg; tEl.className='toast on'+(err?' err':''); clearTimeout(toastT); toastT=setTimeout(function(){tEl.className='toast';},2800); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function val(id){ var e=document.getElementById(id); return e?e.value:''; }
 function num(id){ var v=val(id); return v===''?null:Number(v); }
@@ -2130,6 +2291,9 @@ function initThemeToggle(){
   initThemeToggle();
   document.getElementById('overlay').onclick=closeModal;
   document.getElementById('modalCancel').onclick=closeModal;
+  var loLangBtn=document.getElementById('loLangBtn'); if(loLangBtn) loLangBtn.onclick=toggleLoginLang;
+  var langBtn=document.getElementById('langBtn'); if(langBtn) langBtn.onclick=toggleMocLang;
+  applyMocLangStatic();
 
   cloudInit();
 })();

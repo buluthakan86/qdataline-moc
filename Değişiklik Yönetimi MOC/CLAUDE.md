@@ -1,5 +1,82 @@
 # MOC (Değişiklik Yönetimi) — Proje Notları
 
+## İngilizce Dil Desteği (29.08.2026'da eklendi)
+Bu modülde daha önce hiç İngilizce yoktu (yalnız Türkçe). Yöntem, Doküman Yönetimi
+modülüne bir gün önce eklenen yöntemden birebir kopyalanıp uyarlandı (bkz. Doküman
+Yönetimi `CLAUDE.md` → "İngilizce Dil Desteği") — yeni bir yöntem icat edilmedi.
+
+**Nasıl çalışıyor:** `MOC.html`'in başına `var I18N={...}` sözlüğü eklendi (yaklaşık
+150 anahtar). Sözlükteki her anahtar TÜRKÇE metnin kendisi (örn. `'Kaydet':'Save'`).
+`t('Kaydet')` İngilizce modda "Save" döner; Türkçe modda ya da sözlükte olmayan bir
+metin için her zaman metni OLDUĞU GİBİ geri döner — yani hiçbir zaman boş/hatalı
+görünmez, güvenli bir yöntem. Dil tercihi `localStorage.moc_lang`'de saklanır
+(varsayılan Türkçe, `moc_` öneki bu modülün kendi anahtarı). Topbar'da ("EN"/"TR"
+düğmesi) ve giriş ekranında ayrı ayrı birer dil düğmesi var.
+
+**ÇOK ÖNEMLİ KURAL — asla bozulmadı:** MOC talebi başlığı/açıklaması/gerekçesi, risk
+kaydı notları, checklist gerekçe/bulgu metni, serbest metin — yani veritabanından gelen
+HİÇBİR KULLANICI VERİSİ çevrilmedi. Yalnızca sabit ekran metinleri (menü, başlık, buton,
+tablo başlığı, durum etiketi, modal başlığı, form etiketi) çevrildi.
+
+**Kapsanan ekranlar:** Giriş ekranı + dil düğmesi; üst kart menü (Özet/Değişiklik
+Talepleri/Onay Bekleyenler/Tüm Değişiklikler/Ayarlar) + topbar (buton/başlık/dil
+düğmesi); Dashboard/Genel Bakış (KPI kutuları, kategori dağılım grafiği, T-7 listesi,
+"Özelleştir" paneli); liste ekranları (Değişiklik Talepleri, Onay Bekleyenler, Tüm
+Değişiklikler) tablo başlıkları ve satır aksiyonları; MOC detay ekranının tamamı —
+durum geçişi paneli, maliyet takibi paneli, risk değerlendirmesi paneli, onay zinciri
+paneli (Onayla/İade/Reddet dahil), aksiyonlar paneli, PSSR paneli, etki değerlendirme
+checklist paneli (bölüm accordion'u + Evet/Hayır/N-A chip'leri + gerekçe kutusu dahil),
+ilişkili kayıtlar paneli; yeni MOC talebi formu ve kısıtlı/tam düzenleme modları; Ayarlar
+ekranının tamamı (Kategori CRUD, Akış Türü CRUD, Etki Değerlendirme Checklist Setleri
+paneli + madde yönetimi modalı, Kullanıcılar/persona paneli); ortak `modalTitle()`/
+`modalFoot()`/`confirmBox()` yardımcı fonksiyonları (bu üçüne çeviri eklendiği için
+platformdaki hemen her modalın başlığı ve Kaydet/Vazgeç/Kapat/Ekle/Onayla gibi butonları
+otomatik İngilizce'ye döndü); tüm `toast()` bildirim mesajlarının büyük çoğunluğu.
+
+**Durum makinesi (`STATUS_LABEL`) özel durumu:** `TRANSITIONS` objesindeki durum KODLARI
+(`DRAFT`/`SCREENING`/`TECHNICAL_REVIEW`/`APPROVAL`/... ) zaten İngilizce ve hiç
+değişmedi — bunlar durum makinesinin tek doğruluk kaynağı, koda hiç dokunulmadı. Yalnız
+kullanıcıya gösterilen `STATUS_LABEL` rozet metni (Taslak/Ön Tarama/Teknik İnceleme vb.)
+`t()` ile sarmalanarak çevrildi; DB'ye/karşılaştırmalara hâlâ kod (`req.status`) gider,
+rozet metni tamamen kozmetik.
+
+**Select/option tuzağı (kritik, kontrol edildi, TEMİZ bulundu):** Bir `<select>`'in
+İngilizce'ye çevrilen görünen metni `value=` özniteliği olmadan bırakılırsa İngilizce
+modda o İngilizce metin veritabanına yazılır ve durum makinesi/checklist tetikleme
+mantığı sessizce bozulur — bu hata daha önce başka modüllerde (Q-Tedarikçi, Bakım-Onarım)
+yaşanmıştı. Bu modülde MOC'un durum makinesi/onay zinciri/checklist tetikleme mantığı
+tamamen string eşleşmelerine dayandığı için özellikle dikkatle kontrol edildi:
+**tüm `<select>`/`<option>` grupları (para birimi, kategori, akış türü, öncelik
+NORMAL/LOW/HIGH/EMERGENCY, aksiyon fazı PRE_APPROVAL/IMPLEMENTATION/..., checklist
+tetikleyen cevap Evet/Hayır, persona, hedef modül) MOC.html'de zaten kod/etiket ayrımıyla
+yazılmıştı** — DB'ye/karşılaştırmaya hep sabit `value=` kodu gider, görünen etiket
+bağımsız olarak `t()` ile çevrilebilir. **Hiçbir yerde ek düzeltme GEREKMEDİ** — yalnız
+görünen etiket metinlerine `t()` eklendi, `value=` hiçbirinde değiştirilmedi. Ayrıca
+Onay Zinciri kararı (Onayla/İade/Reddet) ve checklist Evet/Hayır/N-A chip'leri de
+`<select>` değil buton olup `data-dec="APPROVED/RETURNED/REJECTED"` / `data-cevap=
+"EVET/HAYIR/NA"` özniteliğinden okunuyor — bunlarda da yalnız görünen buton metni
+çevrildi, `data-*` değerleri hiç değişmedi.
+
+**Kritik bir kod-adı çakışması bulunup düzeltildi:** `t` hem global çeviri fonksiyonunun
+adı hem de kodun bazı yerlerinde "tür" (type) nesnesini tutan yerel değişken/parametre
+adıydı (`renderRequestTable`, `renderDetail`, `openTypeModal` gibi). Bu fonksiyonların
+içinde `t('...')` çağrısı eklenseydi, yerel `t` değişkeni global fonksiyonu gölgeler ve
+"t is not a function" hatası ya da (daha tehlikelisi) `openTypeModal`'da olduğu gibi
+`t ? update : insert` kontrolünün her zaman "her t objesi trulu" mantığıyla yanlış dallanması
+riski doğardı. Çözüm: bu fonksiyonlardaki yerel değişken/parametre `t` → `typ`/`tp` olarak
+yeniden adlandırıldı, global `t()` çağrıları güvenli hale getirildi. Bu tür bir isim
+çakışması ileride yeni kod eklenirken tekrar unutulmamalı — bu dosyada "tür/type" nesnesi
+için yerel değişken adı olarak asla düz `t` kullanılmamalı.
+
+**Henüz çevrilmeyenler (bilinçli, düşük öncelik):** bazı `toast()` doğrulama/hata mesajları
+(örn. "Başlık zorunlu.", "Rol kodu zorunlu.", "Kod ve ad alanları zorunlu." gibi form
+doğrulama uyarıları) ve `readRequestForm()`/`toggleEndDate()` içindeki birkaç mesaj —
+bunlar en az kullanılan hata yollarıdır, kullanıcı isterse aynı yöntemle (I18N sözlüğüne
+satır ekleyip `toast(t(...))` şeklinde sarmalayarak) genişletilebilir.
+
+**Sözdizimi doğrulaması:** dosyadaki 2 `<script>` bloğu da Node (`new Function(...)`)
+ile hatasız doğrulandı.
+
 ## Ne bu
 Endüstriyel değişiklik yönetimi (Management of Change) modülü. Tek dosya
 HTML (`MOC.html`), build yok — Ekipman/Gıda/Q-Tedarikçi/Q-Kalite ile aynı
