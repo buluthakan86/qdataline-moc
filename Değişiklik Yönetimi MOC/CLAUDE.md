@@ -1,5 +1,21 @@
 # MOC (Değişiklik Yönetimi) — Proje Notları
 
+## Ek bug fix (30.08.2026, ikinci tur) — İade edilen onay adımı zinciri kalıcı kilitliyordu
+`checkApprovalAuto()` bir onay adımı **İade (RETURNED)** edildiğinde MOC'u `TECHNICAL_REVIEW`'a
+geri gönderiyordu ama o `moc_approvals` satırının `decision` alanını sıfırlamıyordu. Talep tekrar
+`APPROVAL`'a ilerletildiğinde `activeApprovalStep()` sıralı listede bu eski RETURNED satırına
+ulaşınca (`decision!=='APPROVED'` olduğu için) döngüyü kırıp `null` döndürüyordu — hiçbir adım
+bir daha "aktif" olamıyordu, Onayla/İade/Reddet butonları kimseye görünmüyordu, "Onay
+Bekleyenler" ekranı bu MOC'u asla listelemiyordu, talep **sonsuza kadar `APPROVAL` durumunda
+kilitli** kalıyordu. Bu, CLAUDE.md'de daha önce "sıralı onay zinciri henüz canlı test edilmedi"
+diye not düşülen tam senaryoydu. **Düzeltme (commit `c04a146`):** `checkApprovalAuto()` artık
+`TECHNICAL_REVIEW`'a dönerken İade edilen satır(lar)ın `decision`/`decided_at`/`approver_id`
+alanlarını `null`'a çekiyor — adım tekrar "Bekliyor" durumuna dönüyor, MOC yeniden `APPROVAL`'a
+geldiğinde normal şekilde ilerleyebiliyor. **⚠️ Bu düzeltmeden ÖNCE zaten kilitlenmiş MOC
+kayıtları varsa** (canlıda İade akışı hiç kullanılmadıysa risk yok), onların RETURNED satırının
+`decision`'ı SQL ile elle `null`'a çekilmeli — kod düzeltmesi yalnız YENİ kilitlenmeleri önler,
+geçmiş veriyi otomatik düzeltmez.
+
 ## Ek bug fix (30.08.2026) — openNewRequest() içindeki gölgeleme kaçmıştı
 İngilizce dil desteği eklenirken `renderRequestTable`/`renderDetail`/`openTypeModal`'daki
 `t` (tür objesi) ↔ global `t()` çeviri fonksiyonu gölgelemesi düzeltilmişti, ama
