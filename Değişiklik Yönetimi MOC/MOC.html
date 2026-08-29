@@ -1818,10 +1818,21 @@ function checkApprovalAuto(){
   sb.from('moc_approvals').select('*').eq('moc_id',req.id).then(function(res){
     var rows=res.data||[];
     var next=null;
+    var returned=rows.filter(function(a){return a.decision==='RETURNED';});
     if(rows.some(function(a){return a.decision==='REJECTED';})) next='REJECTED';
-    else if(rows.some(function(a){return a.decision==='RETURNED';})) next='TECHNICAL_REVIEW';
+    else if(returned.length) next='TECHNICAL_REVIEW';
     else if(rows.length && rows.every(function(a){return a.decision==='APPROVED';})) next='IMPLEMENTATION';
-    if(next && req.status==='APPROVAL'){
+    if(next==='TECHNICAL_REVIEW'){
+      // İade edilen adımın kararı sıfırlanmazsa activeApprovalStep() bu satırda kalıcı olarak
+      // takılıp kalır (decision hep 'RETURNED'!=='APPROVED' kaldığı için) — talep tekrar
+      // APPROVAL'a geçse bile hiçbir adım bir daha "aktif" olamaz, onay zinciri sonsuza kadar
+      // kilitlenir. İade edilen adım tekrar Bekliyor durumuna dönsün diye kararı sıfırlanır.
+      var resets=returned.map(function(a){ return sb.from('moc_approvals').update({decision:null, decided_at:null, approver_id:null}).eq('id',a.id); });
+      Promise.all(resets).then(function(){
+        if(req.status==='APPROVAL'){ sb.from('moc_requests').update({status:next}).eq('id',req.id).then(function(){ viewDetail(req.id); }); }
+        else viewDetail(req.id);
+      });
+    } else if(next && req.status==='APPROVAL'){
       sb.from('moc_requests').update({status:next}).eq('id',req.id).then(function(){ viewDetail(req.id); });
     } else viewDetail(req.id);
   });
