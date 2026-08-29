@@ -1926,9 +1926,9 @@ function openNewRequest(){
     sb.from('moc_requests').insert(payload).select().single().then(function(res){
       if(res.error){ toast('Hata: '+res.error.message,true); return; }
       var req=res.data;
-      var t=typeById(req.type_id);
+      var typ=typeById(req.type_id);
       var after=Promise.resolve();
-      if(t&&t.requires_end_date&&req.planned_end){
+      if(typ&&typ.requires_end_date&&req.planned_end){
         after=sb.from('moc_temporary_tracking').insert({tenant_id:cloudTenantId, moc_id:req.id, expires_at:req.planned_end});
       }
       Promise.resolve(after).then(function(){
