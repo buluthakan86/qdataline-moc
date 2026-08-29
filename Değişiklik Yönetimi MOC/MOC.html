@@ -1511,10 +1511,15 @@ function commitChecklistAnswer(m, cevap, gerekce){
       if(res.error){ toast('Hata: '+res.error.message,true); return existing?existing.action_id:null; }
       return res.data.id;
     });
+  } else if(!needsAction && existing && existing.action_id){
+    // Cevap daha önce tetikleyiciydi (aksiyon açılmıştı), şimdi tetikleyici olmayan bir
+    // cevaba çevrildi — açılan aksiyon iptal edilmezse sonsuza kadar "açık" kalıp
+    // condActionsDone() kontrollerini gereksiz yere kilitli tutardı (yetim aksiyon).
+    actionPromise = sb.from('moc_action_items').update({status:'CANCELLED'}).eq('id',existing.action_id).then(function(){ return null; });
   }
   actionPromise.then(function(actionId){
     var payload={ tenant_id:cloudTenantId, moc_request_id:DETAIL_CTX.req.id, madde_id:m.id,
-      cevap:cevap, gerekce:gerekce||null, action_id: needsAction?actionId:(existing?existing.action_id:null),
+      cevap:cevap, gerekce:gerekce||null, action_id: needsAction?actionId:null,
       answered_by:cloudUserId, answered_at:new Date().toISOString() };
     var op = existing
       ? sb.from('moc_etki_checklist_yanitlari').update(payload).eq('id',existing.id).select().single()
