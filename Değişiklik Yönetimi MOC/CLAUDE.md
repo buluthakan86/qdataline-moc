@@ -1,5 +1,18 @@
 # MOC (Değişiklik Yönetimi) — Proje Notları
 
+## Ek bug fix (30.08.2026) — openNewRequest() içindeki gölgeleme kaçmıştı
+İngilizce dil desteği eklenirken `renderRequestTable`/`renderDetail`/`openTypeModal`'daki
+`t` (tür objesi) ↔ global `t()` çeviri fonksiyonu gölgelemesi düzeltilmişti, ama
+**`openNewRequest()` içindeki dördüncü bir yer gözden kaçmıştı** (commit `f2fb623`,
+paralel modül denetimi sırasında bulundu). `var t=typeById(req.type_id);` global `t()`'yi
+gölgeliyordu; seçili akış türü varsa (`typ.requires_end_date` kontrolü sonrası)
+`toast(t('Talep oluşturuldu'))` çağrısı `TypeError: t is not a function` fırlatıp
+`.then()` içinde sessizce yutuluyordu — kullanıcı başarı bildirimini görmüyor, yeni
+oluşturduğu talebin detay ekranına yönlendirilmiyordu (`go('detail', req.id)` hiç
+çalışmıyordu). Düzeltme: değişken `typ` olarak yeniden adlandırıldı. **Ders:** bu
+dosyada "tür/type" nesnesi için yerel değişken adı olarak asla düz `t` kullanılmamalı —
+bu artık DÖRT yerde tekrarlanmış bir hata sınıfı, yeni kod eklerken özellikle dikkat.
+
 ## İngilizce Dil Desteği (29.08.2026'da eklendi)
 Bu modülde daha önce hiç İngilizce yoktu (yalnız Türkçe). Yöntem, Doküman Yönetimi
 modülüne bir gün önce eklenen yöntemden birebir kopyalanıp uyarlandı (bkz. Doküman
