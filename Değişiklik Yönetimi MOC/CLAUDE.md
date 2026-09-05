@@ -15,7 +15,23 @@ eski notlar YANLIŞTIR** — canlı şema sorgulandı, dördü de uygulanmış d
 `para_birimi`, `sapma_*` GENERATED, `tetik_tipi`, `tetikleyen_cevap` mevcut). O notlar tarihsel
 kayıt olarak bırakıldı; güncel durum burasıdır.
 
-### 🔴 SIRADAKİ İŞ
+### ✅ RAKİP ANALİZİNİN 5 EKSİĞİNİN TAMAMI KAPATILDI (Faz I/J, commit `0df410c`)
+Aşağıdaki "SIRADAKİ İŞ" listesinin beşi de yapıldı — ayrıntı en altta Faz I/J bölümünde.
+**BEKLEYEN TEK ŞEY: TARAYICI TESTİ.** Kullanıcı hiçbirini ekranda denemedi.
+
+**Kullanıcının ekranda denemesi gerekenler:**
+1. **Ek Dosyalar paneli** — bir talebe dosya ekle, indir; yönetici olarak sil.
+2. **İşlem Geçmişi paneli** — bir alanı değiştirip kaydet, geçmişte `eski → yeni` satırı çıkmalı.
+3. **Geçici Değişiklik Takibi** — `requires_end_date` olan bir türde: "Süreyi Uzat" (gerekçe
+   zorunlu, uzatma geçmişine yazılmalı) ve "Eski Duruma Dönüldü".
+4. **Denetim Dosyası** — sağ kolondaki 🖨 düğmesi; yazdırma penceresi açılmalı.
+5. **Onay adımsız APPROVAL** artık engellenmeli; PSSR "serbest bırakma" sonrası tekrar PSSR'a
+   gelince karar düğmeleri YENİDEN görünmeli (eski hâlinde kilitleniyordu).
+6. **Arama kutusu** — üstteki kutuya MOC no/başlık yaz, liste süzülmeli (eskiden ölüydü).
+7. **Günlük mail** — sabah ~09:20'de gelmeli. ⚠️ Yalnız MOC yetkisi olan ADMIN/EDITOR
+   kullanıcılara ve **yalnız o kişinin yapacağı iş varsa** gider.
+
+### 🔴 ESKİ SIRADAKİ İŞ LİSTESİ (tamamlandı, tarihsel kayıt)
 05.09.2026'da rakip analizi + uçtan uca denetim yapıldı (26 bulgu), **en kritik 3 iş tamamlandı**
 (aşağıda Faz H). Kalan işler önem sırasıyla:
 
@@ -732,3 +748,59 @@ onunla çelişirse dosya esas alınır ve kod düzeltilir.
 - **Onaycı akışı ("üstlenme" modeli):** mevcut model (atama yok,
   yetkili herhangi bir kullanıcı kararı üstlenerek veriyor) korunduğu
   haliyle test edildi, sorunsuz.
+
+---
+
+## ★ FAZ I / J (2026-09-05) — RAKİP ANALİZİNİN 5 EKSİĞİ (commit `0df410c`)
+
+Denetim raporundaki beş eksiğin tamamı kapatıldı. Dördü zaten şemada duran ama uygulamanın
+hiç dokunmadığı tabloları hayata geçirdi — sıfırdan iş değil, yarım kalan işin tamamlanması.
+
+**1. Ek dosya / fotoğraf (`moc_schema_faz_i_ekler.sql` + `renderDocsPanel`).**
+`moc-belgeler` kovası açıldı (public DEĞİL). Depolama yolu **her zaman**
+`<tenant_id>/<moc_id>/<dosya>`; politikalar yolun ilk klasörünü firma kimliğiyle
+karşılaştırıyor, yani uygulama kodu hata yapsa bile bir firmanın dosyası başkasına görünmez.
+Ayrıca `has_modul('moc')` şartı kondu: MOC yetkisi olmayan bir kullanıcı, aynı firmada olsa
+dahi kovaya erişemez (denetimde `modul_yetki`nin yalnız arayüzde kontrol edildiği bulunmuştu —
+bu, o boşluğun depolama tarafı). İndirme imzalı geçici bağlantıyla (60 sn), silme yalnız
+yöneticide. Dosya adı depolama anahtarında temizleniyor (Türkçe karakter/boşluk sorun çıkarır).
+
+**2. Otomatik bildirim (`moc_schema_faz_j_bildirim.sql`).** `moc_daily_notify()` + pg_cron
+`20 6 * * *` (Tedarikçi 06:00, Q-Kalite 06:10 — üç mail aynı dakikaya düşmesin diye).
+**Mail kişiye özeldir**, herkese aynı liste gitmez: o kişinin *gerçekten karar verebileceği*
+onay adımları hesaplanır — sıralı zincir (öncekiler onaylanmış olmalı), talep sahibi hariç ve
+"aynı kişi zincirde ikinci kez karar veremez" kuralı, yani arayüzdeki `activeApprovalStep` +
+`canDecideApproval` mantığının SQL karşılığı. Ayrıca termini geçmiş aksiyonlar ve süresi
+dolan geçici değişiklikler. **Yapacak iş yoksa mail atılmaz.** Ortak `qdl_send_email`
+altyapısı kullanıldı, yeniden kurulmadı. **Canlıda gerçek veriyle test edildi:** Resend `200`
++ mail kimliği döndü, test bildirimi silindi.
+
+**3. İşlem geçmişi (`renderGecmisPanel`).** `moc_audit_log` trigger'la zaten doluyordu
+(talep, onay, risk kayıtları), gösteren ekran yoktu. Yalnız **gerçekten değişen** alanlar
+`eski → yeni` olarak, okunur etiketlerle listeleniyor; `version`/`updated_at` gibi damgalar
+ve kimlik alanları hariç tutuldu (yoksa her kayıtta anlamsız satır çıkardı). Durum, kategori
+ve akış türü kodları ekranda ada çevriliyor.
+
+**4. Denetim dosyası çıktısı (`denetimDosyasi`).** Talep bilgisi + risk değerlendirmesi +
+onay zinciri + aksiyonlar + işlem geçmişi tek yazdırılabilir sayfada. Veri detay ekranında
+zaten toplandığı için **yeni sorgu atmaz**. Yazdırma penceresi engellenirse kullanıcıya
+anlaşılır uyarı verilir.
+
+**5. Geçici değişikliğin kapanışı (`renderTempPanel`).** `moc_temporary_tracking`
+yaz-ama-hiç-okuma durumundaydı. Artık: **Süreyi Uzat** (yeni tarih + gerekçe zorunlu, yeni
+tarih mevcut bitişten sonra olmalı; uzatma `extension_history`'ye yazılıyor, uyarı bayrakları
+sıfırlanıyor, `moc_requests.planned_end` de güncelleniyor) ve **Eski Duruma Dönüldü**
+(not zorunlu, geri alınamaz). `restored_by`/`restore_note` kolonları eklendi — geri dönüşün
+denetim değeri "ne zaman"dan çok "kim ve neye dönüldü"dedir. İzleme kaydı yoksa ilk işlemde
+oluşturuluyor; bu, denetimdeki "yeni talep + izleme kaydı atomik değil, hata yutuluyor"
+bulgusunun telafisi.
+
+**Ayrıca:** `moc_documents` ve `moc_notifications` tablolarındaki tek "ALL" politikası da
+Faz H desenine çekildi (okuma firma içinde, yazma EDITOR, silme ADMIN); bildirimin okundu
+işaretini kişinin kendisi yapabilsin diye ayrı bir politika kondu.
+
+**Hâlâ kapatılmayanlar:** `DOC_UPDATE` ve `TRAINING` adımları **içi boş** kalmaya devam
+ediyor — `moc_trainings` ve `AFFECTED_DOC` akışı, doğru çözüm olarak Doküman Yönetimi ve
+Eğitim Platformu modüllerine bağlanmayı gerektiriyor (MOC içine ikinci bir eğitim/doküman
+sistemi yazmak yanlış olur). `evidence_hash` hâlâ kanıt değeri taşımıyor. Tablolarda
+`overflow-x` yok. Soft-delete edilmiş kaydın detayı doğrudan id ile açılabiliyor.
