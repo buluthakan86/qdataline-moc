@@ -1163,7 +1163,9 @@ function viewDetail(id){
     sb.from('moc_action_items').select('*').eq('moc_id',id).order('created_at'),
     sb.from('moc_pssr_checklists').select('*').eq('moc_id',id).eq('is_template',false).order('created_at'),
     sb.from('moc_temporary_tracking').select('*').eq('moc_id',id).maybeSingle(),
-    sb.from('moc_etki_checklist_yanitlari').select('*').eq('moc_request_id',id)
+    sb.from('moc_etki_checklist_yanitlari').select('*').eq('moc_request_id',id),
+    sb.from('moc_documents').select('*').eq('moc_id',id).order('created_at',{ascending:false}),
+    sb.from('moc_audit_log').select('*').eq('record_id',id).in('table_name',['moc_requests','moc_approvals','moc_risk_assessments']).order('created_at',{ascending:false}).limit(200)
   ]).then(function(res){
     /* DÜZELTME (2026-09-05): bu yedi sorgunun HİÇBİRİNİN `error` alanı kontrol edilmiyordu.
        Mükerrer PSSR checklist'i .maybeSingle()'ı hataya düşürüyor, hata yutulduğu için panel
@@ -1177,6 +1179,7 @@ function viewDetail(id){
     if(!req){ document.getElementById('content').innerHTML='<div class="empty">'+t('Kayıt bulunamadı.')+'</div>'; return; }
     DETAIL_CTX = { req:req, risks:res[1].data||[], approvals:res[2].data||[], actions:res[3].data||[],
                    pssr:(res[4].data&&res[4].data[0])||null, temp:res[5].data||null, checklistAnswers:res[6].data||[],
+                   docs:res[7].data||[], gecmis:res[8].data||[],
                    type:typeById(req.type_id), category:catById(req.category_id) };
     document.getElementById('pageTitle').textContent = req.moc_no || ('MOC #'+req.id);
     document.getElementById('pageCrumb').textContent = req.title;
@@ -1219,6 +1222,9 @@ function renderDetail(){
   html+=renderApprovalsPanel();
   html+=renderActionsPanel();
   if(typ&&typ.requires_pssr) html+=renderPssrPanel();
+  html+=renderTempPanel();
+  html+=renderDocsPanel();
+  html+=renderGecmisPanel();
   html+='</div>';
 
   // Sağ kolon
@@ -1230,6 +1236,7 @@ function renderDetail(){
   if(canDo('coordinate') && !['DRAFT','CANCELLED'].includes(req.status)){
     html+='<button class="btn-line" id="btnRollback">↩ '+t('Bu MOC\'u Geri Al')+'</button>';
   }
+  html+='<button class="btn-line" id="btnDosyaCiktisi">🖨 '+t('Denetim Dosyası')+'</button>';
   html+='</div></div>';
   html+=crossRefsPanelHTML();
   html+='</div>';
@@ -1237,6 +1244,329 @@ function renderDetail(){
   html+='</div></div>';
   document.getElementById('content').innerHTML=html;
   bindDetailEvents();
+}
+
+
+/* ============================================================================
+   FAZ I (2026-09-05) — Ek Dosyalar · İşlem Geçmişi · Geçici Değişiklik · Çıktı
+   Dördü de "şemada var, uygulamada hiç kullanılmıyor" durumundaki tabloları
+   (moc_documents / moc_audit_log / moc_temporary_tracking) hayata geçirir.
+   ========================================================================= */
+
+/* ---- Ek Dosyalar ----
+   Bir değişiklik talebine teknik resim, teklif, fotoğraf eklenemiyordu; saha bunu
+   mesajlaşmayla taşıyor, denetimde dosya delilsiz görünüyordu. Depolama yolu HER ZAMAN
+   `<tenant>/<moc>/<dosya>` — politikalar yolun ilk klasörünü firma kimliğiyle
+   karşılaştırdığı için (bkz. moc_schema_faz_i) uygulama hata yapsa bile firma ayrımı bozulmaz. */
+var MOC_BUCKET='moc-belgeler';
+function renderDocsPanel(){
+  var ctx=DETAIL_CTX, docs=ctx.docs||[];
+  var ce=canDo('coordinate') && ['CLOSED','REJECTED','CANCELLED'].indexOf(ctx.req.status)<0;
+  var html='<div class="panel" id="docsPanel"><div class="ph"><h2>'+t('Ek Dosyalar')+'</h2>';
+  if(ce) html+='<label class="btn-line sm" style="margin-left:auto;cursor:pointer">'+t('+ Dosya Ekle')
+    +'<input type="file" id="docFile" multiple style="display:none"></label>';
+  html+='</div><div class="pb">';
+  if(!docs.length){ html+='<div class="empty">'+t('Henüz dosya eklenmedi.')+'</div>'; }
+  else{
+    html+='<table><thead><tr><th>'+t('Dosya')+'</th><th>'+t('Boyut')+'</th><th>'+t('Tarih')+'</th><th></th></tr></thead><tbody>';
+    docs.forEach(function(d){
+      html+='<tr><td>'+esc(d.title||'—')+'</td>'
+        +'<td>'+dosyaBoyutu(d.size_bytes)+'</td><td>'+fmtDT(d.created_at)+'</td>'
+        +'<td style="display:flex;gap:6px"><button class="btn-line sm docdl" data-k="'+esc(d.storage_key)+'">'+t('İndir')+'</button>'
+        +(canDo('admin')?'<button class="btn-crit sm docdel" data-id="'+d.id+'" data-k="'+esc(d.storage_key)+'">✕</button>':'')
+        +'</td></tr>';
+    });
+    html+='</tbody></table>';
+  }
+  html+='</div></div>';
+  return html;
+}
+function dosyaBoyutu(b){
+  if(!b) return '—';
+  if(b<1024) return b+' B';
+  if(b<1048576) return (b/1024).toFixed(0)+' KB';
+  return (b/1048576).toFixed(1)+' MB';
+}
+function docYukle(files){
+  if(!files || !files.length) return;
+  var req=DETAIL_CTX.req;
+  var isler=Array.prototype.map.call(files, function(file){
+    /* Dosya adı temizlenir: Türkçe karakter ve boşluk depolama anahtarında sorun çıkarır. */
+    var ad=String(file.name||'dosya').replace(/[^A-Za-z0-9._-]/g,'_');
+    var key=cloudTenantId+'/'+req.id+'/'+Date.now()+'_'+ad;
+    return sb.storage.from(MOC_BUCKET).upload(key, file).then(function(up){
+      if(up.error) throw up.error;
+      return sb.from('moc_documents').insert({
+        tenant_id:cloudTenantId, moc_id:req.id, doc_kind:'ATTACHMENT',
+        title:file.name, storage_key:key, mime_type:file.type||null,
+        size_bytes:file.size||null, uploaded_by:cloudUserId
+      }).then(function(res){ if(res.error) throw res.error; });
+    });
+  });
+  toast(t('Yükleniyor…'));
+  Promise.all(isler).then(function(){
+    toast(t('Dosya eklendi')); viewDetail(req.id);
+  }).catch(function(e){ toast(hataMesaji(e), true); });
+}
+function docIndir(key){
+  /* Kova public değil; imzalı geçici bağlantı üretilir (60 sn). */
+  sb.storage.from(MOC_BUCKET).createSignedUrl(key, 60).then(function(r){
+    if(r.error){ toast(hataMesaji(r.error), true); return; }
+    window.open(r.data.signedUrl, '_blank');
+  });
+}
+function docSil(id, key){
+  confirmBox(esc(t('Bu dosya kalıcı olarak silinecek. Devam edilsin mi?')), t('Sil'), function(){
+    closeModal();
+    sb.storage.from(MOC_BUCKET).remove([key]).then(function(){
+      return sb.from('moc_documents').delete().eq('id',id);
+    }).then(function(res){
+      if(res && res.error) throw res.error;
+      toast(t('Dosya silindi')); viewDetail(DETAIL_CTX.req.id);
+    }).catch(function(e){ toast(hataMesaji(e), true); });
+  }, true);
+}
+
+/* ---- İşlem Geçmişi ----
+   `moc_audit_log` trigger ile zaten doluyordu (talep, onay ve risk kayıtlarındaki her
+   değişiklik) ama gösteren tek bir ekran yoktu. Denetçinin ilk sorduğu şey budur. */
+var GECMIS_ALAN_ETIKET = {
+  status:'Durum', title:'Başlık', description:'Açıklama', reason:'Gerekçe',
+  priority:'Öncelik', planned_end:'Planlanan Bitiş', unit_area:'Ünite/Bölüm',
+  decision:'Karar', step_order:'Sıra', role_code:'Rol', approver_id:'Onaylayan',
+  baslangic_maliyeti:'Başlangıç Maliyeti', tamamlanma_sonrasi_maliyet:'Tamamlanma Maliyeti',
+  para_birimi:'Para Birimi', closed_at:'Kapanış', deleted_at:'Gizlenme',
+  category_id:'Kategori', type_id:'Akış Türü', is_rik:'RIK', risk_after:'Risk (sonra)',
+  risk_before:'Risk (önce)', controls:'Önlemler', hazard:'Tehlike'
+};
+var GECMIS_HARIC = ['id','tenant_id','created_at','updated_at','moc_no','initiator_id','moc_id','version','updated_by','created_by'];
+function renderGecmisPanel(){
+  var rows=DETAIL_CTX.gecmis||[];
+  var html='<div class="panel" id="gecmisPanel"><div class="ph"><h2>'+t('İşlem Geçmişi')+'</h2></div><div class="pb">';
+  if(!rows.length){ html+='<div class="empty">'+t('Bu kayıt için henüz bir işlem geçmişi yok.')+'</div>'; }
+  else{
+    html+='<div style="display:flex;flex-direction:column;gap:8px">';
+    rows.forEach(function(g){
+      var farklar=gecmisFarklari(g);
+      html+='<div style="border-left:3px solid var(--leaf);background:var(--mint);border-radius:6px;padding:9px 11px">'
+        +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;font-size:12.5px">'
+        +'<b>'+esc(gecmisIslemAdi(g.action))+'</b>'
+        +'<span style="color:var(--muted)">'+esc(gecmisTabloAdi(g.table_name))+'</span>'
+        +'<span style="margin-left:auto;color:var(--muted);font-size:11.5px">'+fmtDT(g.created_at)+'</span></div>';
+      if(farklar.length){
+        html+='<div style="margin-top:5px;display:flex;flex-direction:column;gap:2px">';
+        farklar.forEach(function(d){
+          html+='<div style="font-size:12px;color:var(--muted)"><span style="color:var(--fg)">'+esc(d.ad)+':</span> '
+            +'<span style="text-decoration:line-through;opacity:.7">'+esc(d.eski)+'</span> → '
+            +'<span style="color:var(--fg)">'+esc(d.yeni)+'</span></div>';
+        });
+        html+='</div>';
+      }
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  html+='</div></div>';
+  return html;
+}
+function gecmisIslemAdi(a){
+  return a==='INSERT'?t('Oluşturuldu'):a==='UPDATE'?t('Güncellendi'):a==='DELETE'?t('Silindi'):a;
+}
+function gecmisTabloAdi(tn){
+  return tn==='moc_requests'?t('Talep'):tn==='moc_approvals'?t('Onay adımı'):tn==='moc_risk_assessments'?t('Risk kaydı'):tn;
+}
+/* Yalnız GERÇEKTEN değişen ve anlamlı alanlar gösterilir; tüm satırı iki kez basmak
+   "ne değişti?" sorusunu okunmaz hâle getirir. */
+function gecmisFarklari(g){
+  var eski=g.old_data||{}, yeni=g.new_data||{}, out=[];
+  if(g.action==='INSERT') return out;
+  Object.keys(yeni).forEach(function(k){
+    if(GECMIS_HARIC.indexOf(k)>=0) return;
+    var a=eski[k], b=yeni[k];
+    if(JSON.stringify(a)===JSON.stringify(b)) return;
+    out.push({ ad:t(GECMIS_ALAN_ETIKET[k]||k), eski:gecmisDeger(k,a), yeni:gecmisDeger(k,b) });
+  });
+  return out;
+}
+function gecmisDeger(alan,v){
+  if(v===null||v===undefined||v==='') return '—';
+  if(typeof v==='boolean') return v?t('Evet'):t('Hayır');
+  if(alan==='status') return t(STATUS_LABEL[v]||v);
+  if(alan==='category_id'){ var c=catById(v); return c?c.name_tr:String(v); }
+  if(alan==='type_id'){ var ty=typeById(v); return ty?ty.name_tr:String(v); }
+  if(typeof v==='object') return JSON.stringify(v);
+  return String(v);
+}
+
+/* ---- Geçici Değişiklik: geri dönüş ve uzatma ----
+   Sektörde en bilinen kaza sebebi, geçici bir değişikliğin sessizce kalıcılaşmasıdır.
+   Uyarı rozeti zaten vardı ama "eski duruma dönüldü" kaydı ve uzatma akışı yoktu;
+   `moc_temporary_tracking` yaz-ama-hiç-okuma durumundaydı. */
+function renderTempPanel(){
+  var ctx=DETAIL_CTX, req=ctx.req, typ=ctx.type;
+  if(!(typ&&typ.requires_end_date)) return '';
+  var tr=ctx.temp||{};
+  var ce=canDo('coordinate') && ['CLOSED','REJECTED','CANCELLED'].indexOf(req.status)<0;
+  var bitis=tr.expires_at||req.planned_end;
+  var html='<div class="panel" id="tempPanel"><div class="ph"><h2>'+t('Geçici Değişiklik Takibi')+'</h2></div><div class="pb">';
+  html+='<div class="row2"><div><b>'+t('Bitiş tarihi')+':</b> '+esc(bitis||'—')+'</div>'
+      +'<div><b>'+t('Uzatma sayısı')+':</b> '+(tr.extension_count||0)+'</div></div>';
+  if(tr.restored_at){
+    html+='<div class="alert-chip ok" style="margin-top:10px">✓ '+t('Eski duruma dönüldü:')+' '+fmtDT(tr.restored_at)
+      +(tr.restore_note?(' · '+esc(tr.restore_note)):'')+'</div>';
+  } else if(bitis){
+    var d=daysLeft(bitis);
+    html+='<div class="alert-chip '+(d<0?'crit':d<=7?'warn':'blue')+'" style="margin-top:10px">'
+      +(d<0?(t('Süresi')+' '+Math.abs(d)+' '+t('gün geçti — eski duruma dönüş veya uzatma gerekli.')):(t('Kalan')+' '+d+' '+t('gün')))+'</div>';
+  }
+  if((tr.extension_history||[]).length){
+    html+='<div style="margin-top:10px"><b>'+t('Uzatma geçmişi')+':</b><ul style="margin:6px 0 0 18px;color:var(--muted);font-size:12.5px">';
+    (tr.extension_history||[]).forEach(function(u){
+      html+='<li>'+esc(u.eski||'—')+' → '+esc(u.yeni||'—')+' · '+esc(u.gerekce||'')+' ('+fmtDT(u.tarih)+')</li>';
+    });
+    html+='</ul></div>';
+  }
+  if(ce && !tr.restored_at){
+    html+='<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">'
+      +'<button class="btn-line sm" id="btnTempExtend">'+t('Süreyi Uzat')+'</button>'
+      +'<button class="btn-leaf sm" id="btnTempRestore">'+t('Eski Duruma Dönüldü')+'</button></div>';
+  }
+  html+='</div></div>';
+  return html;
+}
+function tempKaydiGetir(){
+  /* Kayıt yoksa (eski talepler ya da oluşturma anında yazılamamış olanlar) burada açılır —
+     denetimdeki "yeni talep + izleme kaydı atomik değil, hata yutuluyor" bulgusunun telafisi. */
+  var ctx=DETAIL_CTX;
+  if(ctx.temp && ctx.temp.id) return Promise.resolve(ctx.temp);
+  return sb.from('moc_temporary_tracking').insert({
+    tenant_id:cloudTenantId, moc_id:ctx.req.id, expires_at:ctx.req.planned_end||null
+  }).select().maybeSingle().then(function(res){
+    if(res.error) throw res.error;
+    return res.data;
+  });
+}
+function tempUzat(){
+  var ctx=DETAIL_CTX;
+  modalTitle('Süreyi Uzat');
+  setModalBody('<div class="frow"><label>'+t('Yeni bitiş tarihi')+' *</label><input type="date" id="tmpYeni" value="'+esc(ctx.req.planned_end||'')+'"></div>'
+    +'<div class="frow"><label>'+t('Uzatma gerekçesi')+' *</label><textarea id="tmpGerekce" rows="3"></textarea></div>');
+  modalFoot('Kaydet','Vazgeç',function(){
+    var yeni=val('tmpYeni'), gerekce=val('tmpGerekce').trim();
+    if(!yeni || !gerekce){ toast(t('Yeni tarih ve gerekçe zorunlu.'),true); return; }
+    if(ctx.req.planned_end && yeni<=ctx.req.planned_end){ toast(t('Yeni tarih mevcut bitiş tarihinden sonra olmalı.'),true); return; }
+    tempKaydiGetir().then(function(tr){
+      var gecmis=(tr.extension_history||[]).concat([{eski:tr.expires_at||ctx.req.planned_end, yeni:yeni, gerekce:gerekce, tarih:new Date().toISOString(), kim:cloudFullName||cloudUser}]);
+      return Promise.all([
+        sb.from('moc_temporary_tracking').update({
+          expires_at:yeni, extension_count:(tr.extension_count||0)+1,
+          extension_history:gecmis, warned_t7:false, warned_t1:false, escalated:false
+        }).eq('id',tr.id),
+        sb.from('moc_requests').update({planned_end:yeni}).eq('id',ctx.req.id)
+      ]);
+    }).then(function(r){
+      var h=(r||[]).filter(function(x){return x&&x.error;})[0];
+      if(h) throw h.error;
+      closeModal(); toast(t('Süre uzatıldı')); viewDetail(ctx.req.id);
+    }).catch(function(e){ toast(hataMesaji(e), true); });
+  });
+  openModal();
+}
+function tempGeriDon(){
+  var ctx=DETAIL_CTX;
+  modalTitle('Eski Duruma Dönüldü');
+  setModalBody('<p style="font-size:13px;color:var(--muted);margin-bottom:10px">'
+    +t('Geçici değişikliğin kaldırıldığını ve tesisin eski durumuna döndüğünü kaydedersiniz. Bu kayıt geri alınamaz.')+'</p>'
+    +'<div class="frow"><label>'+t('Not (neye dönüldü, kim doğruladı)')+' *</label><textarea id="tmpNot" rows="3"></textarea></div>');
+  modalFoot('Kaydet','Vazgeç',function(){
+    var not=val('tmpNot').trim();
+    if(!not){ toast(t('Not zorunlu.'),true); return; }
+    tempKaydiGetir().then(function(tr){
+      return sb.from('moc_temporary_tracking').update({
+        restored_at:new Date().toISOString(), restored_by:cloudUserId, restore_note:not
+      }).eq('id',tr.id);
+    }).then(function(res){
+      if(res.error) throw res.error;
+      closeModal(); toast(t('Eski duruma dönüş kaydedildi')); viewDetail(ctx.req.id);
+    }).catch(function(e){ toast(hataMesaji(e), true); });
+  });
+  openModal();
+}
+
+/* ---- Denetim dosyası çıktısı ----
+   Denetçi "şu değişikliğin dosyasını göster" dediğinde ekran görüntüsünden başka yol yoktu.
+   Veri zaten detay ekranında toplandığı için yeni sorgu atılmaz; yazdırılabilir tek sayfa. */
+function denetimDosyasi(){
+  var ctx=DETAIL_CTX, req=ctx.req, typ=ctx.type, c=ctx.category;
+  var td='padding:4px 8px;border-bottom:1px solid #eee';
+  var th='text-align:left;padding:4px 8px;border-bottom:1px solid #ddd';
+  var sat=function(a,b){ return '<tr><th style="'+th+';width:210px">'+esc(a)+'</th><td style="'+td+'">'+esc(b==null||b===''?'—':b)+'</td></tr>'; };
+  var h='<h1 style="font-size:19px;margin:0 0 2px">'+esc(req.moc_no||('MOC #'+req.id))+' — '+esc(req.title)+'</h1>';
+  h+='<div style="color:#555;font-size:12px;margin-bottom:14px">'+esc(t('Denetim dosyası'))+' · '+esc(fmtDT(new Date().toISOString()))+'</div>';
+
+  h+='<h2 style="font-size:14px;margin:16px 0 6px">'+esc(t('Talep Bilgisi'))+'</h2><table style="width:100%;border-collapse:collapse;font-size:12.5px">';
+  h+=sat(t('Durum'), t(STATUS_LABEL[req.status]||req.status));
+  h+=sat(t('Kategori'), c?c.name_tr:'—');
+  h+=sat(t('Akış Türü'), typ?typ.name_tr:'—');
+  h+=sat(t('Öncelik'), req.priority);
+  h+=sat(t('Ünite/Bölüm'), req.unit_area);
+  h+=sat(t('Açıklama'), req.description);
+  h+=sat(t('Gerekçe'), req.reason);
+  h+=sat(t('Planlanan Bitiş'), req.planned_end);
+  h+=sat(t('Kapanış'), req.closed_at?fmtDT(req.closed_at):'—');
+  h+='</table>';
+
+  if((ctx.risks||[]).length){
+    h+='<h2 style="font-size:14px;margin:16px 0 6px">'+esc(t('Risk Değerlendirmesi'))+'</h2>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr><th style="'+th+'">'+esc(t('Tehlike'))+'</th><th style="'+th+'">'+esc(t('Önlemler'))+'</th><th style="'+th+'">'+esc(t('Önce'))+'</th><th style="'+th+'">'+esc(t('Sonra'))+'</th></tr>';
+    ctx.risks.forEach(function(r){
+      h+='<tr><td style="'+td+'">'+esc(r.hazard||'—')+'</td><td style="'+td+'">'+esc(r.controls||'—')+'</td>'
+        +'<td style="'+td+';text-align:center">'+esc(r.risk_before)+'</td><td style="'+td+';text-align:center">'+esc(r.risk_after)+'</td></tr>';
+    });
+    h+='</table>';
+  }
+
+  if((ctx.approvals||[]).length){
+    h+='<h2 style="font-size:14px;margin:16px 0 6px">'+esc(t('Onay Zinciri'))+'</h2>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr><th style="'+th+'">'+esc(t('Sıra'))+'</th><th style="'+th+'">'+esc(t('Rol'))+'</th><th style="'+th+'">'+esc(t('Karar'))+'</th><th style="'+th+'">'+esc(t('Tarih'))+'</th></tr>';
+    ctx.approvals.forEach(function(a){
+      h+='<tr><td style="'+td+';text-align:center">'+esc(a.step_order)+'</td><td style="'+td+'">'+esc(a.role_code||'—')+'</td>'
+        +'<td style="'+td+'">'+esc(a.decision||t('Bekliyor'))+'</td><td style="'+td+'">'+esc(a.decided_at?fmtDT(a.decided_at):'—')+'</td></tr>';
+    });
+    h+='</table>';
+  }
+
+  if((ctx.actions||[]).length){
+    h+='<h2 style="font-size:14px;margin:16px 0 6px">'+esc(t('Aksiyonlar'))+'</h2>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr><th style="'+th+'">'+esc(t('Aksiyon'))+'</th><th style="'+th+'">'+esc(t('Sorumlu'))+'</th><th style="'+th+'">'+esc(t('Termin'))+'</th><th style="'+th+'">'+esc(t('Durum'))+'</th></tr>';
+    ctx.actions.forEach(function(a){
+      h+='<tr><td style="'+td+'">'+esc(a.title||a.description||'—')+'</td><td style="'+td+'">'+esc(a.owner_name||a.owner||'—')+'</td>'
+        +'<td style="'+td+'">'+esc(a.due_date||'—')+'</td><td style="'+td+'">'+esc(a.status||'—')+'</td></tr>';
+    });
+    h+='</table>';
+  }
+
+  var gecmis=ctx.gecmis||[];
+  if(gecmis.length){
+    h+='<h2 style="font-size:14px;margin:16px 0 6px">'+esc(t('İşlem Geçmişi'))+'</h2><table style="width:100%;border-collapse:collapse;font-size:12px">';
+    gecmis.forEach(function(g){
+      var f=gecmisFarklari(g).map(function(d){ return d.ad+': '+d.eski+' → '+d.yeni; }).join('; ');
+      h+='<tr><td style="'+td+';white-space:nowrap">'+esc(fmtDT(g.created_at))+'</td>'
+        +'<td style="'+td+'">'+esc(gecmisIslemAdi(g.action)+' · '+gecmisTabloAdi(g.table_name))+'</td>'
+        +'<td style="'+td+'">'+esc(f||'—')+'</td></tr>';
+    });
+    h+='</table>';
+  }
+
+  var w=window.open('', '_blank');
+  if(!w){ toast(t('Yazdırma penceresi engellendi. Tarayıcı ayarlarından izin verin.'), true); return; }
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(req.moc_no||('MOC '+req.id))+'</title>'
+    +'<style>body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:28px;line-height:1.45}'
+    +'h2{border-bottom:2px solid #111;padding-bottom:3px}@media print{@page{margin:14mm}}</style></head><body>'
+    +h+'</body></html>');
+  w.document.close();
+  w.focus();
+  setTimeout(function(){ try{ w.print(); }catch(_){} }, 400);
 }
 
 function renderTransitionsPanel(){
@@ -1775,6 +2105,19 @@ function bindDetailEvents(){
   Array.prototype.forEach.call(document.querySelectorAll('.pssrres'),function(b){
     b.onclick=function(){ setPssrResult(b.getAttribute('data-r')); };
   });
+  /* FAZ I panelleri */
+  var df=document.getElementById('docFile');
+  if(df) df.onchange=function(){ docYukle(df.files); };
+  Array.prototype.forEach.call(document.querySelectorAll('.docdl'),function(b){
+    b.onclick=function(){ docIndir(b.getAttribute('data-k')); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.docdel'),function(b){
+    b.onclick=function(){ docSil(Number(b.getAttribute('data-id')), b.getAttribute('data-k')); };
+  });
+  var te=document.getElementById('btnTempExtend'); if(te) te.onclick=tempUzat;
+  var trs=document.getElementById('btnTempRestore'); if(trs) trs.onclick=tempGeriDon;
+  var dc=document.getElementById('btnDosyaCiktisi'); if(dc) dc.onclick=denetimDosyasi;
+
   bindChecklistEvents();
   crossRefsBind(req.id, req.moc_no?req.moc_no+' — '+req.title:req.title);
 }
