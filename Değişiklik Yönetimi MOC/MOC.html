@@ -539,7 +539,7 @@ var TRANSITIONS = {
   TRAINING:         [ {to:'PSSR', action:'coordinate', cond:function(r,ctx){return !!(ctx.type&&ctx.type.requires_pssr);}},
                        {to:'STARTUP', action:'coordinate', cond:function(r,ctx){return !(ctx.type&&ctx.type.requires_pssr);}} ],
   PSSR:             [ {to:'STARTUP', action:'pssr', cond:function(r,ctx){return !!(ctx.pssr&&ctx.pssr.result==='RELEASED') && condPssrChecklistAnswered(r,ctx) && condActionsDone('PSSR')(r,ctx);}},
-                       {to:'IMPLEMENTATION', action:'pssr', cond:function(r,ctx){return ctx.pssr&&ctx.pssr.result==='NOT_RELEASED';}} ],
+                       {to:'IMPLEMENTATION', action:'pssr', cond:function(r,ctx){return ctx.pssr&&ctx.pssr.result==='NOT_RELEASED';}, after:resetPssrResult} ],
   STARTUP:          [ {to:'CLOSED', action:'close', cond:condNoOpenActions} ],
   CLOSED:[], REJECTED:[], CANCELLED:[]
 };
@@ -560,7 +560,14 @@ function condNoOpenActions(r,ctx){
    "Evet + aksiyon gerekli" cevaplarının doğurduğu PRE_APPROVAL aksiyonları
    kapanmış (DONE/CANCELLED) olmalı. */
 function condReadyForApproval(r,ctx){
-  return condChecklistAnswered(r,ctx) && condActionsDone('PRE_APPROVAL')(r,ctx);
+  /* DÜZELTME (2026-09-05) — KALICI KİLİT 1: APPROVAL'dan çıkışın tek yolu checkApprovalAuto(),
+     o da yalnız bir onay kararı verildiğinde çalışıyor. Onay adımı tanımlanmadan APPROVAL'a
+     geçilirse karar verilecek adım da, adım ekleyecek düğme de olmadığı için talep SONSUZA
+     KADAR kilitleniyordu (kurtarma yalnız SQL ile). Artık en az bir onay adımı olmadan
+     onaya geçilemez; ayrıca renderApprovalsPanel APPROVAL durumunda da adım eklemeye izin
+     verir, böylece bu hataya daha önce düşmüş kayıtlar arayüzden kurtarılabilir. */
+  return condChecklistAnswered(r,ctx) && condActionsDone('PRE_APPROVAL')(r,ctx)
+      && (ctx.approvals||[]).length > 0;
 }
 /* PSSR→STARTUP geçişi için: durum-tetiklemeli PSSR checklist'i tamamen
    yanıtlanmış ve doğurduğu PSSR fazlı aksiyonlar kapanmış olmalı. */
@@ -599,7 +606,7 @@ function afterLogin(session){
         document.getElementById('loginScreen').style.display='none';
         document.getElementById('app').style.display='flex';
         document.getElementById('userLabel').textContent=(cloudFullName?cloudFullName+' · ':'')+cloudUser+' · '+cloudRole;
-        renderNav(); go('dashboard');
+        renderNav(); bindListeAramasi(); go('dashboard');
       });
     });
   });
@@ -614,30 +621,54 @@ function cloudInit(){
 /* ============================================================================
    Lookup verisi (kategoriler, türler)
    ========================================================================= */
+/* DÜZELTME (2026-09-05): dosyada tek bir .range()/.limit() yoktu. PostgREST bir sorguda
+   varsayılan olarak EN FAZLA 1000 satır döndürür ve bunu hiçbir yerde belirtmez. En tehlikeli
+   yer checklist maddeleri: liste kırpılırsa `condChecklistAnswered()` eksik maddeleri
+   "yanıtlanmamış" saymaz — HİÇ GÖRMEZ — ve `TECHNICAL_REVIEW → APPROVAL` kilidi sessizce
+   açılır, cevaplanmamış güvenlik soruları atlanır. Bir değişiklik yönetimi modülünde bu
+   doğrudan güvenlik sonucu doğurur. Bu yardımcı sayfa sayfa çekip tamamını toplar. */
+function tumSatirlar(sorguKur, sayfa){
+  sayfa = sayfa || 1000;
+  var hepsi = [];
+  function tur(bas){
+    return sorguKur().range(bas, bas + sayfa - 1).then(function(res){
+      if(res.error) throw res.error;
+      var d = res.data || [];
+      hepsi = hepsi.concat(d);
+      if(d.length < sayfa) return hepsi;
+      return tur(bas + sayfa);
+    });
+  }
+  return tur(0);
+}
 var CATEGORIES=[], TYPES=[], ALL_CATEGORIES=[], ALL_TYPES=[];
 var CHECKLIST_SETS=[], CHECKLIST_ITEMS=[], ALL_CHECKLIST_SETS=[], ALL_CHECKLIST_ITEMS=[];
 function loadLookups(){
   return Promise.all([
-    sb.from('moc_change_categories').select('*').eq('is_active',true).order('sort_order'),
-    sb.from('moc_types').select('*').eq('is_active',true),
-    sb.from('moc_etki_checklist_setleri').select('*').eq('aktif',true),
-    sb.from('moc_etki_checklist_maddeleri').select('*').eq('is_active',true)
+    tumSatirlar(function(){ return sb.from('moc_change_categories').select('*').eq('is_active',true).order('sort_order'); }),
+    tumSatirlar(function(){ return sb.from('moc_types').select('*').eq('is_active',true); }),
+    tumSatirlar(function(){ return sb.from('moc_etki_checklist_setleri').select('*').eq('aktif',true); }),
+    tumSatirlar(function(){ return sb.from('moc_etki_checklist_maddeleri').select('*').eq('is_active',true); })
   ]).then(function(res){
-    CATEGORIES = res[0].data||[]; TYPES = res[1].data||[];
-    CHECKLIST_SETS = res[2].data||[]; CHECKLIST_ITEMS = res[3].data||[];
+    CATEGORIES = res[0]; TYPES = res[1];
+    CHECKLIST_SETS = res[2]; CHECKLIST_ITEMS = res[3];
+  }).catch(function(e){
+    /* Eskiden hata hiç kontrol edilmiyordu: kategori/tür sorgusu hata verirse listeler
+       sessizce boş kalıyor, kullanıcı boş açılır liste görüp sebebini anlamıyordu. */
+    toast(hataMesaji(e), true);
   });
 }
 function reloadLookupsAll(){
   return Promise.all([
-    sb.from('moc_change_categories').select('*').order('sort_order'),
-    sb.from('moc_types').select('*'),
-    sb.from('moc_etki_checklist_setleri').select('*').order('id'),
-    sb.from('moc_etki_checklist_maddeleri').select('*').order('sira_no')
+    tumSatirlar(function(){ return sb.from('moc_change_categories').select('*').order('sort_order'); }),
+    tumSatirlar(function(){ return sb.from('moc_types').select('*'); }),
+    tumSatirlar(function(){ return sb.from('moc_etki_checklist_setleri').select('*').order('id'); }),
+    tumSatirlar(function(){ return sb.from('moc_etki_checklist_maddeleri').select('*').order('sira_no'); })
   ]).then(function(res){
-    ALL_CATEGORIES = res[0].data||[]; ALL_TYPES = res[1].data||[];
+    ALL_CATEGORIES = res[0]; ALL_TYPES = res[1];
     CATEGORIES = ALL_CATEGORIES.filter(function(c){return c.is_active;});
     TYPES = ALL_TYPES.filter(function(t){return t.is_active;});
-    ALL_CHECKLIST_SETS = res[2].data||[]; ALL_CHECKLIST_ITEMS = res[3].data||[];
+    ALL_CHECKLIST_SETS = res[2]; ALL_CHECKLIST_ITEMS = res[3];
     CHECKLIST_SETS = ALL_CHECKLIST_SETS.filter(function(s){return s.aktif;});
     CHECKLIST_ITEMS = ALL_CHECKLIST_ITEMS.filter(function(m){return m.is_active;});
   });
@@ -922,9 +953,11 @@ function viewList(kind){
        zincirdeki AKTİF adımı (activeApprovalStep) bul, o adımı kararlaştırma
        yetkisi olan (talep sahibi değil, VIEWER değil, başka birine kilitli
        değil) kullanıcılara göster. */
-    sb.from('moc_approvals').select('*, moc_requests(*)').order('step_order')
-      .then(function(res){
-        var rows=res.data||[];
+    /* DÜZELTME (2026-09-05): (a) sayfalama yoktu, 1000'i aşan onayda liste sessizce
+       eksik kalıyordu; (b) soft-delete filtresi yoktu — gizlenmiş bir talep "Onay
+       Bekleyenler"de durmaya devam ediyor ve onaylanabiliyordu. */
+    tumSatirlar(function(){ return sb.from('moc_approvals').select('*, moc_requests(*)').order('step_order'); })
+      .then(function(rows){
         var byMoc={};
         rows.forEach(function(a){ (byMoc[a.moc_id]=byMoc[a.moc_id]||[]).push(a); });
         var pending=[];
@@ -932,6 +965,7 @@ function viewList(kind){
           var list=byMoc[mid];
           var req=list[0]&&list[0].moc_requests;
           if(!req || req.status!=='APPROVAL') return;
+          if(req.deleted_at) return;   /* gizlenmiş talep onay kuyruğunda görünmez */
           var active=activeApprovalStep(list);
           if(!active) return;
           if(req.initiator_id===cloudUserId) return;
@@ -940,12 +974,40 @@ function viewList(kind){
           pending.push(active);
         });
         renderApprovalQueue(pending);
-      });
+      }).catch(function(e){ toast(hataMesaji(e), true); });
     return;
   }
-  var q = sb.from('moc_requests').select('*').is('deleted_at',null).order('created_at',{ascending:false});
-  if(kind==='mine') q = q.eq('initiator_id',cloudUserId);
-  q.then(function(res){ renderRequestTable(res.data||[], kind); });
+  tumSatirlar(function(){
+    var q = sb.from('moc_requests').select('*').is('deleted_at',null).order('created_at',{ascending:false});
+    if(kind==='mine') q = q.eq('initiator_id',cloudUserId);
+    return q;
+  }).then(function(rows){
+    LISTE_SATIRLARI = rows; LISTE_TURU = kind;
+    renderRequestTable(filtreliListe(), kind);
+  }).catch(function(e){ toast(hataMesaji(e), true); });
+}
+/* DÜZELTME (2026-09-05): üstteki arama kutusu ekranda duruyordu ama hiçbir olaya bağlı
+   değildi — kullanıcı yazıyor, hiçbir şey olmuyordu. Listeler zaten bellekte olduğu için
+   sunucuya gitmeye gerek yok; MOC numarası ve başlıkta yerel filtre yeterli. */
+var LISTE_SATIRLARI=[], LISTE_TURU='mine', ARAMA='';
+function filtreliListe(){
+  var q=(ARAMA||'').trim().toLocaleLowerCase('tr-TR');
+  if(!q) return LISTE_SATIRLARI;
+  return LISTE_SATIRLARI.filter(function(r){
+    var hay=[r.moc_no, r.title, r.description].filter(Boolean).join(' ').toLocaleLowerCase('tr-TR');
+    return hay.indexOf(q)>=0;
+  });
+}
+function bindListeAramasi(){
+  var el=document.getElementById('sideSearch');
+  if(!el || el.dataset.bagli) return;
+  el.dataset.bagli='1';
+  el.addEventListener('input', function(){
+    ARAMA=el.value;
+    if(document.getElementById('content') && LISTE_SATIRLARI.length){
+      renderRequestTable(filtreliListe(), LISTE_TURU);
+    }
+  });
 }
 function renderApprovalQueue(rows){
   if(!rows.length){ document.getElementById('content').innerHTML='<div class="panel"><div class="empty">'+t('Bekleyen onayınız yok.')+'</div></div>'; return; }
@@ -1037,7 +1099,7 @@ function editRequestFlow(req){
       if(!title.trim()){ toast('Başlık zorunlu.',true); return; }
       sb.from('moc_requests').update({title:title, description:val('fDesc'), reason:val('fReason'),
         para_birimi:val('fCurrency')||'TRY', baslangic_maliyeti:num('fCostStart'), tamamlanma_sonrasi_maliyet:num('fCostEnd')}).eq('id',req.id).then(function(res){
-        if(res.error){ toast('Hata: '+res.error.message,true); return; }
+        if(res.error){ toast(hataMesaji(res.error),true); return; }
         closeModal(); toast('Kaydedildi'); go(CURRENT_VIEW);
       });
     });
@@ -1048,7 +1110,7 @@ function editRequestFlow(req){
       var patch=readRequestForm();
       if(!patch) return;
       sb.from('moc_requests').update(patch).eq('id',req.id).then(function(res){
-        if(res.error){ toast('Hata: '+res.error.message,true); return; }
+        if(res.error){ toast(hataMesaji(res.error),true); return; }
         closeModal(); toast('Kaydedildi'); go(CURRENT_VIEW);
       });
     });
@@ -1057,7 +1119,7 @@ function editRequestFlow(req){
 }
 function deleteRequestFlow(req){
   sb.from('moc_action_items').select('id,status').eq('moc_id',req.id).then(function(res){
-    if(res.error){ toast('Hata: '+res.error.message,true); return; }
+    if(res.error){ toast(hataMesaji(res.error),true); return; }
     var openActs=(res.data||[]).filter(function(a){return a.status!=='DONE'&&a.status!=='CANCELLED';});
     if(openActs.length){
       toast('Bu talebe bağlı '+openActs.length+' açık aksiyon var — önce aksiyonları kapatın.',true);
@@ -1072,7 +1134,7 @@ function deleteRequestFlow(req){
         ? sb.from('moc_requests').delete().eq('id',req.id)
         : sb.from('moc_requests').update({deleted_at:new Date().toISOString()}).eq('id',req.id);
       op.then(function(res2){
-        if(res2.error){ toast('Hata: '+res2.error.message,true); return; }
+        if(res2.error){ toast(hataMesaji(res2.error),true); return; }
         closeModal(); toast(hardDelete?'Talep kalıcı silindi':'Talep gizlendi'); go(CURRENT_VIEW);
       });
     },true);
@@ -1099,14 +1161,22 @@ function viewDetail(id){
     sb.from('moc_risk_assessments').select('*').eq('moc_id',id).order('created_at'),
     sb.from('moc_approvals').select('*').eq('moc_id',id).order('step_order'),
     sb.from('moc_action_items').select('*').eq('moc_id',id).order('created_at'),
-    sb.from('moc_pssr_checklists').select('*').eq('moc_id',id).eq('is_template',false).maybeSingle(),
+    sb.from('moc_pssr_checklists').select('*').eq('moc_id',id).eq('is_template',false).order('created_at'),
     sb.from('moc_temporary_tracking').select('*').eq('moc_id',id).maybeSingle(),
     sb.from('moc_etki_checklist_yanitlari').select('*').eq('moc_request_id',id)
   ]).then(function(res){
+    /* DÜZELTME (2026-09-05): bu yedi sorgunun HİÇBİRİNİN `error` alanı kontrol edilmiyordu.
+       Mükerrer PSSR checklist'i .maybeSingle()'ı hataya düşürüyor, hata yutulduğu için panel
+       "Checklist henüz oluşturulmadı" göstermeye devam ediyor ve her tıklamada bir satır daha
+       ekleniyordu — PSSR→STARTUP bir daha mümkün olmuyordu (KALICI KİLİT 3). Artık hata
+       görünür; PSSR sorgusu ayrıca çoğul okumaya çevrildi ki mükerrer kayıt paneli
+       kilitlemek yerine uyarıyla çalışmaya devam etsin. */
+    var hataliSorgu = res.find(function(r){ return r && r.error; });
+    if(hataliSorgu) toast(hataMesaji(hataliSorgu.error), true);
     var req=res[0].data;
     if(!req){ document.getElementById('content').innerHTML='<div class="empty">'+t('Kayıt bulunamadı.')+'</div>'; return; }
     DETAIL_CTX = { req:req, risks:res[1].data||[], approvals:res[2].data||[], actions:res[3].data||[],
-                   pssr:res[4].data||null, temp:res[5].data||null, checklistAnswers:res[6].data||[],
+                   pssr:(res[4].data&&res[4].data[0])||null, temp:res[5].data||null, checklistAnswers:res[6].data||[],
                    type:typeById(req.type_id), category:catById(req.category_id) };
     document.getElementById('pageTitle').textContent = req.moc_no || ('MOC #'+req.id);
     document.getElementById('pageCrumb').textContent = req.title;
@@ -1226,7 +1296,7 @@ function openEditCost(){
   );
   modalFoot('Kaydet','Vazgeç',function(){
     sb.from('moc_requests').update({para_birimi:val('ecCurrency')||'TRY', baslangic_maliyeti:num('ecStart'), tamamlanma_sonrasi_maliyet:num('ecEnd')}).eq('id',req.id).then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       closeModal(); toast(t('Maliyet bilgisi kaydedildi')); viewDetail(req.id);
     });
   });
@@ -1300,7 +1370,7 @@ function crossRefsLoad(sourceId){
 function crossRefsDelete(refId,sourceId){
   confirmBox('Bu bağlantı silinsin mi?','Sil',function(){
     sb.from('qdl_cross_refs').delete().eq('id',refId).then(function(res){
-      if(res.error){ toast(t('Silinemedi')+': '+res.error.message,true); return; }
+      if(res.error){ toast(t('Silinemedi')+': '+hataMesaji(res.error),true); return; }
       closeModal(); toast(t('Bağlantı silindi')); crossRefsLoad(sourceId);
     });
   },true);
@@ -1338,7 +1408,7 @@ function crossRefsBind(sourceId,sourceLabel){
       target_module:mod, target_table:'manual', target_id:lbl, target_label:lbl,
       note:note||null
     }).then(function(res){
-      if(res.error){ toast('Kaydedilemedi: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       toast('Bağlantı eklendi');
       document.getElementById('crLabel').value=''; document.getElementById('crNote').value=''; form.style.display='none';
       crossRefsLoad(sourceId);
@@ -1508,7 +1578,7 @@ function commitChecklistAnswer(m, cevap, gerekce){
       tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, title:'Etki değerlendirme: '+m.soru_metni,
       phase:checklistPhaseForMadde(m), assignee_id:cloudUserId
     }).select().single().then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return existing?existing.action_id:null; }
+      if(res.error){ toast(hataMesaji(res.error),true); return existing?existing.action_id:null; }
       return res.data.id;
     });
   } else if(!needsAction && existing && existing.action_id){
@@ -1525,7 +1595,7 @@ function commitChecklistAnswer(m, cevap, gerekce){
       ? sb.from('moc_etki_checklist_yanitlari').update(payload).eq('id',existing.id).select().single()
       : sb.from('moc_etki_checklist_yanitlari').insert(payload).select().single();
     op.then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       var saved=res.data||payload;
       if(existing){
         DETAIL_CTX.checklistAnswers = DETAIL_CTX.checklistAnswers.map(function(x){ return x.id===existing.id?saved:x; });
@@ -1552,9 +1622,21 @@ function replacePanelById(id, html){
   var node=wrapper.firstElementChild;
   if(node) old.parentNode.replaceChild(node, old);
 }
+/* DÜZELTME (2026-09-05): "→ İptal" düğmesi "→ Ön Tarama"nın hemen yanındaydı ve hiçbir onay
+   sormuyordu. Yanlış tıklama talebi terminal duruma sokuyor; kayıt bir daha düzenlenemiyor,
+   yeniden açılamıyor — yalnız silinebiliyordu. (Silme için onay kutusu VARDI; koruma daha
+   yıkıcı olan işlemde eksikti.) Geri dönüşü olmayan üç geçiş artık onay ister. */
+var GERI_DONUSSUZ = { CANCELLED:'Bu talep iptal edilecek. İptal edilen bir talep yeniden açılamaz ve düzenlenemez. Devam edilsin mi?',
+                      REJECTED:'Bu talep reddedilecek. Reddedilen bir talep yeniden açılamaz. Devam edilsin mi?',
+                      CLOSED:'Bu talep kapatılacak. Kapatılan bir talep yeniden açılamaz. Devam edilsin mi?' };
 function bindTransitionButtons(){
   Array.prototype.forEach.call(document.querySelectorAll('.transbtn'),function(b){
-    b.onclick=function(){ doTransition(b.getAttribute('data-to')); };
+    b.onclick=function(){
+      var to=b.getAttribute('data-to');
+      var uyari=GERI_DONUSSUZ[to];
+      if(uyari){ confirmBox(esc(t(uyari)), t('Evet, devam et'), function(){ closeModal(); doTransition(to); }, true); return; }
+      doTransition(to);
+    };
   });
 }
 function focusNextChecklistItem(afterId){
@@ -1593,7 +1675,8 @@ function renderApprovalsPanel(){
   var ctx=DETAIL_CTX, req=ctx.req;
   var active=activeApprovalStep(ctx.approvals);
   var html='<div class="panel"><div class="ph"><h2>'+t('Onay Zinciri')+'</h2>';
-  if(canDo('coordinate') && req.status==='TECHNICAL_REVIEW') html+='<button class="btn-line sm" id="btnAddApproval" style="margin-left:auto">'+t('+ Onay Adımı Ekle')+'</button>';
+  /* APPROVAL da dahil: onay adımsız kilitlenmiş eski kayıtların kurtarma yolu (bkz. condReadyForApproval). */
+  if(canDo('coordinate') && (req.status==='TECHNICAL_REVIEW' || req.status==='APPROVAL')) html+='<button class="btn-line sm" id="btnAddApproval" style="margin-left:auto">'+t('+ Onay Adımı Ekle')+'</button>';
   html+='</div><div class="pb">';
   if(!ctx.approvals.length){ html+='<div class="empty">'+t('Onay adımı tanımlanmadı.')+'</div>'; }
   else{
@@ -1712,9 +1795,15 @@ function doTransition(to){
   var pre = (to==='APPROVAL' && req.status==='TECHNICAL_REVIEW') ? ensureRiskThresholdApproval() : Promise.resolve();
   pre.then(function(){
     sb.from('moc_requests').update(patch).eq('id',req.id).then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
-      toast(t('Durum güncellendi')+': '+t(STATUS_LABEL[to]));
-      viewDetail(req.id);
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
+      /* Geçişin kendisinden SONRA çalışması gereken temizlik (bkz. resetPssrResult).
+         Hata verirse kullanıcıya bildirilir ama durum geçişi geri alınmaz — geçiş zaten
+         yazıldı; burada sessiz kalmak, PSSR kilidinin geri gelmesi demek olurdu. */
+      var son = opt.after ? opt.after() : Promise.resolve();
+      son.catch(function(e){ toast(hataMesaji(e),true); }).then(function(){
+        toast(t('Durum güncellendi')+': '+t(STATUS_LABEL[to]));
+        viewDetail(req.id);
+      });
     });
   });
 }
@@ -1744,7 +1833,7 @@ function openEditDraft(){
     var patch=readRequestForm();
     if(!patch) return;
     sb.from('moc_requests').update(patch).eq('id',req.id).then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       closeModal(); toast(t('Kaydedildi')); viewDetail(req.id);
     });
   });
@@ -1764,7 +1853,7 @@ function doRollback(){
       previous_moc_id: req.id, status:'DRAFT'
     };
     sb.from('moc_requests').insert(payload).select().single().then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       closeModal(); toast('Geri alma MOC\'u oluşturuldu.'); go('detail', res.data.id);
     });
   });
@@ -1785,7 +1874,7 @@ function openAddRisk(){
       controls:val('rControls'), assessed_by:cloudUserId };
     if(!payload.hazard.trim()){ toast('Tehlike tanımı zorunlu.',true); return; }
     sb.from('moc_risk_assessments').insert(payload).then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       closeModal(); toast(t('Risk eklendi')); viewDetail(DETAIL_CTX.req.id);
     });
   });
@@ -1803,7 +1892,7 @@ function openAddApproval(){
     var role=val('apRole');
     if(!role.trim()){ toast('Rol kodu zorunlu.',true); return; }
     sb.from('moc_approvals').insert({tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, step_order:num('apStep'), role_code:role}).then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       closeModal(); toast(t('Onay adımı eklendi')); viewDetail(DETAIL_CTX.req.id);
     });
   });
@@ -1813,7 +1902,7 @@ function decideApproval(id, decision){
   confirmBox('Bu onay adımı için karar: <b>'+decision+'</b>. Onaylıyor musunuz?','Onayla',function(){
     var hash=btoa(unescape(encodeURIComponent(DETAIL_CTX.req.id+'|'+id+'|'+cloudUserId+'|'+Date.now())));
     sb.from('moc_approvals').update({decision:decision, decided_at:new Date().toISOString(), approver_id:cloudUserId, evidence_hash:hash}).eq('id',id).then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       closeModal(); toast(t('Karar kaydedildi')); checkApprovalAuto();
     });
   }, decision==='REJECTED');
@@ -1853,7 +1942,7 @@ function openAddAction(){
     var title=val('acTitle');
     if(!title.trim()){ toast('Başlık zorunlu.',true); return; }
     sb.from('moc_action_items').insert({tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, title:title, phase:val('acPhase'), due_date:val('acDue')||null, assignee_id:cloudUserId}).then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       closeModal(); toast(t('Aksiyon eklendi')); viewDetail(DETAIL_CTX.req.id);
     });
   });
@@ -1861,21 +1950,42 @@ function openAddAction(){
 }
 function completeAction(id){
   sb.from('moc_action_items').update({status:'DONE', completed_at:new Date().toISOString()}).eq('id',id).then(function(res){
-    if(res.error){ toast('Hata: '+res.error.message,true); return; }
+    if(res.error){ toast(hataMesaji(res.error),true); return; }
     toast(t('Aksiyon tamamlandı')); viewDetail(DETAIL_CTX.req.id);
   });
 }
 
 /* ---- PSSR ---- */
+var pssrOlusturuluyor=false;
 function createPssr(){
+  /* Çift tıklama koruması: eskiden düğme korumasızdı, iki tık iki checklist açıyor ve
+     paneli kalıcı olarak işlevsizleştiriyordu (KALICI KİLİT 3). Kesin engel veritabanındaki
+     UNIQUE(moc_id) kısıtı (moc_schema_faz_h), buradaki bayrak yalnız ilk savunma. */
+  if(pssrOlusturuluyor || (DETAIL_CTX.pssr && DETAIL_CTX.pssr.id)) return;
+  pssrOlusturuluyor=true;
+  var btn=document.getElementById('btnCreatePssr'); if(btn) btn.disabled=true;
   sb.from('moc_pssr_checklists').insert({tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, is_template:false, name:'PSSR — '+DETAIL_CTX.req.title, items:[]}).then(function(res){
-    if(res.error){ toast('Hata: '+res.error.message,true); return; }
+    pssrOlusturuluyor=false;
+    if(res.error){ if(btn) btn.disabled=false; toast(hataMesaji(res.error),true); return; }
     toast(t('Checklist oluşturuldu')); viewDetail(DETAIL_CTX.req.id);
   });
 }
+/* DÜZELTME (2026-09-05) — KALICI KİLİT 2: PSSR "serbest bırakılmadı" sonucu verilip kayıt
+   IMPLEMENTATION'a döndüğünde `result` alanı 'NOT_RELEASED' olarak KALIYORDU. Karar düğmeleri
+   yalnız `!p.result` iken çizildiği için, eksikler giderilip tekrar PSSR'a gelindiğinde düğmeler
+   bir daha görünmüyor, PSSR→STARTUP koşulu ('RELEASED') asla sağlanamıyor ve talep PSSR'da
+   kalıcı olarak kilitleniyordu. Durum makinesi dosyası bu döngüyü (PSSR→IMPLEMENTATION→…→PSSR)
+   açıkça öngörüyor; kod tek seferlik varsaymış. Artık geri dönüşte sonuç sıfırlanır. */
+function resetPssrResult(){
+  var p = DETAIL_CTX && DETAIL_CTX.pssr;
+  if(!p || !p.id) return Promise.resolve();
+  return sb.from('moc_pssr_checklists')
+    .update({result:null, performed_by:null, performed_at:null}).eq('id',p.id)
+    .then(function(res){ if(res.error) throw res.error; });
+}
 function setPssrResult(result){
   sb.from('moc_pssr_checklists').update({result:result, performed_by:cloudUserId, performed_at:new Date().toISOString()}).eq('id',DETAIL_CTX.pssr.id).then(function(res){
-    if(res.error){ toast('Hata: '+res.error.message,true); return; }
+    if(res.error){ toast(hataMesaji(res.error),true); return; }
     toast(t('PSSR sonucu kaydedildi')); viewDetail(DETAIL_CTX.req.id);
   });
 }
@@ -1940,7 +2050,7 @@ function openNewRequest(){
     if(!payload) return;
     payload.tenant_id=cloudTenantId; payload.initiator_id=cloudUserId; payload.status='DRAFT';
     sb.from('moc_requests').insert(payload).select().single().then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       var req=res.data;
       var typ=typeById(req.type_id);
       var after=Promise.resolve();
@@ -1986,7 +2096,7 @@ function renderUsersSettingsSection(){
     Array.prototype.forEach.call(document.querySelectorAll('[data-persona]'),function(s){
       s.onchange=function(){
         sb.from('profiles').update({persona:s.value||null}).eq('id',s.dataset.persona).then(function(res){
-          if(res.error){ toast('Persona güncellenemedi: '+res.error.message,1); return; }
+          if(res.error){ toast(hataMesaji(res.error),1); return; }
           toast(t('Persona güncellendi'));
         });
       };
@@ -2054,7 +2164,7 @@ function bindSettingsEvents(){
   Array.prototype.forEach.call(document.querySelectorAll('.togglecat'),function(b){
     b.onclick=function(){
       sb.from('moc_change_categories').update({is_active: b.getAttribute('data-v')==='true'}).eq('id',Number(b.getAttribute('data-id'))).then(function(res){
-        if(res.error){ toast('Hata: '+res.error.message,true); return; }
+        if(res.error){ toast(hataMesaji(res.error),true); return; }
         toast(t('Güncellendi')); viewSettings();
       });
     };
@@ -2065,7 +2175,7 @@ function bindSettingsEvents(){
   Array.prototype.forEach.call(document.querySelectorAll('.toggletype'),function(b){
     b.onclick=function(){
       sb.from('moc_types').update({is_active: b.getAttribute('data-v')==='true'}).eq('id',Number(b.getAttribute('data-id'))).then(function(res){
-        if(res.error){ toast('Hata: '+res.error.message,true); return; }
+        if(res.error){ toast(hataMesaji(res.error),true); return; }
         toast(t('Güncellendi')); viewSettings();
       });
     };
@@ -2077,7 +2187,7 @@ function bindSettingsEvents(){
   Array.prototype.forEach.call(document.querySelectorAll('.togglechkset'),function(b){
     b.onclick=function(){
       sb.from('moc_etki_checklist_setleri').update({aktif:b.getAttribute('data-v')==='true'}).eq('id',Number(b.getAttribute('data-id'))).then(function(res){
-        if(res.error){ toast('Hata: '+res.error.message,true); return; }
+        if(res.error){ toast(hataMesaji(res.error),true); return; }
         toast(t('Güncellendi')); viewSettings();
       });
     };
@@ -2091,7 +2201,7 @@ function cloneChecklistSet(setId){
   var s=(ALL_CHECKLIST_SETS||[]).find(function(x){return x.id===setId;});
   if(!s) return;
   sb.from('moc_etki_checklist_setleri').insert({tenant_id:cloudTenantId, kategori_id:s.kategori_id, ad:s.ad, aciklama:s.aciklama, aktif:true}).select().single().then(function(res){
-    if(res.error){ toast('Hata: '+res.error.message,true); return; }
+    if(res.error){ toast(hataMesaji(res.error),true); return; }
     var newSetId=res.data.id;
     var items=(ALL_CHECKLIST_ITEMS||[]).filter(function(m){return m.set_id===setId;});
     if(!items.length){ toast(t('Set kopyalandı')); viewSettings(); return; }
@@ -2099,7 +2209,7 @@ function cloneChecklistSet(setId){
       return {set_id:newSetId, bolum_baslik:m.bolum_baslik, soru_metni:m.soru_metni, sira_no:m.sira_no, evet_aksiyon_gerekli:m.evet_aksiyon_gerekli, tetikleyen_cevap:m.tetikleyen_cevap||'Evet'};
     });
     sb.from('moc_etki_checklist_maddeleri').insert(payload).then(function(res2){
-      if(res2.error){ toast('Hata: '+res2.error.message,true); return; }
+      if(res2.error){ toast(hataMesaji(res2.error),true); return; }
       toast(t('Set tesisinize kopyalandı')); viewSettings();
     });
   });
@@ -2117,7 +2227,7 @@ function openNewChecklistSetModal(){
     if(!ad.trim()){ toast('Ad zorunlu.',true); return; }
     var kat=val('csKat');
     sb.from('moc_etki_checklist_setleri').insert({tenant_id:cloudTenantId, kategori_id: kat?Number(kat):null, ad:ad, aciklama:val('csAciklama'), aktif:true}).then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       closeModal(); toast(t('Set oluşturuldu, madde ekleyin')); viewSettings();
     });
   });
@@ -2153,7 +2263,7 @@ function renderChecklistItemsModalBody(setId){
   Array.prototype.forEach.call(document.querySelectorAll('.togglechkitem'),function(b){
     b.onclick=function(){
       sb.from('moc_etki_checklist_maddeleri').update({is_active:b.getAttribute('data-v')==='true'}).eq('id',Number(b.getAttribute('data-id'))).then(function(res){
-        if(res.error){ toast('Hata: '+res.error.message,true); return; }
+        if(res.error){ toast(hataMesaji(res.error),true); return; }
         reloadLookupsAll().then(function(){ renderChecklistItemsModalBody(setId); });
       });
     };
@@ -2181,7 +2291,7 @@ function openChecklistItemForm(setId, m){
     var op = m ? sb.from('moc_etki_checklist_maddeleri').update(payload).eq('id',m.id)
                : sb.from('moc_etki_checklist_maddeleri').insert(Object.assign({set_id:setId},payload));
     op.then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       toast(t('Kaydedildi'));
       reloadLookupsAll().then(function(){ renderChecklistItemsModalBody(setId); });
     });
@@ -2203,7 +2313,7 @@ function openCategoryModal(c){
     var op = c ? sb.from('moc_change_categories').update(payload).eq('id',c.id)
                : sb.from('moc_change_categories').insert(Object.assign({tenant_id:cloudTenantId},payload));
     op.then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       closeModal(); toast(t('Kaydedildi')); viewSettings();
     });
   });
@@ -2235,7 +2345,7 @@ function openTypeModal(tp){
     var op = tp ? sb.from('moc_types').update(payload).eq('id',tp.id)
                : sb.from('moc_types').insert(Object.assign({tenant_id:cloudTenantId},payload));
     op.then(function(res){
-      if(res.error){ toast('Hata: '+res.error.message,true); return; }
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
       closeModal(); toast(t('Kaydedildi')); viewSettings();
     });
   });
@@ -2250,7 +2360,18 @@ function setModalBody(h){ document.getElementById('modalBody').innerHTML=h; }
 function modalFoot(saveLbl,cancelLbl,onSave){
   var sv=document.getElementById('modalSave'), cn=document.getElementById('modalCancel');
   sv.className='btn-leaf';
-  if(saveLbl){ sv.style.display=''; sv.textContent=t(saveLbl); sv.disabled=false; sv.onclick=onSave||null; } else sv.style.display='none';
+  /* DÜZELTME (2026-09-05): Kaydet tıklandıktan sonra devre dışı bırakılmıyordu; yavaş
+     bağlantıda iki tık iki ayrı kayıt (iki ayrı MOC numarası, iki aksiyon, iki onay adımı)
+     üretiyordu. Düğme artık ilk tıklamada kilitlenir; işlem hata verirse çağıran taraf
+     modalı açık bıraktığında düğme yeniden açılsın diye kısa bir süre sonra serbest kalır. */
+  if(saveLbl){
+    sv.style.display=''; sv.textContent=t(saveLbl); sv.disabled=false;
+    sv.onclick = onSave ? function(ev){
+      if(sv.disabled) return;
+      sv.disabled=true;
+      try{ onSave(ev); } finally { setTimeout(function(){ sv.disabled=false; }, 2500); }
+    } : null;
+  } else sv.style.display='none';
   cn.textContent=t(cancelLbl||'Kapat');
 }
 function openModal(wide){ document.getElementById('modalBox').className='modal'+(wide?' wide':''); document.getElementById('overlay').classList.add('on'); document.getElementById('modalWrap').classList.add('on'); }
@@ -2265,6 +2386,44 @@ function confirmBox(msg,okLbl,onOk,danger){
 }
 var toastT=null;
 function toast(msg,err){ var tEl=document.getElementById('toast'); tEl.textContent=msg; tEl.className='toast on'+(err?' err':''); clearTimeout(toastT); toastT=setTimeout(function(){tEl.className='toast';},2800); }
+/* ── Merkezî hata mesajı çevirici (2026-09-05) ──
+   NEDEN: 32 noktada ham veritabanı hatası doğrudan ekrana basılıyordu; kullanıcı
+   `duplicate key value violates unique constraint "moc_approvals_moc_id_step_order_role_code_key"`
+   gibi bir metin görüyor, tablo/kolon/kısıt adları sızıyordu. Bu hem platformun
+   "kullanıcı mesajlarında iç detay görünmez" kuralının ihlali hem de şema keşfine
+   yardım ettiği için güvenlik açısından istenmeyen bir durumdu. Ham metin artık
+   YALNIZ konsola gider. */
+function hataMesaji(err){
+  try{ console.error('[qdl/moc]', err); }catch(_){}
+  var kod=(err&&err.code)||'';
+  var msj=String((err&&err.message)||'');
+
+  if(kod==='23505'){
+    if(msj.indexOf('step_order')>=0) return t('Bu sıra ve rol için zaten bir onay adımı tanımlı.');
+    if(msj.indexOf('moc_no')>=0)     return t('Bu talep numarası zaten kullanılıyor. Lütfen tekrar deneyin.');
+    if(msj.indexOf('pssr')>=0)       return t('Bu talep için zaten bir güvenlik incelemesi checklist’i var.');
+    if(msj.indexOf('madde')>=0)      return t('Bu madde için zaten bir cevap kayıtlı.');
+    return t('Bu kayıt zaten mevcut. Lütfen bilgileri kontrol edin.');
+  }
+  if(kod==='23503') return t('Bu kayıt başka bir kayda bağlı olduğu için işlem yapılamadı.');
+  if(kod==='23514') return t('Girilen değerlerden biri geçerli değil. Lütfen kontrol edin.');
+  if(kod==='23502') return t('Zorunlu alanlardan biri boş bırakılmış.');
+  if(kod==='42501' || kod==='PGRST301') return t('Bu işlem için yetkiniz yok.');
+  if(kod==='PGRST303') return t('Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.');
+  if(kod==='PGRST116') return t('Beklenenden fazla kayıt bulundu. Lütfen sayfayı yenileyin.');
+
+  if(/row-level security|violates row-level/i.test(msj)) return t('Bu işlem için yetkiniz yok.');
+  if(/JWT|token is expired/i.test(msj)) return t('Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.');
+  if(/Failed to fetch|NetworkError/i.test(msj)) return t('Bağlantı kurulamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.');
+
+  /* Sunucu tarafı iş kuralı sinyalleri (bkz. moc_schema_faz_h_kurallar.sql) */
+  if(msj.indexOf('MOC_YETKI_YOK')>=0)       return t('Bu işlem için yetkiniz yok.');
+  if(msj.indexOf('MOC_KENDI_ONAYI')>=0)     return t('Kendi açtığınız talebi onaylayamazsınız.');
+  if(msj.indexOf('MOC_MUKERRER_ONAY')>=0)   return t('Bu zincirde daha önce karar verdiniz; ikinci bir adımı siz onaylayamazsınız.');
+  if(msj.indexOf('MOC_GECERSIZ_GECIS')>=0)  return t('Bu durum geçişi yapılamaz.');
+
+  return t('İşlem tamamlanamadı. Lütfen tekrar deneyin.');
+}
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function val(id){ var e=document.getElementById(id); return e?e.value:''; }
 function num(id){ var v=val(id); return v===''?null:Number(v); }
@@ -2298,7 +2457,7 @@ function initThemeToggle(){
     if(!sb){ loginMsg('Supabase yapılandırılmadı.'); return; }
     loginMsg('Giriş yapılıyor…');
     sb.auth.signInWithPassword({email:val('loginEmail').trim(),password:val('loginPass')}).then(function(r){
-      if(r.error){ loginMsg('Giriş başarısız: '+r.error.message); return; }
+      if(r.error){ try{console.error('[qdl/moc] giris',r.error);}catch(_){} loginMsg(t('Giriş başarısız. E-posta veya parola hatalı.')); return; }
       loginMsg(''); afterLogin(r.data.session);
     });
   });
