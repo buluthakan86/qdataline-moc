@@ -1,5 +1,122 @@
 # MOC (Değişiklik Yönetimi) — Proje Notları
 
+---
+
+## ⚡ BURADAN BAŞLA — 05.09.2026 itibarıyla durum
+
+**Modül canlı:** `moc.qdataline.com` · repo `qdataline-moc` · dal **`master`** · tek dosya
+`MOC.html`, build yok · Cloudflare Pages. Sayfa kök `_redirects` ile
+`/Değişiklik Yönetimi MOC/MOC.html`'e yönleniyor (klasör adı Türkçe karakterli; `curl` ile test
+ederken yolu yüzde-kodlamak ve tarayıcı user-agent'ı vermek gerekir, yoksa 403/404 alırsın —
+site sağlam olduğu hâlde bozuk sanılabilir, bu tuzağa bir kez düşüldü).
+
+**BEKLEYEN SQL YOK.** Faz A–H hepsi canlıda. **Faz D/E/F/G için aşağıda "uygulanmadı" yazan
+eski notlar YANLIŞTIR** — canlı şema sorgulandı, dördü de uygulanmış durumda (`deleted_at`,
+`para_birimi`, `sapma_*` GENERATED, `tetik_tipi`, `tetikleyen_cevap` mevcut). O notlar tarihsel
+kayıt olarak bırakıldı; güncel durum burasıdır.
+
+### 🔴 SIRADAKİ İŞ
+05.09.2026'da rakip analizi + uçtan uca denetim yapıldı (26 bulgu), **en kritik 3 iş tamamlandı**
+(aşağıda Faz H). Kalan işler önem sırasıyla:
+
+1. **Ek dosya / fotoğraf ekleme** — `moc_documents` tablosu hazır, arayüz hiç yazılmamış. Bir
+   talebe teknik resim, teklif ya da fotoğraf eklenemiyor; denetimde dosya delilsiz görünüyor.
+2. **Otomatik bildirim ve hatırlatma** — sistem kimseye haber vermiyor; onay bekleyen kişi
+   ekrana girmedikçe sırasının geldiğini bilmiyor. Ortak Resend altyapısı ve `moc_notifications`
+   tablosu hazır (bkz. Tedarikçi ve Q-Kalite modülleri).
+3. **Talep geçmişi ekranı** — `moc_audit_log` trigger'la zaten doluyor, okuma yetkisi var,
+   gösteren panel yok. En yüksek fayda/efor oranlı iş.
+4. **Denetim dosyası çıktısı** — tek talebin tam dökümü, yazdırılabilir tek sayfa.
+5. **Geçici değişikliğin kapanışı** — `moc_temporary_tracking` yaz-ama-hiç-okuma durumunda;
+   `restored_at`/`extension_*` kolonları kullanılmıyor, geri dönüş ve uzatma akışı yok.
+
+**Kapatılmamış, bilinen açıklar:** `moc_documents`/`moc_trainings`/`moc_equipment` kullanılmadığı
+için `DOC_UPDATE` ve `TRAINING` adımları **içi boş** (koşulsuz geçiliyor); risk önlem alanı
+kontrolü yok — durum makinesi dosyası bu üç koşulu tanımlıyor, kod uygulamıyor. `evidence_hash`
+kanıt değeri taşımıyor (anahtarsız, doğrulanmıyor). Tablolarda `overflow-x` yok, 7 kolonlu liste
+dar ekranda taşıyor. Soft-delete edilmiş kaydın detayı doğrudan id ile hâlâ açılabiliyor.
+
+**Düzeltilmiş bir yanlış belge:** Bu dosya "ekipman modülüne `equipment_id`/`asset_ref` ile
+bağlanır" diyordu — **böyle bir arayüz YOK.** `moc_equipment` tablosu canlıda duruyor ama kodda
+hiç geçmiyor; tek bağ, hedefi serbest metin olan manuel `qdl_cross_refs` etiketi. "Bu ekipmanda
+hangi değişiklikler yapıldı?" sorusu bugün cevaplanamıyor.
+
+### Bu modülde iş yaparken uyulacak kurallar
+1. **İş kuralını yalnız tarayıcıda bırakma.** Faz H ile durum geçişi, onay sırası ve rol
+   kuralları veritabanına indi; yeni kural eklerken aynı yeri de güncelle.
+2. **Ham DB hatası ekrana basılmaz** — `hataMesaji(err)` kullan; `error.message` doğrudan
+   `toast()`'a ASLA gitmez (32 noktada bu hata vardı, hepsi kapatıldı).
+3. **Yeni liste sorgusunda `tumSatirlar()` kullan** — düz `select()` PostgREST'in 1000 satır
+   varsayılanına takılıp sessizce veri kırpar. Checklist maddelerinde bu, onay kilidinin
+   sessizce açılması demekti.
+4. **`t` adını yerel değişken olarak KULLANMA** — global çeviri fonksiyonunu gölgeliyor; bu hata
+   bu dosyada dört kez tekrarlandı.
+5. Değişiklik sonrası: iki `<script>` bloğunu `node --check` ile doğrula → commit → push →
+   `curl` ile canlı sayfada yeni kodun izini ara (yol kodlaması + user-agent, yukarı bkz.).
+
+---
+
+## ★ FAZ H (2026-09-05) — DENETİM + EN KRİTİK 3 İŞ (commit `7def47e`)
+
+İki paralel ajanla rakip analizi (Sphera, Intelex, Enablon, VelocityEHS, Cority, Benchmark
+Gensuite, SafetyIQ, VisiumKMS + yerel çözümler) ve **canlı veritabanı doğrulamalı** uçtan uca
+denetim yapıldı. 26 bulgu çıktı; rapor Artifact olarak yayımlandı:
+`https://claude.ai/code/artifact/62641955-7582-4574-838f-69d72b2f10f4`
+
+**1) İş kuralları veritabanına indi (`moc_schema_faz_h_kurallar.sql`).**
+En ağır bulgu buydu: 17 MOC tablosunun tamamında tek bir politika vardı ve yalnız firma ayrımı
+yapıyordu. VIEWER rolündeki bir kullanıcı arayüzde hiçbir düğme görmese de konsoldan bir MOC'u
+doğrudan `CLOSED` yapabiliyor; talep sahibi kendi talebinin bütün onay adımlarını tek istekte
+onaylayabiliyordu. Yapılanlar: yazma yetkisi role bağlandı (INSERT/UPDATE `is_editor()`, DELETE
+`is_admin()`); `moc_requests`'e durum geçişi trigger'ı (yalnız tanımlı geçişler, yeni kayıt yalnız
+`DRAFT`, onay adımsız `APPROVAL` yok, eksik onayla devreye alma yok); `moc_approvals`'a onay
+trigger'ı (**kendi talebini onaylayamama** + **aynı kişi zincirde ikinci karar veremez** — görev
+ayrılığı, denetimde bulunan açık).
+**Önemli tasarım notu:** rol kontrolü yalnız `auth.uid()` doluyken uygulanır. İlk denemede
+koşulsuz yazılmıştı ve Management API/bakım betikleri de kilitlendi (testte yakalandı);
+tarayıcıdan gelen her istekte `auth.uid()` dolu olduğu için kural, korumak istediği yolda aynen
+yürürlükte.
+
+**2) Üç kalıcı kilitlenme kapatıldı.** Üçü de "kurtarma yalnız SQL ile" sınıfındaydı:
+(a) **Onay adımsız `APPROVAL`** — `TRANSITIONS.APPROVAL` boş, çıkış yalnız `checkApprovalAuto()`,
+o da ancak bir karar verilince çalışıyor; adım ekleme düğmesi yalnız önceki durumda görünüyordu.
+Artık en az bir onay adımı olmadan onaya geçilemiyor (hem geçiş koşulu hem trigger) **ve**
+`APPROVAL` durumunda da adım eklenebiliyor ki daha önce kilitlenmiş kayıtlar arayüzden
+kurtarılabilsin.
+(b) **PSSR `NOT_RELEASED`** — sonuç alanı sıfırlanmadığı için karar düğmeleri bir daha
+görünmüyordu; geçişe `after:resetPssrResult` kancası eklendi. Durum makinesi dosyası bu döngüyü
+zaten öngörüyordu, kod tek seferlik varsaymıştı.
+(c) **Mükerrer PSSR checklist'i** — `UNIQUE(moc_id)` kısıtı + çift tıklama koruması; ayrıca
+`viewDetail`'deki yedi sorgunun `error` alanı artık kontrol ediliyor (hata yutulduğu için panel
+kalıcı boş görünüyordu) ve PSSR sorgusu `.maybeSingle()` yerine çoğul okumaya çevrildi.
+
+**3) Sessiz veri kırpma + hata metinleri.** Dosyada tek bir `.range()`/`.limit()` yoktu. Yeni
+`tumSatirlar()` yardımcısı sayfa sayfa çekiyor; `loadLookups`, `reloadLookupsAll`, talep listesi
+ve onay kuyruğu bağlandı. **En kritik yer checklist maddeleriydi:** 1000 aşılırsa
+`condChecklistAnswered()` eksik maddeleri "yanıtlanmamış" saymaz, HİÇ GÖRMEZ — yani
+`TECHNICAL_REVIEW → APPROVAL` kilidi sessizce açılır ve cevaplanmamış güvenlik soruları atlanır.
+Ayrıca merkezî `hataMesaji()` yazıldı; **32 noktadaki ham DB hatası sıfıra indi** (kullanıcı
+tablo/kolon/kısıt adı görüyordu), giriş ekranı da sağlayıcı mesajını sızdırmıyor.
+
+**Aynı turda kapatılan küçük bulgular:** üstteki arama kutusu hiçbir olaya bağlı değildi, artık
+MOC no/başlık/açıklamada yerel filtre yapıyor; soft-delete edilmiş talep "Onay Bekleyenler"den
+düştü; geri dönüşsüz üç geçiş (İptal/Ret/Kapat) artık onay istiyor (silme için onay VARDI, daha
+yıkıcı olan iptalde yoktu); modal Kaydet düğmesi çift tıklamaya kapatıldı (yavaş bağlantıda iki
+ayrı MOC numarası üretiyordu).
+
+**Faz H canlıya uygulandı ve 10 senaryoyla test edildi**, test verisi silindi (0 kalıntı):
+doğrudan CLOSED kayıt açma engellendi, tanımsız geçiş engellendi, onay adımsız APPROVAL
+engellendi, adım eklenince geçiş çalıştı, kendi onayı engellendi, başkası onayladı, mükerrer onay
+engellendi, eksik onayla devreye alma engellendi, mükerrer PSSR engellendi.
+
+**Denetimde İYİ bulunanlar (bozmayın):** atomik `moc_no` üretimi (tek ifade, satır kilidi altında
+— diğer modüllerde mükerrer numara bug'ı tam bu yüzden çıkmıştı), GENERATED risk/sapma kolonları,
+kurcalanamaz `moc_audit_log` (yazma yalnız trigger'dan), global şablonların RLS korumalı
+salt-okunurluğu, kur çevrimi hatasının şeffaf gösterimi, checklist accordion deneyimi, tutarlı
+`esc()` kullanımı.
+
+---
+
 ## Ek bug fix (30.08.2026, ikinci tur) — İade edilen onay adımı zinciri kalıcı kilitliyordu
 `checkApprovalAuto()` bir onay adımı **İade (RETURNED)** edildiğinde MOC'u `TECHNICAL_REVIEW`'a
 geri gönderiyordu ama o `moc_approvals` satırının `decision` alanını sıfırlamıyordu. Talep tekrar
