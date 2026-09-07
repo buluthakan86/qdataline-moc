@@ -1,0 +1,12 @@
+# 07.09.2026 kapsamlı inceleme raporu SEC-04: CSP/HSTS/X-Frame-Options eksikti.
+# Cloudflare Pages bu dosyayı otomatik okur (build adımı gerektirmez).
+# CSP şimdilik Report-Only — bu tek-dosya uygulamalarda yoğun inline script
+# kullanımı var, doğrudan enforce etmek siteyi kırar. Önce ihlalleri gözlemleyip
+# kademeli sıkılaştırma (Eğitim modülünün CLAUDE.md'sindeki desenle tutarlı).
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://api.frankfurter.app https://generativelanguage.googleapis.com https://*.qdataline.com; frame-ancestors 'none'; base-uri 'self'
