@@ -535,9 +535,9 @@ var TRANSITIONS = {
                        {to:'RISK_ASSESSMENT', action:'review'} ],
   APPROVAL:         [ ], // sistem otomatik ilerletir (bkz. checkApprovalAuto)
   IMPLEMENTATION:   [ {to:'DOC_UPDATE', action:'coordinate', cond:condActionsDone('IMPLEMENTATION')} ],
-  DOC_UPDATE:       [ {to:'TRAINING', action:'coordinate'} ],
-  TRAINING:         [ {to:'PSSR', action:'coordinate', cond:function(r,ctx){return !!(ctx.type&&ctx.type.requires_pssr);}},
-                       {to:'STARTUP', action:'coordinate', cond:function(r,ctx){return !(ctx.type&&ctx.type.requires_pssr);}} ],
+  DOC_UPDATE:       [ {to:'TRAINING', action:'coordinate', cond:condAffectedDocsDone} ],
+  TRAINING:         [ {to:'PSSR', action:'coordinate', cond:function(r,ctx){return !!(ctx.type&&ctx.type.requires_pssr) && condTrainingDone(r,ctx);}},
+                       {to:'STARTUP', action:'coordinate', cond:function(r,ctx){return !(ctx.type&&ctx.type.requires_pssr) && condTrainingDone(r,ctx);}} ],
   PSSR:             [ {to:'STARTUP', action:'pssr', cond:function(r,ctx){return !!(ctx.pssr&&ctx.pssr.result==='RELEASED') && condPssrChecklistAnswered(r,ctx) && condActionsDone('PSSR')(r,ctx);}},
                        {to:'IMPLEMENTATION', action:'pssr', cond:function(r,ctx){return ctx.pssr&&ctx.pssr.result==='NOT_RELEASED';}, after:resetPssrResult} ],
   STARTUP:          [ {to:'CLOSED', action:'close', cond:condNoOpenActions} ],
@@ -555,6 +555,29 @@ function condActionsDone(phase){
 }
 function condNoOpenActions(r,ctx){
   return (ctx.actions||[]).every(function(a){return a.status==='DONE'||a.status==='CANCELLED';});
+}
+/* "MOC doğrular, Doküman Yönetimi uygular" — MOC kendi içine doküman kopyası yazmaz;
+   ggd_sablonlar'daki GÜNCEL versiyon/durumu canlı okuyup fotoğraflanan (snapshot)
+   versiyonla kıyaslar. Etkilenen doküman işaretlenmediyse (items.length===0) engel yok
+   — geriye dönük uyumluluk, condActionsDone ile aynı desen. */
+function computeAffectedDocStatus(d, ctx){
+  var live=(ctx.affectedDocsLive||[]).find(function(s){return String(s.id)===String(d.doc_ref);});
+  if(!live) return {code:'MISSING', label:t('Doküman bulunamadı')};
+  var snapVer=parseInt(d.old_version,10)||0;
+  if(live.versiyon_no>snapVer && live.durum==='Yürürlükte') return {code:'YURURLUKTE', label:t('Yürürlükte'), live:live};
+  if(live.versiyon_no>snapVer) return {code:'TASLAK', label:t('Taslakta Bekliyor'), live:live};
+  return {code:'GUNCELLENMEDI', label:t('Güncellenmedi'), live:live};
+}
+function condAffectedDocsDone(r,ctx){
+  var items=(ctx.docs||[]).filter(function(d){return d.doc_kind==='AFFECTED_DOC';});
+  return items.length===0 || items.every(function(d){return computeAffectedDocStatus(d,ctx).code==='YURURLUKTE';});
+}
+/* TRAINING adımı — moc_trainings zaten şemada vardı ama hiç kullanılmıyordu (bkz. 2026-09-07
+   denetimi). Atanan her kayıt acknowledged=true olmadan bir sonraki adıma geçilemez; hiç
+   atama yapılmadıysa (items.length===0) engel yok. */
+function condTrainingDone(r,ctx){
+  var items=ctx.trainings||[];
+  return items.length===0 || items.every(function(tr){return !!tr.acknowledged;});
 }
 /* Onaya geçiş için: etki değerlendirme checklist'i tamamen yanıtlanmış ve
    "Evet + aksiyon gerekli" cevaplarının doğurduğu PRE_APPROVAL aksiyonları
@@ -1165,7 +1188,8 @@ function viewDetail(id){
     sb.from('moc_temporary_tracking').select('*').eq('moc_id',id).maybeSingle(),
     sb.from('moc_etki_checklist_yanitlari').select('*').eq('moc_request_id',id),
     sb.from('moc_documents').select('*').eq('moc_id',id).order('created_at',{ascending:false}),
-    sb.from('moc_audit_log').select('*').eq('record_id',id).in('table_name',['moc_requests','moc_approvals','moc_risk_assessments']).order('created_at',{ascending:false}).limit(200)
+    sb.from('moc_audit_log').select('*').eq('record_id',id).in('table_name',['moc_requests','moc_approvals','moc_risk_assessments']).order('created_at',{ascending:false}).limit(200),
+    sb.from('moc_trainings').select('*').eq('moc_id',id).order('created_at')
   ]).then(function(res){
     /* DÜZELTME (2026-09-05): bu yedi sorgunun HİÇBİRİNİN `error` alanı kontrol edilmiyordu.
        Mükerrer PSSR checklist'i .maybeSingle()'ı hataya düşürüyor, hata yutulduğu için panel
@@ -1179,11 +1203,23 @@ function viewDetail(id){
     if(!req){ document.getElementById('content').innerHTML='<div class="empty">'+t('Kayıt bulunamadı.')+'</div>'; return; }
     DETAIL_CTX = { req:req, risks:res[1].data||[], approvals:res[2].data||[], actions:res[3].data||[],
                    pssr:(res[4].data&&res[4].data[0])||null, temp:res[5].data||null, checklistAnswers:res[6].data||[],
-                   docs:res[7].data||[], gecmis:res[8].data||[],
+                   docs:res[7].data||[], gecmis:res[8].data||[], trainings:res[9].data||[],
+                   affectedDocsLive:[],
                    type:typeById(req.type_id), category:catById(req.category_id) };
     document.getElementById('pageTitle').textContent = req.moc_no || ('MOC #'+req.id);
     document.getElementById('pageCrumb').textContent = req.title;
-    renderDetail();
+    /* DOC_UPDATE adımının CANLI kontrolü: MOC'ta "etkilenen doküman" olarak işaretlenmiş
+       her kayıt için Doküman Yönetimi'ndeki (ggd_sablonlar) GÜNCEL versiyon/durum çekilir.
+       Karşılaştırma renderDetail() içinde (computeAffectedDocStatus) yapılır — burada
+       sadece canlı veri getirilir, kopyası MOC tarafında SAKLANMAZ. */
+    var etkilenenler=(DETAIL_CTX.docs||[]).filter(function(d){return d.doc_kind==='AFFECTED_DOC' && d.doc_ref;});
+    var refIds=etkilenenler.map(function(d){return d.doc_ref;});
+    if(!refIds.length){ renderDetail(); return; }
+    sb.from('ggd_sablonlar').select('id,baslik,versiyon_no,durum').in('id',refIds).then(function(sr){
+      if(sr.error) toast(hataMesaji(sr.error), true);
+      DETAIL_CTX.affectedDocsLive = sr.data||[];
+      renderDetail();
+    });
   });
 }
 function renderDetail(){
@@ -1223,6 +1259,8 @@ function renderDetail(){
   html+=renderActionsPanel();
   if(typ&&typ.requires_pssr) html+=renderPssrPanel();
   html+=renderTempPanel();
+  html+=renderAffectedDocsPanel();
+  html+=renderTrainingPanel();
   html+=renderDocsPanel();
   html+=renderGecmisPanel();
   html+='</div>';
@@ -1258,6 +1296,138 @@ function renderDetail(){
    mesajlaşmayla taşıyor, denetimde dosya delilsiz görünüyordu. Depolama yolu HER ZAMAN
    `<tenant>/<moc>/<dosya>` — politikalar yolun ilk klasörünü firma kimliğiyle
    karşılaştırdığı için (bkz. moc_schema_faz_i) uygulama hata yapsa bile firma ayrımı bozulmaz. */
+/* ---- Etkilenen Dokümanlar (DOC_UPDATE) ----
+   "MOC doğrular, Doküman Yönetimi uygular": burada kopya doküman içeriği YOK, yalnız
+   ggd_sablonlar tablosundaki gerçek kaydın id'si + o anki versiyon/durum fotoğrafı
+   (moc_documents.doc_ref/old_version, doc_kind='AFFECTED_DOC') tutuluyor. Güncel
+   durum her açılışta canlı sorgulanır (bkz. viewDetail → affectedDocsLive). */
+function renderAffectedDocsPanel(){
+  var ctx=DETAIL_CTX;
+  var items=(ctx.docs||[]).filter(function(d){return d.doc_kind==='AFFECTED_DOC';});
+  var ce=canDo('coordinate') && ['CLOSED','REJECTED','CANCELLED'].indexOf(ctx.req.status)<0;
+  var html='<div class="panel" id="affDocsPanel"><div class="ph"><h2>'+t('Etkilenen Dokümanlar')+'</h2>';
+  if(ce) html+='<button class="btn-line sm" id="btnAddAffDoc" style="margin-left:auto">'+t('+ Doküman Seç')+'</button>';
+  html+='</div><div class="pb">';
+  if(!items.length){ html+='<div class="empty">'+t('Bu değişiklikten etkilenen doküman işaretlenmedi.')+'</div>'; }
+  else{
+    html+='<table><thead><tr><th>'+t('Doküman')+'</th><th>'+t('Fotoğraflanan Versiyon')+'</th><th>'+t('Güncel Durum')+'</th><th></th></tr></thead><tbody>';
+    items.forEach(function(d){
+      var st=computeAffectedDocStatus(d,ctx);
+      var pillCls=st.code==='YURURLUKTE'?'ok':(st.code==='TASLAK'?'warn':(st.code==='MISSING'?'crit':'na'));
+      html+='<tr><td>'+esc(d.title||'—')+'</td><td>'+esc(d.old_version||'—')+'</td>'
+        +'<td><span class="pill '+pillCls+'">'+esc(st.label)+'</span></td>'
+        +'<td>'+(ce?'<button class="btn-crit sm affdocdel" data-id="'+d.id+'">✕</button>':'')+'</td></tr>';
+    });
+    html+='</tbody></table>';
+  }
+  html+='</div></div>';
+  return html;
+}
+function openAddAffectedDoc(){
+  modalTitle('Etkilenen Doküman Seç');
+  setModalBody('<label>'+t('Doküman ara (başlık)')+'</label><input id="affDocSearch" placeholder="'+t('en az 2 karakter yazın')+'">'
+    +'<div id="affDocResults" class="hint" style="margin-top:8px">'+t('Aramak için yazmaya başlayın.')+'</div>');
+  modalFoot(null,'Kapat',null);
+  openModal();
+  var box=document.getElementById('affDocResults');
+  var timer=null;
+  document.getElementById('affDocSearch').oninput=function(e){
+    var q=e.target.value.trim();
+    clearTimeout(timer);
+    if(q.length<2){ box.innerHTML='<span class="hint">'+t('en az 2 karakter yazın')+'</span>'; return; }
+    timer=setTimeout(function(){
+      sb.from('ggd_sablonlar').select('id,baslik,kategori,versiyon_no,durum').ilike('baslik','%'+q+'%').limit(20).then(function(r){
+        if(r.error){ box.innerHTML='<span class="empty">'+esc(hataMesaji(r.error))+'</span>'; return; }
+        var rows=r.data||[];
+        if(!rows.length){ box.innerHTML='<span class="empty">'+t('Sonuç yok.')+'</span>'; return; }
+        box.innerHTML='<table><tbody>'+rows.map(function(s){
+          return '<tr><td>'+esc(s.baslik)+'</td><td class="hint">'+esc(s.kategori||'')+' · v'+s.versiyon_no+' · '+esc(s.durum)+'</td>'
+            +'<td><button class="sm btn-line pickaffdoc" data-id="'+esc(s.id)+'" data-title="'+esc(s.baslik)+'" data-v="'+s.versiyon_no+'" data-d="'+esc(s.durum)+'">'+t('Seç')+'</button></td></tr>';
+        }).join('')+'</tbody></table>';
+        Array.prototype.forEach.call(box.querySelectorAll('.pickaffdoc'),function(b){
+          b.onclick=function(){ pickAffectedDoc(b.dataset.id, b.dataset.title, b.dataset.v); };
+        });
+      });
+    },300);
+  };
+}
+function pickAffectedDoc(sablonId, title, versiyonNo){
+  var already=(DETAIL_CTX.docs||[]).some(function(d){return d.doc_kind==='AFFECTED_DOC'&&String(d.doc_ref)===String(sablonId);});
+  if(already){ toast(t('Bu doküman zaten eklenmiş.'),true); return; }
+  sb.from('moc_documents').insert({
+    tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, doc_kind:'AFFECTED_DOC',
+    title:title, doc_ref:sablonId, old_version:String(versiyonNo), uploaded_by:cloudUserId
+  }).then(function(res){
+    if(res.error){ toast(hataMesaji(res.error),true); return; }
+    closeModal(); toast(t('Doküman eklendi')); viewDetail(DETAIL_CTX.req.id);
+  });
+}
+function affDocSil(id){
+  confirmBox(t('Bu doküman etkilenenler listesinden çıkarılacak. Devam edilsin mi?'), t('Çıkar'), function(){
+    closeModal();
+    sb.from('moc_documents').delete().eq('id',id).then(function(res){
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
+      toast(t('Kaldırıldı')); viewDetail(DETAIL_CTX.req.id);
+    });
+  }, true);
+}
+
+/* ---- Eğitim/Bilgilendirme (TRAINING) ----
+   moc_trainings şemada vardı ama hiç kullanılmıyordu. Koordinatör, değişiklikten
+   etkilenen kişileri atar; her kişi kendi kaydını "tamamlandı" işaretler (veya
+   koordinatör onlar adına işaretleyebilir). TRAINING adımından çıkış, tüm atamalar
+   acknowledged=true olana kadar kilitlenir (bkz. condTrainingDone). */
+function renderTrainingPanel(){
+  var ctx=DETAIL_CTX, items=ctx.trainings||[];
+  var ce=canDo('coordinate') && ['CLOSED','REJECTED','CANCELLED'].indexOf(ctx.req.status)<0;
+  var done=items.filter(function(tr){return tr.acknowledged;}).length;
+  var html='<div class="panel" id="trainPanel"><div class="ph"><h2>'+t('Eğitim / Bilgilendirme')+' '
+    +(items.length?('<span class="hint">('+done+'/'+items.length+')</span>'):'')+'</h2>';
+  if(ce) html+='<button class="btn-line sm" id="btnAddTraining" style="margin-left:auto">'+t('+ Kişi Ata')+'</button>';
+  html+='</div><div class="pb">';
+  if(!items.length){ html+='<div class="empty">'+t('Bu değişiklik için eğitim/bilgilendirme ataması yapılmadı.')+'</div>'; }
+  else{
+    html+='<table><thead><tr><th>'+t('Kişi')+'</th><th>'+t('Konu')+'</th><th>'+t('Durum')+'</th><th></th></tr></thead><tbody>';
+    items.forEach(function(tr){
+      var kisi=profileByIdMoc(tr.user_id);
+      var canAck = tr.user_id===cloudUserId || canDo('coordinate');
+      html+='<tr><td>'+esc(kisi?kisi.full_name:tr.user_id)+'</td><td>'+esc(tr.training_type||'—')+'</td>'
+        +'<td>'+(tr.acknowledged?'<span class="pill ok">'+t('Tamamlandı')+'</span>':'<span class="pill warn">'+t('Bekliyor')+'</span>')+'</td>'
+        +'<td>'+(!tr.acknowledged&&canAck?'<button class="sm btn-line trainack" data-id="'+tr.id+'">'+t('Tamamlandı İşaretle')+'</button>':'')+'</td></tr>';
+    });
+    html+='</tbody></table>';
+  }
+  html+='</div></div>';
+  return html;
+}
+var MOC_PROFILES_CACHE=null;
+function profileByIdMoc(id){ return (MOC_PROFILES_CACHE||[]).find(function(p){return p.id===id;}); }
+function openAddTraining(){
+  var load = MOC_PROFILES_CACHE ? Promise.resolve() :
+    sb.from('profiles').select('id,full_name,is_active').eq('tenant_id',cloudTenantId).order('full_name').then(function(r){ MOC_PROFILES_CACHE=r.data||[]; });
+  load.then(function(){
+    var opts=(MOC_PROFILES_CACHE||[]).filter(function(p){return p.is_active!==false;}).map(function(p){return '<option value="'+p.id+'">'+esc(p.full_name||p.id)+'</option>';}).join('');
+    modalTitle('Eğitim/Bilgilendirme Ataması');
+    setModalBody('<label>'+t('Kişi')+'</label><select id="trUser">'+opts+'</select>'
+      +'<label>'+t('Konu')+'</label><input id="trType" placeholder="'+t('ör. Yeni prosedür bilgilendirmesi')+'">');
+    modalFoot('Ata','Vazgeç',function(){
+      var uid=val('trUser'), typ=val('trType');
+      if(!uid){ toast(t('Kişi seçilmedi.'),true); return; }
+      sb.from('moc_trainings').insert({tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, user_id:uid, training_type:typ||null}).then(function(res){
+        if(res.error){ toast(hataMesaji(res.error),true); return; }
+        closeModal(); toast(t('Atandı')); viewDetail(DETAIL_CTX.req.id);
+      });
+    });
+    openModal();
+  });
+}
+function trainingAck(id){
+  sb.from('moc_trainings').update({acknowledged:true, acknowledged_at:new Date().toISOString()}).eq('id',id).then(function(res){
+    if(res.error){ toast(hataMesaji(res.error),true); return; }
+    toast(t('Tamamlandı olarak işaretlendi')); viewDetail(DETAIL_CTX.req.id);
+  });
+}
+
 var MOC_BUCKET='moc-belgeler';
 function renderDocsPanel(){
   var ctx=DETAIL_CTX, docs=ctx.docs||[];
@@ -2117,6 +2287,14 @@ function bindDetailEvents(){
   var te=document.getElementById('btnTempExtend'); if(te) te.onclick=tempUzat;
   var trs=document.getElementById('btnTempRestore'); if(trs) trs.onclick=tempGeriDon;
   var dc=document.getElementById('btnDosyaCiktisi'); if(dc) dc.onclick=denetimDosyasi;
+  var baad=document.getElementById('btnAddAffDoc'); if(baad) baad.onclick=openAddAffectedDoc;
+  Array.prototype.forEach.call(document.querySelectorAll('.affdocdel'),function(b){
+    b.onclick=function(){ affDocSil(Number(b.getAttribute('data-id'))); };
+  });
+  var bat=document.getElementById('btnAddTraining'); if(bat) bat.onclick=openAddTraining;
+  Array.prototype.forEach.call(document.querySelectorAll('.trainack'),function(b){
+    b.onclick=function(){ trainingAck(Number(b.getAttribute('data-id'))); };
+  });
 
   bindChecklistEvents();
   crossRefsBind(req.id, req.moc_no?req.moc_no+' — '+req.title:req.title);
