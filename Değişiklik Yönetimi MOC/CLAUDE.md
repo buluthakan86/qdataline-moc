@@ -2,7 +2,32 @@
 
 ---
 
-## ⚡ BURADAN BAŞLA — 05.09.2026 itibarıyla durum
+## ⚡ BURADAN BAŞLA — 07.09.2026 itibarıyla durum
+
+**DOC_UPDATE ve TRAINING adımları artık GERÇEK, canlıda (commit `0ceaa72`).** Daha önce
+bu iki adım içi boş / koşulsuz geçiliyordu. Model: **"MOC doğrular, Doküman Yönetimi
+uygular"** — MOC içine ikinci bir doküman/eğitim sistemi yazılmadı.
+- **DOC_UPDATE:** etkilenen doküman(lar) Doküman Yönetimi'nden (`ggd_sablonlar`, ortak
+  Supabase projesi) seçilip `moc_documents` (`doc_kind='AFFECTED_DOC'`, `doc_ref`=şablon
+  id, `old_version`=o anki versiyon no) ile fotoğraflanıyor. `computeAffectedDocStatus()`
+  canlı `ggd_sablonlar.versiyon_no/durum`'u fotoğrafla kıyaslayıp Güncellenmedi/Taslakta
+  Bekliyor/Yürürlükte gösteriyor. Hepsi Yürürlükte olmadan `TRAINING`'e geçilemiyor.
+- **TRAINING:** şemada duran ama hiç kullanılmayan `moc_trainings` (user_id/training_type/
+  acknowledged) tablosu hayata geçirildi — kişi ataması yapılır, `acknowledged=true`
+  olmadan bir sonraki aşamaya (`PSSR`/`STARTUP`) geçilemez.
+- **Cross-module RLS:** `ggd_sablonlar`'a `has_modul('moc')` için ek (OR'lanan, mevcut
+  politikaları bozmayan) bir SELECT politikası eklendi (`Doküman Yönetimi/sql/
+  13_moc_cross_module_erisim.sql`).
+- **DB-seviyesi kilit (Faz K, `moc_schema_faz_k_doc_training_trigger.sql`):** yukarıdaki
+  iki kural yalnız istemcide kalmasın diye `moc_durum_kontrol()` trigger'ına da eklendi —
+  konsoldan/API'den doğrudan `UPDATE ... SET status=...` ile de bu adımlar atlanamaz.
+- **Eğitim Platformu'na henüz bağlanmadı** (bilinçli, kullanıcı kararı): o modül henüz
+  Eksenpro projesinde canlı tabloya sahip değil. Eğitim Platformu canlıya alınınca ayrı
+  bir iş olarak gerçek eğitim kayıtlarına bağlanması değerlendirilebilir.
+
+---
+
+## ⚡ ÖNCEKİ DURUM — 05.09.2026 itibarıyla durum
 
 **Modül canlı:** `moc.qdataline.com` · repo `qdataline-moc` · dal **`master`** · tek dosya
 `MOC.html`, build yok · Cloudflare Pages. Sayfa kök `_redirects` ile
