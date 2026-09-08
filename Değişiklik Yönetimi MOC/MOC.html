@@ -363,6 +363,12 @@ var cloudUser='', cloudUserId=null, cloudTenantId=null, cloudRole='VIEWER', clou
    ========================================================================= */
 var LANG=localStorage.getItem('moc_lang')||'tr';
 var I18N={
+  'Kaynak':'Source','Eğitim Platformu':'Training Platform','Manuel':'Manual','Devam ediyor':'In progress',
+  '🔄 Canlı Durumu Getir':'🔄 Refresh Live Status','Eğitim Platformu kayıtları kontrol ediliyor…':'Checking Training Platform records…',
+  'Bu kişinin Eğitim Platformu kaydı bulunamadı — manuel/serbest metin olarak atanacak.':'No Training Platform record found for this person — will be assigned as manual/free text.',
+  'Eğitim Platformu Kaydı (opsiyonel)':'Training Platform Record (optional)',
+  'Seçilirse tamamlanma durumu Eğitim Platformu\'ndan canlı izlenir, elle işaretlemeye gerek kalmaz.':'If selected, completion status is tracked live from the Training Platform — no manual marking needed.',
+  '— Manuel (serbest metin konu) —':'— Manual (free text topic) —','Yenileniyor…':'Refreshing…',
   'Özet':'Overview','Değişiklik Talepleri':'Change Requests','Onay Bekleyenler':'Pending Approvals',
   'Tüm Değişiklikler':'All Changes','Ayarlar':'Settings','Değişiklik Yönetimi (MOC)':'Management of Change (MOC)',
   'E-posta':'Email','Şifre':'Password','Giriş Yap':'Log In','Çıkış':'Log Out','Açık/Koyu tema':'Light/Dark theme',
@@ -575,9 +581,19 @@ function condAffectedDocsDone(r,ctx){
 /* TRAINING adımı — moc_trainings zaten şemada vardı ama hiç kullanılmıyordu (bkz. 2026-09-07
    denetimi). Atanan her kayıt acknowledged=true olmadan bir sonraki adıma geçilemez; hiç
    atama yapılmadıysa (items.length===0) engel yok. */
+/* Faz L (2026-09-08): linkli atamalarda tamamlanma artık Eğitim Platformu'ndaki
+   CANLI kayıttan okunur (egitimDurumlari), acknowledged'dan DEĞİL — acknowledged
+   yalnız linksiz (manuel) atamalarda anlamlıdır. */
+function trainingIsComplete(tr,ctx){
+  if(tr.egitim_enrollment_id){
+    var live=(ctx.egitimDurumlari||[]).find(function(x){return x.egitim_enrollment_id===tr.egitim_enrollment_id;});
+    return !!(live && live.durum==='completed');
+  }
+  return !!tr.acknowledged;
+}
 function condTrainingDone(r,ctx){
   var items=ctx.trainings||[];
-  return items.length===0 || items.every(function(tr){return !!tr.acknowledged;});
+  return items.length===0 || items.every(function(tr){return trainingIsComplete(tr,ctx);});
 }
 /* Onaya geçiş için: etki değerlendirme checklist'i tamamen yanıtlanmış ve
    "Evet + aksiyon gerekli" cevaplarının doğurduğu PRE_APPROVAL aksiyonları
@@ -1204,7 +1220,7 @@ function viewDetail(id){
     DETAIL_CTX = { req:req, risks:res[1].data||[], approvals:res[2].data||[], actions:res[3].data||[],
                    pssr:(res[4].data&&res[4].data[0])||null, temp:res[5].data||null, checklistAnswers:res[6].data||[],
                    docs:res[7].data||[], gecmis:res[8].data||[], trainings:res[9].data||[],
-                   affectedDocsLive:[],
+                   affectedDocsLive:[], egitimDurumlari:[],
                    type:typeById(req.type_id), category:catById(req.category_id) };
     document.getElementById('pageTitle').textContent = req.moc_no || ('MOC #'+req.id);
     document.getElementById('pageCrumb').textContent = req.title;
@@ -1214,10 +1230,18 @@ function viewDetail(id){
        sadece canlı veri getirilir, kopyası MOC tarafında SAKLANMAZ. */
     var etkilenenler=(DETAIL_CTX.docs||[]).filter(function(d){return d.doc_kind==='AFFECTED_DOC' && d.doc_ref;});
     var refIds=etkilenenler.map(function(d){return d.doc_ref;});
-    if(!refIds.length){ renderDetail(); return; }
-    sb.from('ggd_sablonlar').select('id,baslik,versiyon_no,durum').in('id',refIds).then(function(sr){
-      if(sr.error) toast(hataMesaji(sr.error), true);
-      DETAIL_CTX.affectedDocsLive = sr.data||[];
+    /* TRAINING adımının CANLI kontrolü (Faz L, 2026-09-08): Eğitim Platformu'na
+       (egitim şeması, aynı proje) linkli her atama için GÜNCEL tamamlanma durumu
+       moc_egitim_durumlari() RPC'siyle çekilir — aynı "fotoğrafla, canlıyla kıyasla"
+       deseni. Linksiz (manuel) atamalar zaten ctx.trainings.acknowledged'dan okunur. */
+    var egitimLinkli=(DETAIL_CTX.trainings||[]).some(function(tr){return !!tr.egitim_enrollment_id;});
+    var docP = refIds.length ? sb.from('ggd_sablonlar').select('id,baslik,versiyon_no,durum').in('id',refIds) : Promise.resolve({data:[]});
+    var egitimP = egitimLinkli ? sb.rpc('moc_egitim_durumlari',{p_moc_id:req.id}) : Promise.resolve({data:[]});
+    Promise.all([docP,egitimP]).then(function(r2){
+      if(r2[0].error) toast(hataMesaji(r2[0].error), true);
+      if(r2[1].error) toast(hataMesaji(r2[1].error), true);
+      DETAIL_CTX.affectedDocsLive = r2[0].data||[];
+      DETAIL_CTX.egitimDurumlari = r2[1].data||[];
       renderDetail();
     });
   });
@@ -1380,20 +1404,30 @@ function affDocSil(id){
 function renderTrainingPanel(){
   var ctx=DETAIL_CTX, items=ctx.trainings||[];
   var ce=canDo('coordinate') && ['CLOSED','REJECTED','CANCELLED'].indexOf(ctx.req.status)<0;
-  var done=items.filter(function(tr){return tr.acknowledged;}).length;
+  var done=items.filter(function(tr){return trainingIsComplete(tr,ctx);}).length;
   var html='<div class="panel" id="trainPanel"><div class="ph"><h2>'+t('Eğitim / Bilgilendirme')+' '
     +(items.length?('<span class="hint">('+done+'/'+items.length+')</span>'):'')+'</h2>';
   if(ce) html+='<button class="btn-line sm" id="btnAddTraining" style="margin-left:auto">'+t('+ Kişi Ata')+'</button>';
   html+='</div><div class="pb">';
   if(!items.length){ html+='<div class="empty">'+t('Bu değişiklik için eğitim/bilgilendirme ataması yapılmadı.')+'</div>'; }
   else{
-    html+='<table><thead><tr><th>'+t('Kişi')+'</th><th>'+t('Konu')+'</th><th>'+t('Durum')+'</th><th></th></tr></thead><tbody>';
+    html+='<table><thead><tr><th>'+t('Kişi')+'</th><th>'+t('Konu')+'</th><th>'+t('Kaynak')+'</th><th>'+t('Durum')+'</th><th></th></tr></thead><tbody>';
     items.forEach(function(tr){
       var kisi=profileByIdMoc(tr.user_id);
       var canAck = tr.user_id===cloudUserId || canDo('coordinate');
+      var linked = !!tr.egitim_enrollment_id;
+      var tamam = trainingIsComplete(tr,ctx);
+      var kaynak = linked ? '<span class="pill blue" title="Eğitim Platformu\'ndaki kayda bağlı, canlı takip edilir">🔗 '+t('Eğitim Platformu')+'</span>' : '<span class="pill na">'+t('Manuel')+'</span>';
+      var durumHtml = tamam
+        ? '<span class="pill ok">'+t('Tamamlandı')+'</span>'
+        : (linked ? '<span class="pill warn">'+t('Devam ediyor')+'</span>' : '<span class="pill warn">'+t('Bekliyor')+'</span>');
+      var aksiyon = '';
+      if(!tamam){
+        if(linked) aksiyon = canDo('coordinate') ? '<button class="sm btn-line trainrefresh" data-id="'+tr.id+'">'+t('🔄 Canlı Durumu Getir')+'</button>' : '';
+        else if(canAck) aksiyon = '<button class="sm btn-line trainack" data-id="'+tr.id+'">'+t('Tamamlandı İşaretle')+'</button>';
+      }
       html+='<tr><td>'+esc(kisi?kisi.full_name:tr.user_id)+'</td><td>'+esc(tr.training_type||'—')+'</td>'
-        +'<td>'+(tr.acknowledged?'<span class="pill ok">'+t('Tamamlandı')+'</span>':'<span class="pill warn">'+t('Bekliyor')+'</span>')+'</td>'
-        +'<td>'+(!tr.acknowledged&&canAck?'<button class="sm btn-line trainack" data-id="'+tr.id+'">'+t('Tamamlandı İşaretle')+'</button>':'')+'</td></tr>';
+        +'<td>'+kaynak+'</td><td>'+durumHtml+'</td><td>'+aksiyon+'</td></tr>';
     });
     html+='</tbody></table>';
   }
@@ -1402,6 +1436,10 @@ function renderTrainingPanel(){
 }
 var MOC_PROFILES_CACHE=null;
 function profileByIdMoc(id){ return (MOC_PROFILES_CACHE||[]).find(function(p){return p.id===id;}); }
+/* Faz L (2026-09-08): kişi seçilince Eğitim Platformu'ndaki (egitim şeması, aynı proje)
+   kayıtları moc_egitim_kayitlari() RPC'siyle canlı çekilip ikinci bir seçenek olarak
+   sunulur. Kişinin hesabı/kaydı yoksa (bugünkü çoğunluk) davranış BİREBİR ESKİSİ GİBİDİR:
+   serbest metin "Konu" kutusu, elle "Tamamlandı İşaretle". */
 function openAddTraining(){
   var load = MOC_PROFILES_CACHE ? Promise.resolve() :
     sb.from('profiles').select('id,full_name,is_active').eq('tenant_id',cloudTenantId).order('full_name').then(function(r){ MOC_PROFILES_CACHE=r.data||[]; });
@@ -1409,16 +1447,35 @@ function openAddTraining(){
     var opts=(MOC_PROFILES_CACHE||[]).filter(function(p){return p.is_active!==false;}).map(function(p){return '<option value="'+p.id+'">'+esc(p.full_name||p.id)+'</option>';}).join('');
     modalTitle('Eğitim/Bilgilendirme Ataması');
     setModalBody('<label>'+t('Kişi')+'</label><select id="trUser">'+opts+'</select>'
+      +'<div id="trEnrollWrap" class="fld-hint">'+t('Eğitim Platformu kayıtları kontrol ediliyor…')+'</div>'
       +'<label>'+t('Konu')+'</label><input id="trType" placeholder="'+t('ör. Yeni prosedür bilgilendirmesi')+'">');
     modalFoot('Ata','Vazgeç',function(){
       var uid=val('trUser'), typ=val('trType');
       if(!uid){ toast(t('Kişi seçilmedi.'),true); return; }
-      sb.from('moc_trainings').insert({tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, user_id:uid, training_type:typ||null}).then(function(res){
+      var enrSel=document.getElementById('trEnroll');
+      var enrId = enrSel && enrSel.value ? enrSel.value : null;
+      var patch={tenant_id:cloudTenantId, moc_id:DETAIL_CTX.req.id, user_id:uid, training_type:typ||'', egitim_enrollment_id:enrId};
+      sb.from('moc_trainings').insert(patch).then(function(res){
         if(res.error){ toast(hataMesaji(res.error),true); return; }
         closeModal(); toast(t('Atandı')); viewDetail(DETAIL_CTX.req.id);
       });
     });
     openModal();
+    var loadEnroll=function(){
+      var uid=val('trUser'); var wrap=document.getElementById('trEnrollWrap'); if(!wrap) return;
+      if(!uid){ wrap.innerHTML=''; return; }
+      wrap.innerHTML=t('Eğitim Platformu kayıtları kontrol ediliyor…');
+      sb.rpc('moc_egitim_kayitlari',{p_user_id:uid}).then(function(r){
+        if(r.error || !r.data || !r.data.length){ wrap.innerHTML='<span class="hint">'+t('Bu kişinin Eğitim Platformu kaydı bulunamadı — manuel/serbest metin olarak atanacak.')+'</span>'; return; }
+        var opt=['<option value="">'+t('— Manuel (serbest metin konu) —')+'</option>'].concat(r.data.map(function(e){
+          return '<option value="'+esc(e.enrollment_id)+'">'+esc(e.kurs_baslik||e.kurs_kodu||e.enrollment_id)+' — '+esc(e.durum)+'</option>';
+        })).join('');
+        wrap.innerHTML='<label>'+t('Eğitim Platformu Kaydı (opsiyonel)')+'</label><select id="trEnroll">'+opt+'</select>'
+          +'<div class="hint">'+t('Seçilirse tamamlanma durumu Eğitim Platformu\'ndan canlı izlenir, elle işaretlemeye gerek kalmaz.')+'</div>';
+      });
+    };
+    document.getElementById('trUser').onchange=loadEnroll;
+    loadEnroll();
   });
 }
 function trainingAck(id){
@@ -1426,6 +1483,9 @@ function trainingAck(id){
     if(res.error){ toast(hataMesaji(res.error),true); return; }
     toast(t('Tamamlandı olarak işaretlendi')); viewDetail(DETAIL_CTX.req.id);
   });
+}
+function trainingRefresh(){
+  toast(t('Yenileniyor…')); viewDetail(DETAIL_CTX.req.id);
 }
 
 var MOC_BUCKET='moc-belgeler';
@@ -2294,6 +2354,9 @@ function bindDetailEvents(){
   var bat=document.getElementById('btnAddTraining'); if(bat) bat.onclick=openAddTraining;
   Array.prototype.forEach.call(document.querySelectorAll('.trainack'),function(b){
     b.onclick=function(){ trainingAck(Number(b.getAttribute('data-id'))); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.trainrefresh'),function(b){
+    b.onclick=trainingRefresh;
   });
 
   bindChecklistEvents();
