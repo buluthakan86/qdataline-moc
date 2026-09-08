@@ -2,7 +2,54 @@
 
 ---
 
-## ⚡ BURADAN BAŞLA — 07.09.2026 itibarıyla durum
+## ⚡ BURADAN BAŞLA — 08.09.2026 itibarıyla durum (Faz L — TRAINING artık Eğitim Platformu'na bağlı)
+
+**TRAINING adımı Eğitim Platformu'na bağlandı (commit `e080699`,
+`moc_schema_faz_l_egitim_koprusu.sql`, canlıya uygulandı ve doğrulandı).** Model DOC_UPDATE
+ile birebir aynı: "MOC doğrular, Eğitim Platformu uygular" — MOC içine ikinci bir eğitim
+sistemi yazılmadı.
+
+**Kritik önceki-not düzeltmesi:** Bu dosyanın altındaki "Eğitim Platformu henüz canlı
+tabloya sahip değil" notu ARTIK YANLIŞ/BAYAT. Eğitim Platformu'nun aktif kod tabanı
+(`qdataline-egitim`, `Eğitim Platformu/qdataline-egitim/` — eski Node/SQLite backend
+`_ARSIV-KULLANMA-...` olarak 2026-08-25'te terk edildi) MOC ile **AYNI Supabase projesinde**
+(`bbltvuxxtacrpgrqnfoh`), yalnız kendi `egitim` şemasında çalışıyor. Ayrı bir backend/API
+entegrasyonu GEREKMEDİ.
+
+- **Kişi eşleştirmesi:** `egitim.enrollment.user_id` / `egitim.user_account.id`, MOC'un
+  `auth.users(id)` ile AYNI paylaşımlı kimlik havuzu (canlıda doğrulandı: 52/52 e-posta
+  eşleşti, id doğrudan eşleşiyor). `egitim.tenant.id` ise `public.tenants.id` ile FARKLI
+  değer uzayında (0/3 eşleşme) — bu yüzden tenant izolasyonu `egitim.tenant_id()` JWT
+  claim'ine değil, `public.profiles` üzerinden (hedef kişi çağıranla aynı tenant'ta mı?)
+  yapılıyor.
+- **API yüzeyi (çıplak cross-schema RLS politikası DEĞİL, denetlenebilir SECURITY DEFINER
+  fonksiyonlar):** `moc_egitim_kayitlari(p_user_id uuid)` — kişi atanırken o kişinin
+  Eğitim Platformu kayıtlarını (kurs adı, durum) listeler; `moc_egitim_durumlari(p_moc_id
+  bigint)` — bir MOC'a bağlı tüm linkli atamaların canlı durumunu toplu getirir (detay
+  ekranı açılırken, `computeAffectedDocStatus`/`ggd_sablonlar` ile AYNI "fotoğrafla, canlıyla
+  kıyasla" deseni).
+- **`moc_trainings.egitim_enrollment_id`** (nullable, `egitim.enrollment` FK) — kişi
+  atarken opsiyonel olarak bir Eğitim Platformu kaydına bağlanabilir. Bağlanmazsa (kişinin
+  hesabı yoksa, ya da bilgilendirme serbest metinse) davranış BİREBİR ESKİSİ GİBİDİR: elle
+  "Tamamlandı İşaretle". Bağlanırsa tamamlanma artık `acknowledged`'dan değil, o kaydın CANLI
+  `egitim.enrollment.status='completed'` durumundan okunuyor — arayüzde elle işaretleme
+  butonu yerine "🔄 Canlı Durumu Getir" var.
+  **DB trigger'ı da güncellendi** (`moc_durum_kontrol()`, TRAINING→PSSR/STARTUP): linksiz
+  kayıtlarda `acknowledged=true` yeterli (eskisi gibi), linkli kayıtlarda canlı
+  `status='completed'` şart — istemci kontrolü kadar DB'de de zorunlu
+  ([[feedback_istemci_tarafi_kural_tuzagi]] dersi burada da uygulandı).
+- **⚠️ Aynı migrasyonla düzeltilen, İLGİSİZ ama gerçek bir bug:** `moc_trainings.
+  training_type` `CHECK (IN ('INFO','CLASSROOM','ON_JOB'))` idi ama arayüzdeki "+ Kişi Ata"
+  formu her zaman SERBEST METİN gönderiyordu (`trType` kutusu) — yani 07.09.2026'dan beri
+  bu özellik dolu bir konu girildiğinde HER ZAMAN constraint ihlaliyle başarısız oluyordu
+  (boş bırakılırsa NOT NULL ihlaliyle yine başarısız). CHECK kaldırıldı, sütun artık serbest
+  metin. **Bu, "canlıyı doğrula" kuralının somut faydası** — yeni özelliği kodlamadan önce
+  canlı şemayı kontrol ederken bulundu.
+- **Henüz kullanıcı tarafından canlıda test edilmedi.**
+
+---
+
+## ⚡ ÖNCEKİ DURUM (BAYAT NOT — düzeltmesi yukarıda) — 07.09.2026 itibarıyla durum
 
 **DOC_UPDATE ve TRAINING adımları artık GERÇEK, canlıda (commit `0ceaa72`).** Daha önce
 bu iki adım içi boş / koşulsuz geçiliyordu. Model: **"MOC doğrular, Doküman Yönetimi
