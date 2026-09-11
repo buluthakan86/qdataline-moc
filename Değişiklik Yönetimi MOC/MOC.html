@@ -3048,7 +3048,12 @@ function initThemeToggle(){
   document.getElementById('btnLogout').onclick=function(){ sb.auth.signOut().then(function(){ location.reload(); }); };
   document.getElementById('btnNewRequest').onclick=openNewRequest;
   initThemeToggle();
-  document.getElementById('overlay').onclick=closeModal;
+  document.getElementById('overlay').onclick=function(){
+    var mb = document.getElementById('modalBox');
+    var formVarMi = mb && mb.querySelector('input:not([disabled]):not([type="file"]), textarea:not([disabled]), select:not([disabled])');
+    if(formVarMi && !confirm('Kaydedilmemiş bilgiler kaybolacak. Kapatmak istediğinize emin misiniz?')) return;
+    closeModal();
+  };
   document.getElementById('modalCancel').onclick=closeModal;
   var loLangBtn=document.getElementById('loLangBtn'); if(loLangBtn) loLangBtn.onclick=toggleLoginLang;
   var langBtn=document.getElementById('langBtn'); if(langBtn) langBtn.onclick=toggleMocLang;
