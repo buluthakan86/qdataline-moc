@@ -2,6 +2,19 @@
 
 ---
 
+## ⚡ EK (11-12.09.2026) — Platform-geneli tur: overlay veri kaybı + mobil ince ayar
+
+1. **Kritik düzeltme:** `document.getElementById('overlay').onclick=closeModal;`
+   — arka plana tıklayınca form HİÇ ONAY SORMADAN kapanıp içindeki her şeyi
+   siliyordu (platform-geneli bug, bkz. hafızada `feedback_overlay_click_veri_kaybi`,
+   9 modülde düzeltildi). Artık formda dolu alan varsa onay isteniyor.
+2. **Mobil responsive:** MOC hiç sidebar kullanmıyor (`cardnav` zaten yatay
+   kaydırmalı flex) — bu yüzden diğer modüllerin yaşadığı "sabit sidebar dar
+   ekranda kullanılamıyor" sorunu MOC'ta hiç olmamış. Yalnız ≤640px'te topbar/
+   içerik boşluğu ve modal genişliği için ince ayar eklendi.
+Her ikisi de commit+push+Cloudflare deploy edilip `moc.qdataline.com`'da
+canlıda doğrulandı.
+
 ## ⚡ BURADAN BAŞLA — 08.09.2026 itibarıyla durum (Faz L — TRAINING artık Eğitim Platformu'na bağlı)
 
 **TRAINING adımı Eğitim Platformu'na bağlandı (commit `e080699`,
