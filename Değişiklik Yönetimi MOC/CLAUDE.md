@@ -2,6 +2,64 @@
 
 ---
 
+## ⚡ EK (12.09.2026) — E-posta ile tek-tıkla Onay/Red (PİLOT — platform-geneli özelliğin ilk modülü)
+
+Onaylayıcının giriş yapmadan, e-postadaki linkten doğrudan Onayla/Reddet kararı
+verebilmesi için paylaşımlı (MOC'a özel olmayan, `qdl_` ön ekli) bir token
+altyapısı tasarlandı. MOC pilot modül; diğer 10 modül daha sonra aynı yapıyı
+kullanacak.
+
+**Yeni dosyalar:**
+- `moc_schema_faz_m_email_onay.sql` — tam DDL (aşağıda "uygulama durumu"na bakın)
+- `moc-onay.html` — token'lı linkin açtığı, MOC.html ile aynı `moc_theme_tokens.css`
+  temasını ve TR/EN `t()` sözlük desenini kullanan bağımsız iniş sayfası
+
+**Tasarım (bkz. `moc_schema_faz_m_email_onay.sql` için tam yorum satırları):**
+- `public.qdl_approval_tokens` — ham token hiç saklanmaz, yalnız sha256 hash'i
+  (`token_hash`). RLS açık, policy yok; tüm erişim SECURITY DEFINER fonksiyon
+  üzerinden. `status`: pending/used/expired/invalidated.
+- `public.qdl_approval_rate_limit` — IP başına saatte 20 deneme sınırı (basit sayaç).
+- `public.qdl_create_approval_token(...)` — ham token üretir, yalnız hash'i saklar,
+  ham token'ı bir kere döner (loglanmaz).
+- `public.qdl_approval_token_preview(p_token)` — tüketmeden salt-okunur önizleme
+  (MOC no, başlık, durum) — anon RPC olarak açık.
+- `public.qdl_consume_approval_token(p_token, p_decision, p_ip, p_ua)` — atomik
+  tek kullanımlık tüketim: `UPDATE ... WHERE status='pending' AND now()<expires_at`.
+  Sıfır satır dönerse invalid/already_used/expired ayrımı yapılır. Kayıt hâlâ
+  `expected_status` ile uyumlu mu tekrar kontrol edilir (uyumsuzsa "state_changed",
+  token yine de tüketilmiş kalır — asla yeniden kullanılamaz). Geçerliyse
+  `moc_approvals.decision` alanına yazar (mevcut `moc_onay_kontrol`/`moc_durum_kontrol`
+  trigger zincirini tetikler — durum geçiş mantığı burada TEKRAR YAZILMADI, var
+  olan tetikleyiciler yeniden kullanıldı) ve `moc_audit_log`'a
+  `EMAIL_APPROVE`/`EMAIL_REJECT` action'ı ile IP/UA/zaman damgalı satır ekler.
+- `public.moc_onay_eposta_gonder()` (trigger, `moc_approvals` insert/update) —
+  bir onay adımı `approver_id` atanmış + `decision IS NULL` + üst `moc_requests.status
+  = 'APPROVAL'` olduğunda otomatik `qdl_create_approval_token` + `qdl_send_email`
+  çağırır (Tedarikçi modülündeki paylaşımlı `qdl_send_email(to,subject,html)`
+  fonksiyonu birebir yeniden kullanıldı, e-posta gönderimi yeniden yazılmadı).
+
+**Uygulama durumu — ÖNEMLİ:** Bu tur sırasında live Supabase (`bbltvuxxtacrpgrqnfoh`)
+için önbelleğe alınmış bir Management API token'ı (`sbp_...`) BULUNAMADI (önceki
+turlarda İSG modülü için kullanıcı elle vermiş, kalıcı bir dosyada saklanmıyor).
+Proje kuralı "önce doğrula, sonra şema değiştir" gereği DDL **canlıya
+uygulanmadı** ve dolayısıyla canlı test (gerçek Resend gönderimi, gerçek
+`qdl_consume_approval_token` tüketim/already-used/expired senaryoları) **koşulmadı**.
+`moc_schema_faz_m_email_onay.sql` dosyasının içinde doğrulama ve test sorguları
+hazır — bir sonraki turda kullanıcı bir Management API token'ı verdiğinde veya
+Supabase SQL Editor'den elle uygulandığında:
+1. `information_schema` ile `moc_requests`/`moc_approvals` kolonlarını teyit et,
+2. dosyayı uygula,
+3. dosyanın sonundaki "DOĞRULAMA" ve "TEST SIRASI" adımlarını çalıştır.
+
+**Bilinen sınırlama / takip:** `moc-onay.html` gerçek istemci IP'sini tarayıcıdan
+göndermiyor (`p_ip: null`) — düz PostgREST RPC çağrısından gerçek IP okunamaz;
+gerçek IP yakalamak için bir Cloudflare Worker/Edge Function proxy gerekir
+(platformda henüz Edge Function yok, Tedarikçi'deki gibi düz Postgres fonksiyon +
+pg_net deseni izlendi). Hız sınırlama şimdilik yalnız IP=null durumunu es geçer;
+bu, diğer modüllere yayılmadan önce ele alınmalı.
+
+---
+
 ## ⚡ EK (11-12.09.2026) — Platform-geneli tur: overlay veri kaybı + mobil ince ayar
 
 1. **Kritik düzeltme:** `document.getElementById('overlay').onclick=closeModal;`

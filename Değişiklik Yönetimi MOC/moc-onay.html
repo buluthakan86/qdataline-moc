@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>MOC Onay</title>
+<link rel="stylesheet" href="moc_theme_tokens.css"/>
+<style>
+  html,body{height:100%;margin:0;background:var(--q-bg-base);color:var(--q-text-primary);
+    font-family:var(--q-font-family,'Inter',sans-serif);}
+  .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .card{max-width:480px;width:100%;background:var(--q-bg-surface);border:1px solid var(--q-border);
+    border-radius:var(--q-radius-lg);box-shadow:var(--q-shadow-card);padding:32px;}
+  .card h1{font-size:18px;margin:0 0 4px;color:var(--q-text-primary);}
+  .card .sub{color:var(--q-text-secondary);font-size:13px;margin-bottom:20px;}
+  .field{margin:10px 0;font-size:14px;}
+  .field b{color:var(--q-text-secondary);font-weight:600;display:inline-block;min-width:110px;}
+  .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:var(--q-radius-sm);
+    font-size:12px;font-weight:600;background:var(--q-accent-soft);color:var(--q-status-approval);}
+  .btns{display:flex;gap:12px;margin-top:24px;}
+  button{flex:1;padding:12px 16px;border-radius:var(--q-radius-md);border:1px solid var(--q-border);
+    font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-approve{background:var(--q-accent);border-color:var(--q-accent);color:var(--q-text-on-accent);}
+  .btn-reject{background:transparent;border-color:var(--q-status-danger);color:var(--q-status-danger);}
+  .msg{margin-top:16px;padding:12px;border-radius:var(--q-radius-sm);font-size:14px;display:none;}
+  .msg.ok{background:var(--q-accent-soft);color:var(--q-status-success);display:block;}
+  .msg.err{background:#F871711A;color:var(--q-status-danger);display:block;}
+  .lang{position:absolute;top:16px;right:16px;background:transparent;border:1px solid var(--q-border);
+    color:var(--q-text-secondary);border-radius:var(--q-radius-sm);padding:4px 10px;font-size:12px;cursor:pointer;flex:none;width:auto;}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;
+    border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" style="position:relative">
+    <button class="lang" id="langBtn" onclick="toggleLang()">EN</button>
+    <h1 id="hTitle">MOC Onay</h1>
+    <div class="sub" id="hSub">Yükleniyor…</div>
+    <div id="details" style="display:none">
+      <div class="field"><b id="lMocNo">MOC No</b><span id="vMocNo"></span></div>
+      <div class="field"><b id="lTitle">Başlık</b><span id="vTitle"></span></div>
+      <div class="field"><b id="lStatus">Durum</b><span class="badge" id="vStatus"></span></div>
+    </div>
+    <div class="btns" id="btns" style="display:none">
+      <button class="btn-approve" id="btnApprove" onclick="decide('APPROVED')">Onayla</button>
+      <button class="btn-reject" id="btnReject" onclick="decide('REJECTED')">Reddet</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.45.4/umd/supabase.min.js"></script>
+<script>
+var SUPABASE_URL = 'https://bbltvuxxtacrpgrqnfoh.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_3UUYAbeaA4tJahYiAAGhLQ_AtDfHkq4';
+var sb = null;
+try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){}
+
+var LANG = localStorage.getItem('moc_lang') || 'tr';
+var I18N = {
+  'MOC Onay':'MOC Approval',
+  'Yükleniyor…':'Loading…',
+  'MOC No':'MOC No','Başlık':'Title','Durum':'Status',
+  'Onayla':'Approve','Reddet':'Reject',
+  'Bu değişiklik talebini onaylamak/reddetmek üzeresiniz. Kararınız kalıcıdır.':
+    'You are about to approve/reject this change request. Your decision is final.',
+  'Bu link geçersiz veya artık kullanılamıyor.':'This link is invalid or no longer usable.',
+  'Bu link daha önce kullanılmış.':'This link has already been used.',
+  'Bu linkin süresi dolmuş.':'This link has expired.',
+  'Bu değişiklik talebi başka biri tarafından güncellenmiş; artık bu link üzerinden karar verilemiyor.':
+    'This change request has already been updated by someone else; a decision can no longer be made through this link.',
+  'Çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.':'Too many attempts. Please try again later.',
+  'İşlem tamamlanamadı. Lütfen tekrar deneyin.':'The action could not be completed. Please try again.',
+  'Kararınız kaydedildi: ONAYLANDI':'Your decision was recorded: APPROVED',
+  'Kararınız kaydedildi: REDDEDİLDİ':'Your decision was recorded: REJECTED',
+  'İşleniyor…':'Processing…',
+};
+function t(s){ return (LANG==='en' && I18N.hasOwnProperty(s)) ? I18N[s] : s; }
+function toggleLang(){ LANG = LANG==='tr'?'en':'tr'; try{localStorage.setItem('moc_lang',LANG);}catch(e){} render(); }
+
+function qs(name){
+  var m = new RegExp('[?&]'+name+'=([^&]*)').exec(location.search);
+  return m ? decodeURIComponent(m[1].replace(/\+/g,' ')) : null;
+}
+var TOKEN = qs('token');
+var PREVIEW = null;
+var DECIDED = false;
+
+function render(){
+  document.getElementById('hTitle').textContent = t('MOC Onay');
+  document.getElementById('langBtn').textContent = LANG==='tr'?'EN':'TR';
+  document.getElementById('lMocNo').textContent = t('MOC No');
+  document.getElementById('lTitle').textContent = t('Başlık');
+  document.getElementById('lStatus').textContent = t('Durum');
+  document.getElementById('btnApprove').textContent = t('Onayla');
+  document.getElementById('btnReject').textContent = t('Reddet');
+  if(PREVIEW && PREVIEW.ok){
+    document.getElementById('hSub').textContent = t('Bu değişiklik talebini onaylamak/reddetmek üzeresiniz. Kararınız kalıcıdır.');
+  }
+}
+
+function showMsg(text, ok){
+  var m = document.getElementById('msg');
+  m.className = 'msg ' + (ok?'ok':'err');
+  m.textContent = text;
+}
+
+function reasonText(reason){
+  switch(reason){
+    case 'used':
+    case 'already_used': return t('Bu link daha önce kullanılmış.');
+    case 'expired': return t('Bu linkin süresi dolmuş.');
+    case 'state_changed':
+    case 'already_decided': return t('Bu değişiklik talebi başka biri tarafından güncellenmiş; artık bu link üzerinden karar verilemiyor.');
+    case 'rate_limited': return t('Çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.');
+    default: return t('Bu link geçersiz veya artık kullanılamıyor.');
+  }
+}
+
+function load(){
+  render();
+  if(!TOKEN || !sb){
+    document.getElementById('hSub').textContent = t('Bu link geçersiz veya artık kullanılamıyor.');
+    return;
+  }
+  sb.rpc('qdl_approval_token_preview', {p_token: TOKEN}).then(function(res){
+    if(res.error){ showMsg(t('İşlem tamamlanamadı. Lütfen tekrar deneyin.'), false); return; }
+    PREVIEW = res.data;
+    if(!PREVIEW || !PREVIEW.ok){
+      document.getElementById('hSub').textContent = reasonText(PREVIEW && PREVIEW.reason);
+      return;
+    }
+    render();
+    document.getElementById('vMocNo').textContent = PREVIEW.moc_no || '';
+    document.getElementById('vTitle').textContent = PREVIEW.title || '';
+    document.getElementById('vStatus').textContent = PREVIEW.current_status || '';
+    document.getElementById('details').style.display = 'block';
+    if(PREVIEW.still_relevant){
+      document.getElementById('btns').style.display = 'flex';
+    } else {
+      showMsg(reasonText('state_changed'), false);
+    }
+  }).catch(function(){
+    showMsg(t('İşlem tamamlanamadı. Lütfen tekrar deneyin.'), false);
+  });
+}
+
+function decide(decision){
+  if(DECIDED) return;
+  DECIDED = true;
+  document.getElementById('btnApprove').disabled = true;
+  document.getElementById('btnReject').disabled = true;
+  var clicked = decision==='APPROVED' ? document.getElementById('btnApprove') : document.getElementById('btnReject');
+  var orig = clicked.textContent;
+  clicked.innerHTML = '<span class="spin"></span>' + t('İşleniyor…');
+
+  sb.rpc('qdl_consume_approval_token', {
+    p_token: TOKEN, p_decision: decision, p_ip: null, p_ua: navigator.userAgent
+  }).then(function(res){
+    if(res.error || !res.data || !res.data.ok){
+      showMsg(reasonText(res.data && res.data.reason), false);
+      return;
+    }
+    document.getElementById('btns').style.display = 'none';
+    showMsg(t(decision==='APPROVED' ? 'Kararınız kaydedildi: ONAYLANDI' : 'Kararınız kaydedildi: REDDEDİLDİ'), true);
+  }).catch(function(){
+    showMsg(t('İşlem tamamlanamadı. Lütfen tekrar deneyin.'), false);
+  });
+}
+
+load();
+</script>
+</body>
+</html>
