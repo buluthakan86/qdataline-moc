@@ -109,6 +109,18 @@ h1,h2,h3,h4{font-family:"Space Grotesk","Inter","Segoe UI",system-ui,sans-serif;
 .dash-section-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--leaf-d);font-weight:700;margin:4px 0 10px}
 .dash-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
 @media(max-width:980px){.dash-grid{grid-template-columns:1fr}}
+/* 12.09.2026 — küçük ekran ince ayarı (cardnav zaten yatay kaydırmalı, sidebar
+   yok; buradaki tek gerçek eksik dar ekranda topbar/içerik boşluğu ve modalın
+   kenara dayanmasıydı). */
+@media(max-width:640px){
+  .topbar{padding:10px 14px; gap:8px}
+  .content{padding:14px}
+  .modal{max-width:100%}
+  .modal .mh{padding:12px 14px}
+  .modal .mb{padding:14px; max-height:76vh}
+  .modal .mf{padding:12px 14px; flex-wrap:wrap}
+  input, select, textarea{font-size:14px}
+}
 .barrow{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12.5px}
 .barrow .barlbl{width:150px;flex-shrink:0;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .barrow .bartrack{flex:1;height:9px;background:var(--bar-track);border-radius:5px;overflow:hidden}
