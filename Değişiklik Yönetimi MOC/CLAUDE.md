@@ -68,15 +68,42 @@ bitince Supabase panelinden iptal edilecek — hiçbir dosyaya yazılmadı). Det
 - Test verisi (MOC-2026-0013 kaydı, onay adımları 7/8, ilgili audit satırları, kullanılan
   token'lar, rate-limit sayaçları) test sonunda temizlendi; şema/fonksiyon/trigger kalıcı.
 
-**Bilinen sınırlama / takip — hâlâ AÇIK:** `moc-onay.html` gerçek istemci IP'sini
-tarayıcıdan göndermiyor (`p_ip: null`) — düz PostgREST RPC çağrısından Postgres'in
-gerçek istemci IP'sine erişimi yok; gerçek IP yakalamak için bir Cloudflare
-Worker/Edge Function proxy (ör. `CF-Connecting-IP` başlığını RPC gövdesine ekleyip
-iletme) gerekir. Platformda henüz Edge Function yok (Tedarikçi'deki gibi düz Postgres
-fonksiyon + pg_net deseni bilinçli olarak izlendi), bu yüzden IP yakalama KISMEN
-çözülmüş sayılmalı: hız sınırlama ve tüketim mantığı IP alanını doğru işliyor, ama
-alana giren gerçek değer bugün itibarıyla `null`/tarayıcıdan gelen (güvenilmez)
-bir değer olacaktır — diğer modüllere yayılmadan önce ele alınmalı.
+**13.09.2026 — İKİNCİ TUR: IP-yakalama boşluğu KAPATILDI.** `moc-onay.html`
+artık `qdl_consume_approval_token`'ı doğrudan tarayıcıdan değil, yeni bir
+Cloudflare Pages Function üzerinden çağırıyor:
+- Yeni dosya: `MOC/functions/api/onay-consume.js` (repo KÖKÜNDE — Pages build
+  root repo köküdür, Ekipman modülündeki `functions/` deseniyle aynı). Gerçek
+  ziyaretçi IP'sini `request.headers.get('CF-Connecting-IP')`'den okuyup
+  (Cloudflare'in eklediği, tarayıcıdan sahtelenemeyen başlık) Supabase RPC
+  gövdesine ekliyor, User-Agent'ı da sunucu tarafında okuyor.
+- `moc-onay.html`'in `decide()` fonksiyonu artık `sb.rpc(...)` yerine
+  `fetch('/api/onay-consume', {...})` çağırıyor.
+- **Karar (madde 4, kullanıcı/agent isteği üzerine değerlendirildi):**
+  `qdl_consume_approval_token`'ın EXECUTE yetkisi anon'dan GERİ ALINMADI —
+  service_role KULLANILMADI. Gerekçe: RPC zaten SECURITY DEFINER + atomik
+  tek-kullanımlık tüketim + kendi rate-limit'i ile korunuyor; Pages Function'ın
+  tek görevi gerçek IP'yi okuyup iletmek, yetkilendirme katmanı değil. Bu
+  sayede platformda daha önce hiç kullanılmamış olan `service_role` anahtarını
+  yeni bir gizli değişken olarak saklama ihtiyacı doğmadı (Cloudflare Pages'te
+  hiçbir yeni secret/env var eklenmedi — eklenecek bir şey de yok). Salt-okunur
+  `qdl_approval_token_preview` zaten anon'a açık kaldı, tarayıcıdan doğrudan
+  çağrılmaya devam ediyor (önizleme akışı değişmedi).
+- **Canlı kanıt:** `git push` sonrası Cloudflare Pages otomatik deploy oldu
+  (`moc.qdataline.com/api/onay-consume` birkaç saniye içinde 404'ten 200'e
+  geçti). Gerçek bir MOC test kaydı (MOC-2026-0014) + onay adımı üzerinden
+  canlı uçtan uca çağrı yapıldı: `curl … https://moc.qdataline.com/api/onay-consume`
+  → `{"ok":true,"moc_no":"MOC-2026-0014","decision":"APPROVED"}`. Ardından
+  `qdl_approval_tokens.used_from_ip` sorgulandı: **gerçek bir IPv6 adresi**
+  yazılmış bulundu (artık `null` değil) ve `qdl_approval_rate_limit` tablosunda
+  o IP için gerçek bir sayaç satırı oluştuğu doğrulandı. Test verisi sonrasında
+  temizlendi.
+- **Sonuç:** IP-yakalama boşluğu artık TAM KAPALI sayılır — hem `used_from_ip`
+  hem de rate-limit sayacı gerçek, sahtelenemeyen bir değer taşıyor.
+- **Diğer modüllere yayma notu:** Bu Pages Function deseni MOC'a özeldir
+  (her modülün kendi Cloudflare Pages projesi var); diğer 10 modüle
+  yayılırken her birinin kendi `functions/api/onay-consume.js`'i (veya ortak
+  bir paylaşımlı Worker) gerekecek — kod birebir kopyalanabilir, yalnız
+  `SUPABASE_URL`/anon key zaten her modülde açık olduğu için değişmez.
 
 ---
 
