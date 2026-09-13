@@ -2,12 +2,17 @@
 
 ---
 
-## ⚡ EK (12.09.2026) — E-posta ile tek-tıkla Onay/Red (PİLOT — platform-geneli özelliğin ilk modülü)
+## ⚡ EK (12-13.09.2026) — E-posta ile tek-tıkla Onay/Red (PİLOT — platform-geneli özelliğin ilk modülü) — CANLI + TEST EDİLDİ
 
 Onaylayıcının giriş yapmadan, e-postadaki linkten doğrudan Onayla/Reddet kararı
 verebilmesi için paylaşımlı (MOC'a özel olmayan, `qdl_` ön ekli) bir token
 altyapısı tasarlandı. MOC pilot modül; diğer 10 modül daha sonra aynı yapıyı
 kullanacak.
+
+**13.09.2026 güncelleme: DDL canlıya uygulandı, uçtan uca gerçek test yapıldı,
+tümü geçti.** Kullanıcı bu turda geçici bir Management API token'ı verdi (iş
+bitince Supabase panelinden iptal edilecek — hiçbir dosyaya yazılmadı). Detaylar
+"CANLI DOĞRULAMA" bölümünde.
 
 **Yeni dosyalar:**
 - `moc_schema_faz_m_email_onay.sql` — tam DDL (aşağıda "uygulama durumu"na bakın)
@@ -38,25 +43,40 @@ kullanacak.
   çağırır (Tedarikçi modülündeki paylaşımlı `qdl_send_email(to,subject,html)`
   fonksiyonu birebir yeniden kullanıldı, e-posta gönderimi yeniden yazılmadı).
 
-**Uygulama durumu — ÖNEMLİ:** Bu tur sırasında live Supabase (`bbltvuxxtacrpgrqnfoh`)
-için önbelleğe alınmış bir Management API token'ı (`sbp_...`) BULUNAMADI (önceki
-turlarda İSG modülü için kullanıcı elle vermiş, kalıcı bir dosyada saklanmıyor).
-Proje kuralı "önce doğrula, sonra şema değiştir" gereği DDL **canlıya
-uygulanmadı** ve dolayısıyla canlı test (gerçek Resend gönderimi, gerçek
-`qdl_consume_approval_token` tüketim/already-used/expired senaryoları) **koşulmadı**.
-`moc_schema_faz_m_email_onay.sql` dosyasının içinde doğrulama ve test sorguları
-hazır — bir sonraki turda kullanıcı bir Management API token'ı verdiğinde veya
-Supabase SQL Editor'den elle uygulandığında:
-1. `information_schema` ile `moc_requests`/`moc_approvals` kolonlarını teyit et,
-2. dosyayı uygula,
-3. dosyanın sonundaki "DOĞRULAMA" ve "TEST SIRASI" adımlarını çalıştır.
+**CANLI DOĞRULAMA (13.09.2026, Management API ile):**
+- `information_schema.columns` ile `moc_requests`/`moc_approvals`/`moc_audit_log`
+  kolonları dosyadaki varsayımlarla BİREBİR eşleşti (id bigint, status/decision text vb.) —
+  taslak SQL değiştirilmeden uygulandı.
+- **1 düzeltme canlıda bulundu ve giderildi:** `gen_random_bytes`/`digest` fonksiyonları
+  `public` şemasında değil `extensions` şemasında kurulu (pgcrypto). İlk uygulamada
+  `qdl_create_approval_token` ve `qdl_approval_token_preview` "function gen_random_bytes
+  does not exist" hatası verdi; her iki fonksiyonun `set search_path`'i `public, extensions`
+  olarak düzeltilip yeniden uygulandı (dosyaya da işlendi) — sonrasında hatasız çalıştı.
+- Tablolar/fonksiyonlar/trigger canlıda doğrulandı: `qdl_approval_tokens`,
+  `qdl_approval_rate_limit`, `qdl_create_approval_token`, `qdl_approval_token_preview`,
+  `qdl_consume_approval_token`, `moc_onay_eposta_gonder` + `moc_onay_eposta_trg`.
+- Gerçek test MOC kaydı oluşturuldu (MOC-2026-0013, id=43, geçerli durum geçişleriyle
+  DRAFT→…→APPROVAL), gerçek onay adımı (`moc_approvals.id=7`, approver=buluthakan86@gmail.com
+  hesabı) atanınca `moc_onay_eposta_trg` otomatik tetiklendi, `qdl_send_email` çağrıldı;
+  `net._http_response` üzerinde **status_code=200** ve Resend mesaj id'si doğrulandı
+  (gerçek e-posta gönderildi, uydurulmadı).
+- **4 senaryo da beklendiği gibi çalıştı, kanıtlarıyla:**
+  - **A — ilk kullanım:** `qdl_consume_approval_token(...,'APPROVED',...)` → `{"ok":true,"moc_no":"MOC-2026-0013","decision":"APPROVED"}`; `moc_approvals.decision='APPROVED'`, `comment` alanına "[E-posta linki ile onaylandı]" eklendi, `moc_audit_log`'a `action='EMAIL_APPROVE'` satırı IP/UA/zaman damgasıyla düştü.
+  - **B — aynı token'ı tekrar kullanma:** aynı token ile ikinci çağrı → `{"ok":false,"reason":"already_used"}`; hiçbir alan değişmedi.
+  - **C — süresi dolmuş token:** `p_ttl_hours=>0` ile üretilip 2 sn beklenip tüketildi → `{"ok":false,"reason":"expired"}`; ilgili `moc_approvals.decision` null kaldı (hiçbir şey uygulanmadı).
+  - **D — kayıt token'dan sonra değişmiş (expected_status uyuşmazlığı):** token üretildikten sonra `moc_requests.status` APPROVAL→REJECTED yapıldı (gerçek geçerli bir geçiş), sonra token tüketildi → `{"ok":false,"reason":"state_changed"}`; `moc_approvals.decision` null kaldı, ama token satırı yine de `status='used'` olarak işaretlendi (asla tekrar denenemez — doğrulandı).
+- Test verisi (MOC-2026-0013 kaydı, onay adımları 7/8, ilgili audit satırları, kullanılan
+  token'lar, rate-limit sayaçları) test sonunda temizlendi; şema/fonksiyon/trigger kalıcı.
 
-**Bilinen sınırlama / takip:** `moc-onay.html` gerçek istemci IP'sini tarayıcıdan
-göndermiyor (`p_ip: null`) — düz PostgREST RPC çağrısından gerçek IP okunamaz;
-gerçek IP yakalamak için bir Cloudflare Worker/Edge Function proxy gerekir
-(platformda henüz Edge Function yok, Tedarikçi'deki gibi düz Postgres fonksiyon +
-pg_net deseni izlendi). Hız sınırlama şimdilik yalnız IP=null durumunu es geçer;
-bu, diğer modüllere yayılmadan önce ele alınmalı.
+**Bilinen sınırlama / takip — hâlâ AÇIK:** `moc-onay.html` gerçek istemci IP'sini
+tarayıcıdan göndermiyor (`p_ip: null`) — düz PostgREST RPC çağrısından Postgres'in
+gerçek istemci IP'sine erişimi yok; gerçek IP yakalamak için bir Cloudflare
+Worker/Edge Function proxy (ör. `CF-Connecting-IP` başlığını RPC gövdesine ekleyip
+iletme) gerekir. Platformda henüz Edge Function yok (Tedarikçi'deki gibi düz Postgres
+fonksiyon + pg_net deseni bilinçli olarak izlendi), bu yüzden IP yakalama KISMEN
+çözülmüş sayılmalı: hız sınırlama ve tüketim mantığı IP alanını doğru işliyor, ama
+alana giren gerçek değer bugün itibarıyla `null`/tarayıcıdan gelen (güvenilmez)
+bir değer olacaktır — diğer modüllere yayılmadan önce ele alınmalı.
 
 ---
 

@@ -68,7 +68,7 @@ create or replace function public.qdl_create_approval_token(
 ) returns text
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_raw   text;
@@ -98,7 +98,7 @@ create or replace function public.qdl_approval_token_preview(p_token text)
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_hash text;
@@ -149,7 +149,7 @@ create or replace function public.qdl_consume_approval_token(
 ) returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_hash text;
