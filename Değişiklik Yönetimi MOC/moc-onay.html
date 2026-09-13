@@ -156,11 +156,16 @@ function decide(decision){
   var orig = clicked.textContent;
   clicked.innerHTML = '<span class="spin"></span>' + t('İşleniyor…');
 
-  sb.rpc('qdl_consume_approval_token', {
-    p_token: TOKEN, p_decision: decision, p_ip: null, p_ua: navigator.userAgent
-  }).then(function(res){
-    if(res.error || !res.data || !res.data.ok){
-      showMsg(reasonText(res.data && res.data.reason), false);
+  // Gerçek istemci IP'sini sunucu tarafında (Cloudflare Pages Function) okumak için
+  // Supabase RPC'sine doğrudan değil, /api/onay-consume endpoint'ine gidiyoruz —
+  // tarayıcının kendi beyan ettiği IP güvenilmez olurdu.
+  fetch('/api/onay-consume', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ token: TOKEN, decision: decision })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(!data || !data.ok){
+      showMsg(reasonText(data && data.reason), false);
       return;
     }
     document.getElementById('btns').style.display = 'none';
