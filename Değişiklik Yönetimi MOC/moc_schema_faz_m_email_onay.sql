@@ -58,187 +58,232 @@ revoke all on public.qdl_approval_rate_limit from public, anon, authenticated;
 -- ---------------------------------------------------------------------------
 -- 2) Token üretimi (sunucu tarafından / trigger'dan çağrılır)
 -- ---------------------------------------------------------------------------
-create or replace function public.qdl_create_approval_token(
-  p_record_table    text,
-  p_record_id       text,
-  p_recipient_email text,
-  p_expected_status text,
-  p_action          text default 'moc_change_decision',
-  p_ttl_hours       int  default 72
-) returns text
-language plpgsql
-security definer
-set search_path = public, extensions
-as $$
-declare
-  v_raw   text;
-  v_hash  text;
-begin
-  -- 32 byte CSPRNG, base64url (pad'siz)
-  v_raw := translate(encode(gen_random_bytes(32), 'base64'), '+/=', '-_ ');
-  v_raw := replace(v_raw, ' ', '');
-  v_hash := encode(digest(v_raw, 'sha256'), 'hex');
-
-  insert into public.qdl_approval_tokens
-    (token_hash, action, record_table, record_id, recipient_email, expected_status, expires_at)
-  values
-    (v_hash, coalesce(p_action,'moc_change_decision'), p_record_table, p_record_id,
-     p_recipient_email, p_expected_status, now() + make_interval(hours => coalesce(p_ttl_hours,72)));
-
-  return v_raw;  -- yalnız burada, tek sefer döner; kalıcı olarak SAKLANMAZ
-end
-$$;
+-- =====================================================================
+-- !!! ETKISIZLESTIRILDI (15.09.2026) — BU TANIM ARTIK GECERLI DEGIL !!!
+--
+-- 'qdl_create_approval_token' PAYLASIMLI bir fonksiyondur. Tek yetkili kaynak:
+--     _platform-ortak/sql/09_qdl_onay_dagitim_kaydi.sql
+--
+-- Asagidaki govde, BU MODUL eklendigi andaki ANLIK GORUNTUDUR.
+-- Bugun calistirilsaydi canli tanimla ayni olsa da paylasimli bir govdeyi modulden yeniden yazardi.
+-- Hicbir hata vermezdi; ariza ancak musteri onay linkine
+-- tikladiginda ortaya cikardi.
+--
+-- Tarihsel kayit olarak saklandi, calismasin diye YORUMA ALINDI.
+-- Bu modulun kendi onay mantigi artik su fonksiyondadir: public.qdl_create_approval_token() — paylasimli, degismedi
+-- =====================================================================
+-- create or replace function public.qdl_create_approval_token(
+--   p_record_table    text,
+--   p_record_id       text,
+--   p_recipient_email text,
+--   p_expected_status text,
+--   p_action          text default 'moc_change_decision',
+--   p_ttl_hours       int  default 72
+-- ) returns text
+-- language plpgsql
+-- security definer
+-- set search_path = public, extensions
+-- as $$
+-- declare
+--   v_raw   text;
+--   v_hash  text;
+-- begin
+--   -- 32 byte CSPRNG, base64url (pad'siz)
+--   v_raw := translate(encode(gen_random_bytes(32), 'base64'), '+/=', '-_ ');
+--   v_raw := replace(v_raw, ' ', '');
+--   v_hash := encode(digest(v_raw, 'sha256'), 'hex');
+--
+--   insert into public.qdl_approval_tokens
+--     (token_hash, action, record_table, record_id, recipient_email, expected_status, expires_at)
+--   values
+--     (v_hash, coalesce(p_action,'moc_change_decision'), p_record_table, p_record_id,
+--      p_recipient_email, p_expected_status, now() + make_interval(hours => coalesce(p_ttl_hours,72)));
+--
+--   return v_raw;  -- yalnız burada, tek sefer döner; kalıcı olarak SAKLANMAZ
+-- end
+-- $$;
+-- ===================== ETKISIZLESTIRME SONU =====================
 revoke all on function public.qdl_create_approval_token(text,text,text,text,text,int) from public, anon, authenticated;
 -- Yalnız diğer SECURITY DEFINER fonksiyonlar / trigger'lar (definer olarak) çağırır.
 
 -- ---------------------------------------------------------------------------
 -- 3) Salt-okunur önizleme (tüketmeden) — PostREST RPC ile anon çağırabilir
 -- ---------------------------------------------------------------------------
-create or replace function public.qdl_approval_token_preview(p_token text)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public, extensions
-as $$
-declare
-  v_hash text;
-  v_row  public.qdl_approval_tokens;
-  v_moc  record;
-begin
-  v_hash := encode(digest(coalesce(p_token,''), 'sha256'), 'hex');
-  select * into v_row from public.qdl_approval_tokens where token_hash = v_hash;
-
-  if v_row.id is null then
-    return jsonb_build_object('ok', false, 'reason', 'invalid');
-  end if;
-  if v_row.status <> 'pending' then
-    return jsonb_build_object('ok', false, 'reason', 'used');
-  end if;
-  if now() >= v_row.expires_at then
-    return jsonb_build_object('ok', false, 'reason', 'expired');
-  end if;
-
-  if v_row.record_table = 'moc_approvals' then
-    select r.moc_no, r.title, r.status into v_moc
-      from public.moc_approvals a
-      join public.moc_requests r on r.id = a.moc_id
-     where a.id = v_row.record_id::bigint;
-  end if;
-
-  return jsonb_build_object(
-    'ok', true,
-    'moc_no', v_moc.moc_no,
-    'title', v_moc.title,
-    'current_status', v_moc.status,
-    'expected_status', v_row.expected_status,
-    'still_relevant', (v_moc.status is not distinct from v_row.expected_status)
-  );
-end
-$$;
+-- =====================================================================
+-- !!! ETKISIZLESTIRILDI (15.09.2026) — BU TANIM ARTIK GECERLI DEGIL !!!
+--
+-- 'qdl_approval_token_preview' PAYLASIMLI bir fonksiyondur. Tek yetkili kaynak:
+--     _platform-ortak/sql/09_qdl_onay_dagitim_kaydi.sql
+--
+-- Asagidaki govde, BU MODUL eklendigi andaki ANLIK GORUNTUDUR.
+-- Bugun calistirilsaydi onizleme dallarini SESSIZCE SILERDI.
+-- Hicbir hata vermezdi; ariza ancak musteri onay linkine
+-- tikladiginda ortaya cikardi.
+--
+-- Tarihsel kayit olarak saklandi, calismasin diye YORUMA ALINDI.
+-- Bu modulun kendi onay mantigi artik su fonksiyondadir: public.moc_onay_onizle()
+-- =====================================================================
+-- create or replace function public.qdl_approval_token_preview(p_token text)
+-- returns jsonb
+-- language plpgsql
+-- security definer
+-- set search_path = public, extensions
+-- as $$
+-- declare
+--   v_hash text;
+--   v_row  public.qdl_approval_tokens;
+--   v_moc  record;
+-- begin
+--   v_hash := encode(digest(coalesce(p_token,''), 'sha256'), 'hex');
+--   select * into v_row from public.qdl_approval_tokens where token_hash = v_hash;
+--
+--   if v_row.id is null then
+--     return jsonb_build_object('ok', false, 'reason', 'invalid');
+--   end if;
+--   if v_row.status <> 'pending' then
+--     return jsonb_build_object('ok', false, 'reason', 'used');
+--   end if;
+--   if now() >= v_row.expires_at then
+--     return jsonb_build_object('ok', false, 'reason', 'expired');
+--   end if;
+--
+--   if v_row.record_table = 'moc_approvals' then
+--     select r.moc_no, r.title, r.status into v_moc
+--       from public.moc_approvals a
+--       join public.moc_requests r on r.id = a.moc_id
+--      where a.id = v_row.record_id::bigint;
+--   end if;
+--
+--   return jsonb_build_object(
+--     'ok', true,
+--     'moc_no', v_moc.moc_no,
+--     'title', v_moc.title,
+--     'current_status', v_moc.status,
+--     'expected_status', v_row.expected_status,
+--     'still_relevant', (v_moc.status is not distinct from v_row.expected_status)
+--   );
+-- end
+-- $$;
+-- ===================== ETKISIZLESTIRME SONU =====================
 revoke all on function public.qdl_approval_token_preview(text) from public;
 grant execute on function public.qdl_approval_token_preview(text) to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 4) Tüketim: atomik tek kullanımlık onay/red
 -- ---------------------------------------------------------------------------
-create or replace function public.qdl_consume_approval_token(
-  p_token    text,
-  p_decision text,   -- 'APPROVED' | 'REJECTED'
-  p_ip       text,
-  p_ua       text
-) returns jsonb
-language plpgsql
-security definer
-set search_path = public, extensions
-as $$
-declare
-  v_hash text;
-  v_row  public.qdl_approval_tokens;
-  v_appr public.moc_approvals;
-  v_moc  public.moc_requests;
-  v_rl   public.qdl_approval_rate_limit;
-begin
-  -- 4.0) Basit hız sınırlama: IP başına saatte 20 deneme
-  if p_ip is not null then
-    select * into v_rl from public.qdl_approval_rate_limit where ip = p_ip for update;
-    if v_rl.ip is null then
-      insert into public.qdl_approval_rate_limit(ip, window_start, attempts) values (p_ip, now(), 1);
-    elsif v_rl.window_start < now() - interval '1 hour' then
-      update public.qdl_approval_rate_limit set window_start = now(), attempts = 1 where ip = p_ip;
-    else
-      if v_rl.attempts >= 20 then
-        return jsonb_build_object('ok', false, 'reason', 'rate_limited');
-      end if;
-      update public.qdl_approval_rate_limit set attempts = attempts + 1 where ip = p_ip;
-    end if;
-  end if;
-
-  if p_decision not in ('APPROVED','REJECTED') then
-    return jsonb_build_object('ok', false, 'reason', 'invalid');
-  end if;
-
-  v_hash := encode(digest(coalesce(p_token,''), 'sha256'), 'hex');
-
-  -- 4.1) Atomik tüketim: yalnızca pending + süresi geçmemişse 'used' yap
-  update public.qdl_approval_tokens
-     set status = 'used', used_at = now(), used_from_ip = p_ip,
-         used_user_agent = p_ua, used_decision = p_decision
-   where token_hash = v_hash
-     and status = 'pending'
-     and now() < expires_at
-  returning * into v_row;
-
-  if v_row.id is null then
-    -- Ayırt et: bulunamadı / zaten kullanılmış / süresi geçmiş
-    select * into v_row from public.qdl_approval_tokens where token_hash = v_hash;
-    if v_row.id is null then
-      return jsonb_build_object('ok', false, 'reason', 'invalid');
-    elsif v_row.status = 'used' then
-      return jsonb_build_object('ok', false, 'reason', 'already_used');
-    elsif now() >= v_row.expires_at then
-      return jsonb_build_object('ok', false, 'reason', 'expired');
-    else
-      return jsonb_build_object('ok', false, 'reason', 'invalid');
-    end if;
-  end if;
-
-  -- 4.2) Kayıt hâlâ token'daki beklenen durumda mı? (token yine de 'used' kalır)
-  if v_row.record_table = 'moc_approvals' then
-    select a.* into v_appr from public.moc_approvals a where a.id = v_row.record_id::bigint;
-    if v_appr.id is null then
-      return jsonb_build_object('ok', false, 'reason', 'not_found');
-    end if;
-    select r.* into v_moc from public.moc_requests r where r.id = v_appr.moc_id;
-    if v_moc.status is distinct from v_row.expected_status then
-      return jsonb_build_object('ok', false, 'reason', 'state_changed');
-    end if;
-    if v_appr.decision is not null then
-      return jsonb_build_object('ok', false, 'reason', 'already_decided');
-    end if;
-
-    -- 4.3) Mevcut durum makinesini/trigger'ları tetikleyerek gerçek geçişi uygula
-    update public.moc_approvals
-       set decision = p_decision, decided_at = now(),
-           comment = coalesce(comment,'') ||
-             case when p_decision='APPROVED' then '[E-posta linki ile onaylandı]'
-                  else '[E-posta linki ile reddedildi]' end
-     where id = v_appr.id;
-
-    insert into public.moc_audit_log
-      (tenant_id, table_name, record_id, action, changed_by, old_data, new_data)
-    values
-      (v_appr.tenant_id, 'moc_approvals', v_appr.id,
-       case when p_decision='APPROVED' then 'EMAIL_APPROVE' else 'EMAIL_REJECT' end,
-       null,
-       to_jsonb(v_appr),
-       jsonb_build_object('decision', p_decision, 'ip', p_ip, 'user_agent', p_ua, 'via', 'email_link', 'at', now()));
-
-    return jsonb_build_object('ok', true, 'moc_no', v_moc.moc_no, 'decision', p_decision);
-  end if;
-
-  return jsonb_build_object('ok', false, 'reason', 'unsupported_record');
-end
-$$;
+-- =====================================================================
+-- !!! ETKISIZLESTIRILDI (15.09.2026) — BU TANIM ARTIK GECERLI DEGIL !!!
+--
+-- 'qdl_consume_approval_token' PAYLASIMLI bir fonksiyondur. Tek yetkili kaynak:
+--     _platform-ortak/sql/09_qdl_onay_dagitim_kaydi.sql
+--
+-- Asagidaki govde, BU MODUL eklendigi andaki ANLIK GORUNTUDUR.
+-- Bugun calistirilsaydi 7 onay dalindan 6'sini SESSIZCE SILERDI.
+-- Hicbir hata vermezdi; ariza ancak musteri onay linkine
+-- tikladiginda ortaya cikardi.
+--
+-- Tarihsel kayit olarak saklandi, calismasin diye YORUMA ALINDI.
+-- Bu modulun kendi onay mantigi artik su fonksiyondadir: public.moc_onay_uygula()
+-- =====================================================================
+-- create or replace function public.qdl_consume_approval_token(
+--   p_token    text,
+--   p_decision text,   -- 'APPROVED' | 'REJECTED'
+--   p_ip       text,
+--   p_ua       text
+-- ) returns jsonb
+-- language plpgsql
+-- security definer
+-- set search_path = public, extensions
+-- as $$
+-- declare
+--   v_hash text;
+--   v_row  public.qdl_approval_tokens;
+--   v_appr public.moc_approvals;
+--   v_moc  public.moc_requests;
+--   v_rl   public.qdl_approval_rate_limit;
+-- begin
+--   -- 4.0) Basit hız sınırlama: IP başına saatte 20 deneme
+--   if p_ip is not null then
+--     select * into v_rl from public.qdl_approval_rate_limit where ip = p_ip for update;
+--     if v_rl.ip is null then
+--       insert into public.qdl_approval_rate_limit(ip, window_start, attempts) values (p_ip, now(), 1);
+--     elsif v_rl.window_start < now() - interval '1 hour' then
+--       update public.qdl_approval_rate_limit set window_start = now(), attempts = 1 where ip = p_ip;
+--     else
+--       if v_rl.attempts >= 20 then
+--         return jsonb_build_object('ok', false, 'reason', 'rate_limited');
+--       end if;
+--       update public.qdl_approval_rate_limit set attempts = attempts + 1 where ip = p_ip;
+--     end if;
+--   end if;
+--
+--   if p_decision not in ('APPROVED','REJECTED') then
+--     return jsonb_build_object('ok', false, 'reason', 'invalid');
+--   end if;
+--
+--   v_hash := encode(digest(coalesce(p_token,''), 'sha256'), 'hex');
+--
+--   -- 4.1) Atomik tüketim: yalnızca pending + süresi geçmemişse 'used' yap
+--   update public.qdl_approval_tokens
+--      set status = 'used', used_at = now(), used_from_ip = p_ip,
+--          used_user_agent = p_ua, used_decision = p_decision
+--    where token_hash = v_hash
+--      and status = 'pending'
+--      and now() < expires_at
+--   returning * into v_row;
+--
+--   if v_row.id is null then
+--     -- Ayırt et: bulunamadı / zaten kullanılmış / süresi geçmiş
+--     select * into v_row from public.qdl_approval_tokens where token_hash = v_hash;
+--     if v_row.id is null then
+--       return jsonb_build_object('ok', false, 'reason', 'invalid');
+--     elsif v_row.status = 'used' then
+--       return jsonb_build_object('ok', false, 'reason', 'already_used');
+--     elsif now() >= v_row.expires_at then
+--       return jsonb_build_object('ok', false, 'reason', 'expired');
+--     else
+--       return jsonb_build_object('ok', false, 'reason', 'invalid');
+--     end if;
+--   end if;
+--
+--   -- 4.2) Kayıt hâlâ token'daki beklenen durumda mı? (token yine de 'used' kalır)
+--   if v_row.record_table = 'moc_approvals' then
+--     select a.* into v_appr from public.moc_approvals a where a.id = v_row.record_id::bigint;
+--     if v_appr.id is null then
+--       return jsonb_build_object('ok', false, 'reason', 'not_found');
+--     end if;
+--     select r.* into v_moc from public.moc_requests r where r.id = v_appr.moc_id;
+--     if v_moc.status is distinct from v_row.expected_status then
+--       return jsonb_build_object('ok', false, 'reason', 'state_changed');
+--     end if;
+--     if v_appr.decision is not null then
+--       return jsonb_build_object('ok', false, 'reason', 'already_decided');
+--     end if;
+--
+--     -- 4.3) Mevcut durum makinesini/trigger'ları tetikleyerek gerçek geçişi uygula
+--     update public.moc_approvals
+--        set decision = p_decision, decided_at = now(),
+--            comment = coalesce(comment,'') ||
+--              case when p_decision='APPROVED' then '[E-posta linki ile onaylandı]'
+--                   else '[E-posta linki ile reddedildi]' end
+--      where id = v_appr.id;
+--
+--     insert into public.moc_audit_log
+--       (tenant_id, table_name, record_id, action, changed_by, old_data, new_data)
+--     values
+--       (v_appr.tenant_id, 'moc_approvals', v_appr.id,
+--        case when p_decision='APPROVED' then 'EMAIL_APPROVE' else 'EMAIL_REJECT' end,
+--        null,
+--        to_jsonb(v_appr),
+--        jsonb_build_object('decision', p_decision, 'ip', p_ip, 'user_agent', p_ua, 'via', 'email_link', 'at', now()));
+--
+--     return jsonb_build_object('ok', true, 'moc_no', v_moc.moc_no, 'decision', p_decision);
+--   end if;
+--
+--   return jsonb_build_object('ok', false, 'reason', 'unsupported_record');
+-- end
+-- $$;
+-- ===================== ETKISIZLESTIRME SONU =====================
 revoke all on function public.qdl_consume_approval_token(text,text,text,text) from public;
 grant execute on function public.qdl_consume_approval_token(text,text,text,text) to anon, authenticated;
 
