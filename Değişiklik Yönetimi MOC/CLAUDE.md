@@ -1022,3 +1022,36 @@ ediyor — `moc_trainings` ve `AFFECTED_DOC` akışı, doğru çözüm olarak Do
 Eğitim Platformu modüllerine bağlanmayı gerektiriyor (MOC içine ikinci bir eğitim/doküman
 sistemi yazmak yanlış olur). `evidence_hash` hâlâ kanıt değeri taşımıyor. Tablolarda
 `overflow-x` yok. Soft-delete edilmiş kaydın detayı doğrudan id ile açılabiliyor.
+
+---
+
+## 🔒 GÜVENLİK DÜZELTMESİ — 15.09.2026 · `moc_egitim_kayitlari` anon'a açıktı
+
+Platform geneli `SECURITY DEFINER` denetiminde (bkz.
+`_platform-ortak/sql/03_anon_execute_denetimi.sql`) bu modülde **çapraz-firma veri
+sızıntısı** bulundu ve kapatıldı.
+
+**Neydi.** `moc_schema_faz_l_egitim_koprusu.sql` içindeki `moc_egitim_kayitlari()`
+fonksiyonunun **her iki** yetki kontrolü de `auth.uid() is not null and …` ile
+başlıyordu — yani **oturumsuz** çağırana hiç uygulanmıyordu. Fonksiyon, Postgres'in
+varsayılan **PUBLIC** grant'i üzerinden `anon` rolüne açıktı (kaynak dosya yalnız
+`grant … to authenticated` veriyordu, PUBLIC grant'ini geri almıyordu).
+
+**Kanıtlandı (canlı, yalnız public anon anahtarıyla):**
+`POST /rest/v1/rpc/moc_egitim_kayitlari {"p_user_id":"<uuid>"}`
+→ `HTTP 200 [{"kurs_baslik":"Bakım Onarım Eğitimi","durum":"completed",…}]`
+Bir kullanıcının kimliğini bilen herkes — **hangi firmadan olursa olsun** — o kişinin
+eğitim kayıtlarını (kurs adı, durum, tarih) okuyabiliyordu.
+
+**Ne yapıldı.**
+1. Guard'lar **koşulsuz** hale getirildi (`auth.uid() is not null and` ön koşulu kaldırıldı).
+   Tenant kontrolü (`hedef.tenant_id = me.tenant_id`) aynen korundu.
+2. `revoke all on function … from public, anon;` eklendi (hem `moc_egitim_kayitlari`
+   hem `moc_egitim_durumlari` için).
+   ⚠️ `revoke … from anon` **TEK BAŞINA YETMEZ** — `=X/postgres` PUBLIC grant'idir.
+3. Doğrulandı: anon çağrısı artık `HTTP 401 / 42501 permission denied`.
+   **MOC.html'deki akış etkilenmedi** — "+ Kişi Ata" ve detay ekranı bu RPC'leri
+   zaten oturum açmış kullanıcı (`authenticated`) olarak çağırıyor.
+
+**Bundan sonra:** `_platform-ortak/README.md` → "Güvenlik: anon EXECUTE denetimi"
+kuralına uy; `_platform-ortak/sql/04_anon_execute_nobetci.sql` nöbetçisini çalıştır.

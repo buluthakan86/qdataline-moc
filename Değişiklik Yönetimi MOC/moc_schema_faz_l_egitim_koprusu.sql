@@ -71,10 +71,16 @@ security definer
 set search_path = public
 as $$
 begin
-  if auth.uid() is not null and not (is_editor() and has_modul('moc')) then
+  -- GÜVENLİK DÜZELTMESİ 15.09.2026 (bkz. _platform-ortak/sql/03_anon_execute_denetimi.sql)
+  -- ESKİ HALİ: her iki guard da "auth.uid() is not null and ..." ile başlıyordu,
+  -- yani OTURUMSUZ çağırana hiç uygulanmıyordu. Fonksiyon PUBLIC grant'i üzerinden
+  -- anon'a açık olduğu için, kullanıcı kimliğini bilen herkes — hangi firmadan
+  -- olursa olsun — o kişinin eğitim kayıtlarını okuyabiliyordu (canlı kanıtlandı).
+  -- Guard'lar artık KOŞULSUZ.
+  if not (is_editor() and has_modul('moc')) then
     raise exception 'MOC_YETKI_YOK' using hint = 'Bu bilgiyi görüntülemek için yetkiniz yok.';
   end if;
-  if auth.uid() is not null and not exists (
+  if not exists (
     select 1 from public.profiles me join public.profiles hedef on hedef.tenant_id = me.tenant_id
      where me.id = auth.uid() and hedef.id = p_user_id
   ) then
@@ -90,6 +96,9 @@ begin
      order by e.assigned_at desc nulls last;
 end
 $$;
+-- GÜVENLİK 15.09.2026: sadece grant vermek yetmiyor; Postgres varsayılan
+-- PUBLIC grant'ini de geri almak gerek (anon onu PUBLIC'ten miras alır).
+revoke all on function public.moc_egitim_kayitlari(uuid) from public, anon;
 grant execute on function public.moc_egitim_kayitlari(uuid) to authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -113,6 +122,9 @@ as $$
      and tr.tenant_id = public.current_tenant_id()
      and tr.egitim_enrollment_id is not null
 $$;
+-- GÜVENLİK 15.09.2026: sadece grant vermek yetmiyor; Postgres varsayılan
+-- PUBLIC grant'ini de geri almak gerek (anon onu PUBLIC'ten miras alır).
+revoke all on function public.moc_egitim_durumlari(bigint) from public, anon;
 grant execute on function public.moc_egitim_durumlari(bigint) to authenticated;
 
 -- ---------------------------------------------------------------------------
