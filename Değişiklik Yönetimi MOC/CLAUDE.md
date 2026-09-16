@@ -1150,3 +1150,19 @@ taşındı (import yok). Adımlar: `.cardnav-wrap` (menü), `#sideSearch`
 sadece görülmemişse otomatik başlıyor; topbar'a `?` ikonlu "Turu göster"
 butonu (`#btnTourShow`) eklendi ki kullanıcı istediği an tekrar
 başlatabilsin. `node --check` ile sözdizimi doğrulandı.
+
+## EK (16.09.2026) — Boş-durum (empty state) standardizasyonu
+
+Satışa hazırlık denetiminde bulunan eksik: liste boşken sade "Kayıt yok."
+metni veya boş alan görünüyordu. Tekrar kullanılabilir tek yardımcı
+fonksiyon eklendi: `renderEmptyState(iconSvg, title, desc, ctaLabel, ctaId)`
+— ikon (inline SVG) + başlık + açıklama + opsiyonel CTA düğmesi üretir,
+modülün mevcut `.panel/.empty/.btn-leaf` diline uyumlu yeni `.empty-state`
+CSS sınıfıyla. 4 ekrana uygulandı: Değişiklik Talepleri listesi
+(`renderRequestTable` — arama sonucu boşsa farklı metin/CTA yok, hiç
+kayıt yoksa "+ Yeni Değişiklik Talebi" CTA'sı `openNewRequest()`'e bağlı),
+Onay Bekleyenler (`renderApprovalQueue`, CTA yok), Aksiyonlar paneli
+(`renderActionsPanel`, CTA `openAddAction`'a bağlı, mevcut yetki koşulu
+korundu), Risk Değerlendirmesi paneli (`renderRiskPanel`, CTA
+`openAddRisk`'e bağlı). Veri çekme/API mantığına dokunulmadı, yalnız
+görünüm. `new Function()` ile sözdizimi doğrulandı.

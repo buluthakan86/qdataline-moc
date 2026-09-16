@@ -169,6 +169,11 @@ th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line-2)}
 tr:last-child td{border:none}
 tr.rowclk:hover td{background:var(--mint-2);cursor:pointer}
 .empty{padding:30px;text-align:center;color:var(--muted);font-size:13px}
+.empty-state{padding:44px 20px;text-align:center;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:6px}
+.empty-state svg{width:40px;height:40px;color:var(--muted);opacity:.55;margin-bottom:6px}
+.empty-state .es-title{font-size:14px;font-weight:700;color:var(--ink)}
+.empty-state .es-desc{font-size:12.5px;color:var(--muted);max-width:380px;line-height:1.5}
+.empty-state .es-cta{margin-top:10px}
 
 /* ---- Rozet / pill ---- */
 .pill{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
@@ -446,6 +451,11 @@ var I18N={
   'E-posta':'Email','Şifre':'Password','Giriş Yap':'Log In','Çıkış':'Log Out','Açık/Koyu tema':'Light/Dark theme',
   'MOC no / başlık ara…':'MOC no / title search…','+ Yeni Değişiklik Talebi':'+ New Change Request',
   'Yükleniyor…':'Loading…','Kayıt yok.':'No records.','Kaydet':'Save','Vazgeç':'Cancel','Kapat':'Close',
+  'Henüz değişiklik talebi yok.':'No change requests yet.','İlk değişiklik talebinizi oluşturarak MOC sürecini başlatın.':'Start the MOC process by creating your first change request.',
+  'Aramanızla eşleşen kayıt bulunamadı.':'No records match your search.','Farklı bir MOC no veya başlık ile tekrar deneyin.':'Try a different MOC no or title.',
+  'Onayınız gereken yeni bir değişiklik talebi geldiğinde burada listelenecek.':'New change requests awaiting your approval will be listed here.',
+  'Bu değişiklikle ilgili tehlikeleri ve kontrol önlemlerini burada kaydedin.':'Record the hazards and controls related to this change here.',
+  'Bu değişikliğin uygulanması için gereken görevleri burada oluşturun.':'Create the tasks needed to implement this change here.',
   'Ekle':'Add','Sil':'Delete','Düzenle':'Edit','Oluştur':'Create','Onayla':'Confirm','Onay':'Confirmation',
   'Acil':'Emergency','MOC No':'MOC No','Başlık':'Title','Kategori':'Category','Akış Türü':'Flow Type','Durum':'Status',
   'Adım':'Step','Onay Adımı':'Approval Step','Bekleyen onayınız yok.':'You have no pending approvals.',
@@ -1125,7 +1135,11 @@ function bindListeAramasi(){
   });
 }
 function renderApprovalQueue(rows){
-  if(!rows.length){ document.getElementById('content').innerHTML='<div class="panel"><div class="empty">'+t('Bekleyen onayınız yok.')+'</div></div>'; return; }
+  if(!rows.length){
+    var apIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4m5 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>';
+    document.getElementById('content').innerHTML='<div class="panel">'+renderEmptyState(apIcon, t('Bekleyen onayınız yok.'), t('Onayınız gereken yeni bir değişiklik talebi geldiğinde burada listelenecek.'))+'</div>';
+    return;
+  }
   var body=rows.map(function(a){
     var r=a.moc_requests;
     return '<tr class="rowclk" data-id="'+r.id+'"><td>'+esc(r.moc_no||('#'+r.id))+'</td><td>'+esc(r.title)+'</td>'
@@ -1135,7 +1149,15 @@ function renderApprovalQueue(rows){
   bindRowClicks();
 }
 function renderRequestTable(rows, kind){
-  if(!rows.length){ document.getElementById('content').innerHTML='<div class="panel"><div class="empty">'+t('Kayıt yok.')+'</div></div>'; return; }
+  if(!rows.length){
+    var isFiltered = !!(ARAMA && ARAMA.trim());
+    var rtIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-6 4h6M9 9h1M5 21h14a2 2 0 0 0 2-2V7.5L15.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2Z"/></svg>';
+    var title = isFiltered ? t('Aramanızla eşleşen kayıt bulunamadı.') : t('Henüz değişiklik talebi yok.');
+    var desc = isFiltered ? t('Farklı bir MOC no veya başlık ile tekrar deneyin.') : t('İlk değişiklik talebinizi oluşturarak MOC sürecini başlatın.');
+    document.getElementById('content').innerHTML='<div class="panel">'+renderEmptyState(rtIcon, title, desc, isFiltered?null:t('+ Yeni Değişiklik Talebi'), isFiltered?null:'esNewRequest')+'</div>';
+    if(!isFiltered){ var enr=document.getElementById('esNewRequest'); if(enr) enr.onclick=openNewRequest; }
+    return;
+  }
   var body=rows.map(function(r){
     var typ=typeById(r.type_id), c=catById(r.category_id);
     var tempBadge='';
@@ -1944,9 +1966,13 @@ function renderRiskPanel(){
     return '<tr><td>'+esc(r.hazard)+'</td><td>'+riskCell(r.risk_before)+'</td><td>'+riskCell(r.risk_after)+'</td><td>'+esc(r.controls||'—')+'</td></tr>';
   }).join('');
   var html='<div class="panel"><div class="ph"><h2>'+t('Risk Değerlendirmesi (5×5)')+'</h2>';
-  if(canDo('risk')) html+='<button class="btn-line sm" id="btnAddRisk" style="margin-left:auto">'+t('+ Risk Ekle')+'</button>';
+  if(canDo('risk') && rows) html+='<button class="btn-line sm" id="btnAddRisk" style="margin-left:auto">'+t('+ Risk Ekle')+'</button>';
   html+='</div><div class="pb">';
-  html+= rows ? '<table><thead><tr><th>'+t('Tehlike')+'</th><th>'+t('Önce')+'</th><th>'+t('Sonra')+'</th><th>'+t('Önlemler')+'</th></tr></thead><tbody>'+rows+'</tbody></table>' : '<div class="empty">'+t('Henüz risk kaydı yok.')+'</div>';
+  if(rows){ html+='<table><thead><tr><th>'+t('Tehlike')+'</th><th>'+t('Önce')+'</th><th>'+t('Sonra')+'</th><th>'+t('Önlemler')+'</th></tr></thead><tbody>'+rows+'</tbody></table>'; }
+  else{
+    var riskIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a1.5 1.5 0 0 0 1.29 2.25h17.78A1.5 1.5 0 0 0 22.18 18L13.71 3.86a1.5 1.5 0 0 0-2.42 0Z"/></svg>';
+    html+=renderEmptyState(riskIcon, t('Henüz risk kaydı yok.'), t('Bu değişiklikle ilgili tehlikeleri ve kontrol önlemlerini burada kaydedin.'), canDo('risk')?t('+ Risk Ekle'):null, canDo('risk')?'btnAddRisk':null);
+  }
   html+='</div></div>';
   return html;
 }
@@ -2360,9 +2386,13 @@ function renderActionsPanel(){
       +'<td>'+(canManageAction(a)&&a.status!=='DONE'?'<button class="sm btn-line actdone" data-id="'+a.id+'">'+t('Tamamla')+'</button>':'')+'</td></tr>';
   }).join('');
   var html='<div class="panel"><div class="ph"><h2>'+t('Aksiyonlar')+'</h2>';
-  if(canDo('coordinate')) html+='<button class="btn-line sm" id="btnAddAction" style="margin-left:auto">'+t('+ Aksiyon Ekle')+'</button>';
+  if(canDo('coordinate') && rows) html+='<button class="btn-line sm" id="btnAddAction" style="margin-left:auto">'+t('+ Aksiyon Ekle')+'</button>';
   html+='</div><div class="pb">';
-  html+= rows ? '<table><thead><tr><th>'+t('Başlık')+'</th><th>'+t('Faz')+'</th><th>'+t('Termin')+'</th><th>'+t('Durum')+'</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>' : '<div class="empty">'+t('Aksiyon yok.')+'</div>';
+  if(rows){ html+='<table><thead><tr><th>'+t('Başlık')+'</th><th>'+t('Faz')+'</th><th>'+t('Termin')+'</th><th>'+t('Durum')+'</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'; }
+  else{
+    var actIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4m5 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>';
+    html+=renderEmptyState(actIcon, t('Aksiyon yok.'), t('Bu değişikliğin uygulanması için gereken görevleri burada oluşturun.'), canDo('coordinate')?t('+ Aksiyon Ekle'):null, canDo('coordinate')?'btnAddAction':null);
+  }
   html+='</div></div>';
   return html;
 }
@@ -3122,6 +3152,19 @@ function hataMesaji(err){
   return t('İşlem tamamlanamadı. Lütfen tekrar deneyin.');
 }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+/* Boş-durum (empty state) — satışa hazırlık denetimi bulgusu (16.09.2026): liste boşken
+   sade "Kayıt yok." yerine ikon+başlık+açıklama(+CTA) gösterir. Tekrar kullanılabilir,
+   modülün mevcut renk/tipografi diline (panel/.empty/.btn-leaf) uyumlu. ctaId verilirse
+   düğme render edilir; onclick binding çağıran kod tarafında (id ile) yapılır — data
+   çekme mantığına dokunmaz, yalnız görünümdür. */
+function renderEmptyState(iconSvg, title, desc, ctaLabel, ctaId){
+  var icon = iconSvg || '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-6 4h6M9 9h1M5 21h14a2 2 0 0 0 2-2V7.5L15.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2Z"/></svg>';
+  var html='<div class="empty-state">'+icon+'<div class="es-title">'+esc(title)+'</div>';
+  if(desc) html+='<div class="es-desc">'+esc(desc)+'</div>';
+  if(ctaLabel && ctaId) html+='<button type="button" class="btn-leaf sm es-cta" id="'+esc(ctaId)+'">'+esc(ctaLabel)+'</button>';
+  html+='</div>';
+  return html;
+}
 function val(id){ var e=document.getElementById(id); return e?e.value:''; }
 function num(id){ var v=val(id); return v===''?null:Number(v); }
 function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()); }
