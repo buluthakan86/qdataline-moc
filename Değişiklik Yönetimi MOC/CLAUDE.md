@@ -1136,3 +1136,17 @@ klasördeki `qdl-version.json`'u güncelledi, repo kökündeki kopya elle
 senkronize edildi (aksi halde canlı sayfa eski sürüm dosyasını okurdu).
 Canlıda uçtan uca test edildi (gerçek RPC çağrısı, kayıt doğrulanıp
 temizlendi). Commit: `46ebaba`.
+
+## EK (16.09.2026) — Onboarding turu (Laboratuvar Ekipman modülünden port)
+
+`MOC.html`'e ilk girişte otomatik başlayan spotlight+ipucu turu eklendi
+(kaynak desen: Laboratuvar Ekipman Bakım Programı `src/ui/tour.js`, aynı
+CSS sınıfları `.tour-overlay/.tour-hole/.tour-pop`). MOC tek dosyalık ve
+ES module kullanmadığı için mantık düz `<script>` içine fonksiyon olarak
+taşındı (import yok). Adımlar: `.cardnav-wrap` (menü), `#sideSearch`
+(arama), `#btnNewRequest` (yeni değişiklik talebi), `#sorunBildirBtn`
+(sorun bildir), `#content` (gösterge paneli). localStorage anahtarı:
+`moc.tourDone`. Tur, `afterLogin()` içinde `go('dashboard')`'dan sonra
+sadece görülmemişse otomatik başlıyor; topbar'a `?` ikonlu "Turu göster"
+butonu (`#btnTourShow`) eklendi ki kullanıcı istediği an tekrar
+başlatabilsin. `node --check` ile sözdizimi doğrulandı.
