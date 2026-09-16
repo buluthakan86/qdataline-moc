@@ -296,6 +296,41 @@ textarea{resize:vertical;min-height:70px}
   </div>
 </div>
 
+<!-- Sorun bildir — BOY pilotunun yaygınlaştırılması. qdl_musteri_bildirim_gonder
+     RPC'sini p_modul=MOC_MODUL('moc') ile çağırır. Yalnız giriş yapılmışken
+     görünür (afterLogin/cloudInit ile açılıp kapanır). Modülün kendi
+     modalTitle()/setModalBody()/modalSave mekanizması ve marka değişkenleri
+     (--leaf/--leaf-d, mor) kullanıldı. -->
+<style>
+  #sorunBildirBtn{
+    position:fixed; right:18px; z-index:190;
+    bottom:calc(18px + env(safe-area-inset-bottom,0px));
+    display:flex; align-items:center; gap:8px;
+    height:44px; padding:0 16px 0 12px; border-radius:22px;
+    background:linear-gradient(135deg, var(--leaf,#7C3AED), var(--leaf-d,#A78BFA));
+    color:var(--ink-on-accent,#07120C); border:1px solid rgba(255,255,255,.22);
+    box-shadow:0 6px 18px rgba(124,58,237,.35); cursor:pointer;
+    font:600 13px/1 system-ui,sans-serif; letter-spacing:.01em;
+    transition:box-shadow .15s, transform .15s;
+  }
+  #sorunBildirBtn:hover{transform:translateY(-1px); box-shadow:0 8px 22px rgba(124,58,237,.5);}
+  #sorunBildirBtn svg{flex:0 0 auto; width:20px; height:20px;}
+  #sorunBildirBtn .sbLbl{white-space:nowrap;}
+  @media (max-width:640px){
+    #sorunBildirBtn{padding:0; width:44px; justify-content:center;}
+    #sorunBildirBtn .sbLbl{display:none;}
+  }
+</style>
+<button id="sorunBildirBtn" style="display:none" onclick="sorunBildirAc()"
+        title="Sorun bildir" aria-label="Sorun bildir">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8A2.5 2.5 0 0 1 17.5 16H10l-4.2 3.5a.6.6 0 0 1-.98-.46V16A2.5 2.5 0 0 1 4 13.5v-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M12 7v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="12" cy="12.7" r="1" fill="currentColor"/>
+  </svg>
+  <span class="sbLbl" id="sorunBildirLbl">Sorun bildir</span>
+</button>
+
 <!-- ============================ MODAL ============================ -->
 <div class="overlay" id="overlay"></div>
 <div class="modal-wrap" id="modalWrap">
@@ -386,6 +421,10 @@ var cloudUser='', cloudUserId=null, cloudTenantId=null, cloudRole='VIEWER', clou
    ========================================================================= */
 var LANG=localStorage.getItem('moc_lang')||'tr';
 var I18N={
+  'Sorun bildir':'Report a problem','Ne fark ettiniz? Kısaca açıklayın.':'What did you notice? Briefly describe it.',
+  'Gönder':'Send','Lütfen kısaca açıklayın.':'Please add a short description.','Gönderiliyor…':'Sending…',
+  'Teşekkürler, bildiriminiz ekibimize ulaştı. İncelenecek.':'Thanks, your report reached our team and will be reviewed.',
+  'Şu anda gönderilemedi. Lütfen birazdan tekrar deneyin.':'Could not send right now. Please try again shortly.',
   'Kaynak':'Source','Eğitim Platformu':'Training Platform','Manuel':'Manual','Devam ediyor':'In progress',
   '🔄 Canlı Durumu Getir':'🔄 Refresh Live Status','Eğitim Platformu kayıtları kontrol ediliyor…':'Checking Training Platform records…',
   'Bu kişinin Eğitim Platformu kaydı bulunamadı — manuel/serbest metin olarak atanacak.':'No Training Platform record found for this person — will be assigned as manual/free text.',
@@ -526,6 +565,7 @@ function applyMocLangStatic(){
     var lo=document.getElementById('btnLogout'); if(lo) lo.textContent=t('Çıkış');
     var nr=document.getElementById('btnNewRequest'); if(nr) nr.textContent=t('+ Yeni Değişiklik Talebi');
     var ss=document.getElementById('sideSearch'); if(ss) ss.placeholder=t('MOC no / başlık ara…');
+    var sbl=document.getElementById('sorunBildirLbl'); if(sbl) sbl.textContent=t('Sorun bildir');
     try{ renderNav(); }catch(e){}
     try{ if(typeof CURRENT_VIEW!=='undefined') go(CURRENT_VIEW, CURRENT_ID); }catch(e){}
   }
@@ -669,12 +709,14 @@ function afterLogin(session){
         document.getElementById('app').style.display='flex';
         document.getElementById('userLabel').textContent=(cloudFullName?cloudFullName+' · ':'')+cloudUser+' · '+cloudRole;
         renderNav(); bindListeAramasi(); go('dashboard');
+        try{ document.getElementById('sorunBildirBtn').style.display=''; }catch(e){}
       });
     });
   });
 }
 function cloudInit(){
   document.getElementById('loginScreen').style.display='flex';
+  try{ document.getElementById('sorunBildirBtn').style.display='none'; }catch(e){}
   if(!sb){ loginMsg('Supabase yapılandırılmadı.'); return; }
   loginMsg('Bağlanıyor…');
   sb.auth.getSession().then(function(r){ var s=r.data&&r.data.session; if(s) afterLogin(s); else loginMsg(''); });
@@ -2983,6 +3025,43 @@ function modalFoot(saveLbl,cancelLbl,onSave){
 }
 function openModal(wide){ document.getElementById('modalBox').className='modal'+(wide?' wide':''); document.getElementById('overlay').classList.add('on'); document.getElementById('modalWrap').classList.add('on'); }
 function closeModal(){ document.getElementById('overlay').classList.remove('on'); document.getElementById('modalWrap').classList.remove('on'); }
+function sorunBildirAc(){
+  modalTitle('Sorun bildir');
+  setModalBody(
+    '<label style="font-size:12.5px;color:var(--muted)">'+t('Ne fark ettiniz? Kısaca açıklayın.')+'</label>'+
+    '<textarea id="sbAciklama" rows="4" maxlength="1000" placeholder="'+t('Ne fark ettiniz? Kısaca açıklayın.')+'" style="width:100%"></textarea>'+
+    '<div id="sbMsg" style="font-size:12.5px;margin-top:6px"></div>'
+  );
+  modalFoot('Gönder','Vazgeç',sorunBildirGonder);
+  openModal();
+  setTimeout(function(){ var el=document.getElementById('sbAciklama'); if(el) el.focus(); }, 50);
+}
+async function sorunBildirGonder(){
+  var btn=document.getElementById('modalSave');
+  var msgEl=document.getElementById('sbMsg');
+  var aciklama=(document.getElementById('sbAciklama').value||'').trim();
+  if(!aciklama){ msgEl.textContent=t('Lütfen kısaca açıklayın.'); msgEl.style.color='var(--crit)'; btn.disabled=false; return; }
+  var eski=btn.textContent; btn.textContent=t('Gönderiliyor…');
+  msgEl.textContent=''; msgEl.style.color='';
+  var surum=null;
+  try{ surum=window.__qdlSurumOnbellek||null; }catch(e){}
+  try{
+    if(!surum){ var r=await fetch('/qdl-version.json',{cache:'no-store'}); if(r.ok){ var j=await r.json(); surum=j&&j.surum; window.__qdlSurumOnbellek=surum; } }
+  }catch(e){}
+  try{
+    var res=await sb.rpc('qdl_musteri_bildirim_gonder',{
+      p_modul:MOC_MODUL, p_aciklama:aciklama,
+      p_sayfa:(location.pathname||'')+(location.hash||''),
+      p_surum:surum||null, p_ua:navigator.userAgent||null
+    });
+    if(res.error) throw res.error;
+    msgEl.style.color='var(--leaf-d)'; msgEl.textContent=t('Teşekkürler, bildiriminiz ekibimize ulaştı. İncelenecek.');
+    setTimeout(closeModal,1600);
+  }catch(e){
+    msgEl.style.color='var(--crit)'; msgEl.textContent=t('Şu anda gönderilemedi. Lütfen birazdan tekrar deneyin.');
+    btn.textContent=eski;
+  }
+}
 function confirmBox(msg,okLbl,onOk,danger){
   modalTitle('Onay');
   setModalBody('<div style="font-size:13.5px;line-height:1.55">'+msg+'</div>');
