@@ -1106,3 +1106,18 @@ her modül **kendi** handler fonksiyonunu yönetiyor.
 7 onay dalının tamamı (MOC, İSG, Q-Kalite, GGD, Doküman, Tedarikçi, URS)
 gerçek token'larla uçtan uca test edildi; onay ve red yolları değişiklikten
 önce ve sonra **birebir aynı** sonucu verdi.
+
+## EK (16.09.2026) — Frontend prod/staging ayrımı: qdl-env.json
+
+`MOC.html` ve `moc-onay.html` artık `SUPABASE_URL`/`SUPABASE_KEY`
+sabitlerini kullanmadan önce senkron XHR ile `/qdl-env.json`'u okuyor;
+yoksa/bozuksa sessizce prod'a (`bbltvuxxtacrpgrqnfoh`) düşüyor.
+**Dikkat — kök yeri:** Cloudflare Pages'te bu depoda `root_dir` BOŞ (repo
+kökü = yayın kökü), `MOC.html` bu alt klasörde yaşıyor ve `_redirects`
+yalnız `/` yolunu buraya yönlendiriyor — ama tarayıcının mutlak
+`/qdl-env.json` isteği REPO KÖKÜNDEN çözülüyor. Bu yüzden `qdl-env.json`
+(ve `qdl-version.json`) hem bu alt klasörde hem **repo kökünde** duruyor,
+ikisi de senkronize tutulmalı. `master` dalının kök `qdl-env.json`'u
+prod'u, `staging` dalınınki staging'i (`cfcwsoufsnwpycebhxdb`) işaret
+ediyor. Ayrıntı: `_platform-ortak/README.md` → "Test ortamı" (16.09.2026).
+Commit: `de100bc` + kök düzeltmesi `9f27883`/`d83d7f1` (master).
