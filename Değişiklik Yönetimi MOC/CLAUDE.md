@@ -1121,3 +1121,18 @@ ikisi de senkronize tutulmalı. `master` dalının kök `qdl-env.json`'u
 prod'u, `staging` dalınınki staging'i (`cfcwsoufsnwpycebhxdb`) işaret
 ediyor. Ayrıntı: `_platform-ortak/README.md` → "Test ortamı" (16.09.2026).
 Commit: `de100bc` + kök düzeltmesi `9f27883`/`d83d7f1` (master).
+
+## EK (16.09.2026) — "Sorun bildir" butonu (BOY pilotunun yaygınlaştırılması)
+
+`MOC.html`'e sağ altta sabit "Sorun bildir" butonu eklendi;
+`qdl_musteri_bildirim_gonder` RPC'sini `p_modul=MOC_MODUL` ('moc',
+`qdl_modul_katalog`'daki gerçek kod) ile çağırıyor. Yalnız giriş
+yapılmışken görünür. Modülün kendi `modalTitle()`/`setModalBody()`/
+`modalFoot()` mekanizması ve marka değişkenleri (`--leaf`/`--leaf-d`, mor)
+kullanıldı; bu dosyada otomatik `data-i18n` taraması yok, TR/EN metni
+`applyMocLangStatic()` içine elle bağlandı. **Yukarıdaki kök-senkron
+kuralı burada da geçerli oldu:** sürüm damgalama betiği yalnız alt
+klasördeki `qdl-version.json`'u güncelledi, repo kökündeki kopya elle
+senkronize edildi (aksi halde canlı sayfa eski sürüm dosyasını okurdu).
+Canlıda uçtan uca test edildi (gerçek RPC çağrısı, kayıt doğrulanıp
+temizlendi). Commit: `46ebaba`.
