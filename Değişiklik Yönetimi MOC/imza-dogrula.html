@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>İmza Kaydı Doğrulama</title>
+<link rel="stylesheet" href="moc_theme_tokens.css"/>
+<style>
+  html,body{height:100%;margin:0;background:var(--q-bg-base);color:var(--q-text-primary);
+    font-family:var(--q-font-family,'Inter',sans-serif);}
+  .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .card{max-width:560px;width:100%;background:var(--q-bg-surface);border:1px solid var(--q-border);
+    border-radius:var(--q-radius-lg);box-shadow:var(--q-shadow-card);padding:32px;}
+  .card h1{font-size:18px;margin:0 0 4px;color:var(--q-text-primary);}
+  .card .sub{color:var(--q-text-secondary);font-size:13px;margin-bottom:20px;}
+  .field{margin:10px 0;font-size:14px;display:flex;gap:8px;}
+  .field b{color:var(--q-text-secondary);font-weight:600;min-width:150px;flex:none;}
+  .field span{word-break:break-all;}
+  .badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:var(--q-radius-sm);
+    font-size:12px;font-weight:700;}
+  .badge.ok{background:var(--q-accent-soft);color:var(--q-status-success);}
+  .badge.bad{background:#F871711A;color:var(--q-status-danger);}
+  .note{margin-top:20px;padding:12px;border-radius:var(--q-radius-sm);font-size:12px;
+    background:var(--q-accent-soft);color:var(--q-text-secondary);line-height:1.5;}
+  .msg{margin-top:16px;padding:12px;border-radius:var(--q-radius-sm);font-size:14px;display:none;}
+  .msg.err{background:#F871711A;color:var(--q-status-danger);display:block;}
+  .lang{position:absolute;top:16px;right:16px;background:transparent;border:1px solid var(--q-border);
+    color:var(--q-text-secondary);border-radius:var(--q-radius-sm);padding:4px 10px;font-size:12px;cursor:pointer;}
+</style>
+<script src="/qdl-hata.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" style="position:relative">
+    <button class="lang" id="langBtn" onclick="toggleLang()">EN</button>
+    <h1 id="hTitle">İmza Kaydı Doğrulama</h1>
+    <div class="sub" id="hSub">Yükleniyor…</div>
+    <div id="details" style="display:none">
+      <div class="field"><b id="lTable">Kayıt</b><span id="vTable"></span></div>
+      <div class="field"><b id="lDecision">Karar</b><span id="vDecision"></span></div>
+      <div class="field"><b id="lSigner">İmzalayan (e-posta)</b><span id="vSigner"></span></div>
+      <div class="field"><b id="lWhen">Tarih/saat</b><span id="vWhen"></span></div>
+      <div class="field"><b id="lIp">IP adresi</b><span id="vIp"></span></div>
+      <div class="field"><b id="lUa">Tarayıcı/istemci</b><span id="vUa"></span></div>
+      <div class="field"><b id="lHash">Bütünlük özeti (hash)</b><span id="vHash" style="font-family:monospace;font-size:11px"></span></div>
+      <div class="field"><b id="lTamper">Kurcalama kontrolü</b><span id="vTamper"></span></div>
+    </div>
+    <div class="msg" id="msg"></div>
+    <div class="note" id="note"></div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.45.4/umd/supabase.min.js"></script>
+<script>
+var SUPABASE_URL = 'https://bbltvuxxtacrpgrqnfoh.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_3UUYAbeaA4tJahYiAAGhLQ_AtDfHkq4';
+var sb = null;
+try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){}
+
+var LANG = localStorage.getItem('moc_lang') || 'tr';
+var I18N = {
+  'İmza Kaydı Doğrulama':'Signature Record Verification',
+  'Yükleniyor…':'Loading…',
+  'Kayıt':'Record','Karar':'Decision','İmzalayan (e-posta)':'Signer (email)',
+  'Tarih/saat':'Date/time','IP adresi':'IP address','Tarayıcı/istemci':'Browser/client',
+  'Bütünlük özeti (hash)':'Integrity hash','Kurcalama kontrolü':'Tamper check',
+  'Değişmemiş':'Unmodified','DEĞİŞTİRİLMİŞ — hash uyuşmuyor':'MODIFIED — hash mismatch',
+  'Bu kayıt bulunamadı veya bağlantı geçersiz.':'This record was not found or the link is invalid.',
+  'Bu sayfa denetim amaçlıdır; hukuki anlamda nitelikli elektronik imza YERİNE GEÇMEZ. Gösterilen alanlar, onay linkinin kullanıldığı anda kaydedilmiştir; bütünlük özeti sonradan yapılan bir değişikliği fark edilebilir kılar, otomatik olarak engellemez.':
+    'This page is for audit purposes; it does NOT constitute a legally qualified electronic signature. The fields shown were captured at the moment the approval link was used; the integrity hash makes a later change detectable, it does not automatically block it.',
+  'APPROVED':'APPROVED','REJECTED':'REJECTED',
+};
+function t(s){ return (LANG==='en' && I18N.hasOwnProperty(s)) ? I18N[s] : s; }
+function toggleLang(){ LANG = LANG==='tr'?'en':'tr'; try{localStorage.setItem('moc_lang',LANG);}catch(e){} render(); load(); }
+
+function qs(name){
+  var m = new RegExp('[?&]'+name+'=([^&]*)').exec(location.search);
+  return m ? decodeURIComponent(m[1].replace(/\+/g,' ')) : null;
+}
+var SIG_ID = qs('id');
+
+function render(){
+  document.getElementById('hTitle').textContent = t('İmza Kaydı Doğrulama');
+  document.getElementById('langBtn').textContent = LANG==='tr'?'EN':'TR';
+  document.getElementById('lTable').textContent = t('Kayıt');
+  document.getElementById('lDecision').textContent = t('Karar');
+  document.getElementById('lSigner').textContent = t('İmzalayan (e-posta)');
+  document.getElementById('lWhen').textContent = t('Tarih/saat');
+  document.getElementById('lIp').textContent = t('IP adresi');
+  document.getElementById('lUa').textContent = t('Tarayıcı/istemci');
+  document.getElementById('lHash').textContent = t('Bütünlük özeti (hash)');
+  document.getElementById('lTamper').textContent = t('Kurcalama kontrolü');
+  document.getElementById('note').textContent = t('Bu sayfa denetim amaçlıdır; hukuki anlamda nitelikli elektronik imza YERİNE GEÇMEZ. Gösterilen alanlar, onay linkinin kullanıldığı anda kaydedilmiştir; bütünlük özeti sonradan yapılan bir değişikliği fark edilebilir kılar, otomatik olarak engellemez.');
+}
+
+function load(){
+  render();
+  document.getElementById('msg').style.display = 'none';
+  document.getElementById('details').style.display = 'none';
+  if(!SIG_ID || !sb){
+    document.getElementById('hSub').textContent = t('Bu kayıt bulunamadı veya bağlantı geçersiz.');
+    return;
+  }
+  document.getElementById('hSub').textContent = t('Yükleniyor…');
+  sb.rpc('qdl_signature_verify', {p_signature_id: SIG_ID}).then(function(res){
+    if(res.error || !res.data || !res.data.ok){
+      document.getElementById('hSub').textContent = t('Bu kayıt bulunamadı veya bağlantı geçersiz.');
+      return;
+    }
+    var d = res.data;
+    document.getElementById('hSub').textContent = '';
+    document.getElementById('vTable').textContent = d.record_table + ' / ' + d.record_id;
+    document.getElementById('vDecision').textContent = t(d.decision);
+    document.getElementById('vSigner').textContent = d.signer_email || '—';
+    document.getElementById('vWhen').textContent = d.decided_at || '—';
+    document.getElementById('vIp').textContent = d.ip || '—';
+    document.getElementById('vUa').textContent = d.user_agent || '—';
+    document.getElementById('vHash').textContent = d.integrity_hash || '—';
+    var tamperEl = document.getElementById('vTamper');
+    if(d.tamper_evident_ok){
+      tamperEl.innerHTML = '<span class="badge ok">' + t('Değişmemiş') + '</span>';
+    } else {
+      tamperEl.innerHTML = '<span class="badge bad">' + t('DEĞİŞTİRİLMİŞ — hash uyuşmuyor') + '</span>';
+    }
+    document.getElementById('details').style.display = 'block';
+  }).catch(function(){
+    document.getElementById('hSub').textContent = t('Bu kayıt bulunamadı veya bağlantı geçersiz.');
+  });
+}
+
+load();
+</script>
+</body>
+</html>
