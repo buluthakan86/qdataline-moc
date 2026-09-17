@@ -552,6 +552,13 @@ var I18N={
   'Onaycı ataması bu sürümde yapılmıyor — herhangi bir yetkili kullanıcı (talep sahibi hariç) kararı "üstlenerek" verir; karar anında approver_id kendisine set edilir.':
     'Approver assignment is not used in this version — any authorized user (other than the requester) can "take" the decision; approver_id is set to that user at decision time.',
   'PSSR sonucu kaydedildi':'PSSR result saved','Persona güncellendi':'Persona updated',
+  'PSSR\'ı Yeniden Aç (yönetici)':'Reopen PSSR (admin)','Yeniden Aç':'Reopen',
+  'Sonuç sıfırlanacak, checklist tekrar doldurulup yeni bir karar verilebilecek. Bu işlem denetim kaydına düşer.':'The result will be reset, the checklist can be answered again and a new decision made. This action is recorded in the audit log.',
+  'Gerekçe en az 5 karakter olmalı.':'Reason must be at least 5 characters.','PSSR yeniden açıldı':'PSSR reopened',
+  'PSSR sonucu zaten kayıtlı, değiştirilemez. Düzeltme gerekiyorsa yönetici PSSR\'ı yeniden açmalı.':'The PSSR result is already recorded and cannot be changed. If a correction is needed, an admin must reopen the PSSR.',
+  'Bu PSSR zaten sonuçlanmamış.':'This PSSR does not have a result yet.',
+  'Bu adım için zaten karar verilmiş. Sayfa yenileniyor…':'A decision has already been made for this step. Refreshing…',
+  'Geçersiz karar değeri.':'Invalid decision value.',
   'Planlanan Bitiş (geçici değişiklikte zorunlu)':'Planned End (required for temporary changes)',
   'Risk Eşiği (risk_after ≥ bu değer, boş = kapalı)':'Risk Threshold (risk_after ≥ this value, blank = off)',
   'Risk eklendi':'Risk added','Rol Kodu (ör. HSE, ENGINEERING, PLANT_MANAGER)':'Role Code (e.g. HSE, ENGINEERING, PLANT_MANAGER)',
@@ -1628,7 +1635,19 @@ function docYukle(files){
         tenant_id:cloudTenantId, moc_id:req.id, doc_kind:'ATTACHMENT',
         title:file.name, storage_key:key, mime_type:file.type||null,
         size_bytes:file.size||null, uploaded_by:cloudUserId
-      }).then(function(res){ if(res.error) throw res.error; });
+      }).then(function(res){
+        if(res.error){
+          /* DÜZELTME (2026-09-17, FAZ N — GÖREV 4): DB kaydı başarısız olursa storage'da
+             yetim (kimsenin bilmediği, hiç görünmeyen ama yer kaplayan) dosya kalıyordu.
+             Kayıt başarısızsa az önce yüklenen dosya geri silinir — yükleme ya tam
+             başarılı ya da hiç iz bırakmadan başarısız olur. Silme kendi de başarısız
+             olursa (ağ vb.) sessizce yutulur — kullanıcıya asıl hata (insert hatası)
+             gösterilir, ikinci bir hata ile karıştırılmaz. */
+          return sb.storage.from(MOC_BUCKET).remove([key]).catch(function(){}).then(function(){
+            throw res.error;
+          });
+        }
+      });
     });
   });
   toast(t('Yükleniyor…'));
@@ -2414,6 +2433,13 @@ function renderPssrPanel(){
         +'<button class="btn-leaf pssrres" data-r="RELEASED">'+t('Serbest Bırak (RELEASED)')+'</button>'
         +'<button class="btn-crit pssrres" data-r="NOT_RELEASED">'+t('Serbest Bırakma (NOT_RELEASED)')+'</button></div>';
     }
+    /* EK (2026-09-17, FAZ N — GÖREV 1): sonuç girildikten sonra artık DB trigger'ı
+       (moc_pssr_kilit) her türlü değişikliği reddediyor — RELEASED/CONDITIONAL kalıcı.
+       Düzeltme gerekiyorsa yalnız yönetici, gerekçe girerek yeniden açabilir; bu olay
+       moc_audit_log'a PSSR_REOPEN olarak düşer. */
+    if(canDo('admin') && p.result){
+      html+='<div style="margin-top:12px"><button class="btn-line sm" id="btnReopenPssr">'+t('PSSR\'ı Yeniden Aç (yönetici)')+'</button></div>';
+    }
   }
   html+='</div></div>';
   return html;
@@ -2441,6 +2467,7 @@ function bindDetailEvents(){
   Array.prototype.forEach.call(document.querySelectorAll('.pssrres'),function(b){
     b.onclick=function(){ setPssrResult(b.getAttribute('data-r')); };
   });
+  var rp=document.getElementById('btnReopenPssr'); if(rp) rp.onclick=openReopenPssr;
   /* FAZ I panelleri */
   var df=document.getElementById('docFile');
   if(df) df.onchange=function(){ docYukle(df.files); };
@@ -2588,38 +2615,20 @@ function openAddApproval(){
   });
   openModal();
 }
+/* DÜZELTME (2026-09-17, FAZ N — GÖREV 2+3): Karar + zincir kontrolü + moc_requests.status
+   güncellemesi eskiden 3 bağımsız istekti (update + select + Promise.all + update), ve
+   evidence_hash istemcide düz btoa() ile üretiliyordu (kriptografik değil). Artık tek bir
+   SECURITY DEFINER RPC'de (moc_decide_approval, moc_schema_faz_n_guvenlik_sertlestirme.sql)
+   — sunucuda gerçek SHA-256 hesaplanır, karar+zincir+status tek transaction'da yazılır.
+   moc_onay_kontrol/moc_durum_kontrol trigger'ları (kendi-onayı/mükerrer-onay engeli) RPC
+   içindeki UPDATE'lerde aynen tetiklenmeye devam eder — dokunulmadı. */
 function decideApproval(id, decision){
   confirmBox('Bu onay adımı için karar: <b>'+decision+'</b>. Onaylıyor musunuz?','Onayla',function(){
-    var hash=btoa(unescape(encodeURIComponent(DETAIL_CTX.req.id+'|'+id+'|'+cloudUserId+'|'+Date.now())));
-    sb.from('moc_approvals').update({decision:decision, decided_at:new Date().toISOString(), approver_id:cloudUserId, evidence_hash:hash}).eq('id',id).then(function(res){
+    sb.rpc('moc_decide_approval', {p_approval_id:id, p_decision:decision}).then(function(res){
       if(res.error){ toast(hataMesaji(res.error),true); return; }
-      closeModal(); toast(t('Karar kaydedildi')); checkApprovalAuto();
+      closeModal(); toast(t('Karar kaydedildi')); viewDetail(DETAIL_CTX.req.id);
     });
   }, decision==='REJECTED');
-}
-function checkApprovalAuto(){
-  var req=DETAIL_CTX.req;
-  sb.from('moc_approvals').select('*').eq('moc_id',req.id).then(function(res){
-    var rows=res.data||[];
-    var next=null;
-    var returned=rows.filter(function(a){return a.decision==='RETURNED';});
-    if(rows.some(function(a){return a.decision==='REJECTED';})) next='REJECTED';
-    else if(returned.length) next='TECHNICAL_REVIEW';
-    else if(rows.length && rows.every(function(a){return a.decision==='APPROVED';})) next='IMPLEMENTATION';
-    if(next==='TECHNICAL_REVIEW'){
-      // İade edilen adımın kararı sıfırlanmazsa activeApprovalStep() bu satırda kalıcı olarak
-      // takılıp kalır (decision hep 'RETURNED'!=='APPROVED' kaldığı için) — talep tekrar
-      // APPROVAL'a geçse bile hiçbir adım bir daha "aktif" olamaz, onay zinciri sonsuza kadar
-      // kilitlenir. İade edilen adım tekrar Bekliyor durumuna dönsün diye kararı sıfırlanır.
-      var resets=returned.map(function(a){ return sb.from('moc_approvals').update({decision:null, decided_at:null, approver_id:null}).eq('id',a.id); });
-      Promise.all(resets).then(function(){
-        if(req.status==='APPROVAL'){ sb.from('moc_requests').update({status:next}).eq('id',req.id).then(function(){ viewDetail(req.id); }); }
-        else viewDetail(req.id);
-      });
-    } else if(next && req.status==='APPROVAL'){
-      sb.from('moc_requests').update({status:next}).eq('id',req.id).then(function(){ viewDetail(req.id); });
-    } else viewDetail(req.id);
-  });
 }
 
 /* ---- Aksiyon ekleme/tamamlama ---- */
@@ -2678,6 +2687,24 @@ function setPssrResult(result){
     if(res.error){ toast(hataMesaji(res.error),true); return; }
     toast(t('PSSR sonucu kaydedildi')); viewDetail(DETAIL_CTX.req.id);
   });
+}
+/* EK (2026-09-17, FAZ N — GÖREV 1): admin-only yeniden açma — gerekçe zorunlu, RPC
+   içinde is_admin() ayrıca doğrulanıyor ve moc_audit_log'a PSSR_REOPEN olarak düşüyor. */
+function openReopenPssr(){
+  var pssrId = DETAIL_CTX.pssr && DETAIL_CTX.pssr.id;
+  if(!pssrId) return;
+  modalTitle(t('PSSR\'ı Yeniden Aç (yönetici)'));
+  setModalBody('<p class="hint">'+t('Sonuç sıfırlanacak, checklist tekrar doldurulup yeni bir karar verilebilecek. Bu işlem denetim kaydına düşer.')+'</p>'
+    +'<label>'+t('Gerekçe')+'</label><textarea id="reopenReason"></textarea>');
+  modalFoot(t('Yeniden Aç'), t('Vazgeç'), function(){
+    var reason=val('reopenReason');
+    if(!reason || reason.trim().length<5){ toast(t('Gerekçe en az 5 karakter olmalı.'),true); return; }
+    sb.rpc('moc_admin_reopen_pssr', {p_pssr_id:pssrId, p_reason:reason}).then(function(res){
+      if(res.error){ toast(hataMesaji(res.error),true); return; }
+      closeModal(); toast(t('PSSR yeniden açıldı')); viewDetail(DETAIL_CTX.req.id);
+    });
+  });
+  openModal();
 }
 
 /* ============================================================================
@@ -3148,6 +3175,12 @@ function hataMesaji(err){
   if(msj.indexOf('MOC_KENDI_ONAYI')>=0)     return t('Kendi açtığınız talebi onaylayamazsınız.');
   if(msj.indexOf('MOC_MUKERRER_ONAY')>=0)   return t('Bu zincirde daha önce karar verdiniz; ikinci bir adımı siz onaylayamazsınız.');
   if(msj.indexOf('MOC_GECERSIZ_GECIS')>=0)  return t('Bu durum geçişi yapılamaz.');
+  /* Sunucu tarafı iş kuralı sinyalleri (bkz. moc_schema_faz_n_guvenlik_sertlestirme.sql) */
+  if(msj.indexOf('MOC_PSSR_KILITLI')>=0)    return t('PSSR sonucu zaten kayıtlı, değiştirilemez. Düzeltme gerekiyorsa yönetici PSSR\'ı yeniden açmalı.');
+  if(msj.indexOf('MOC_GEREKCE_ZORUNLU')>=0) return t('Gerekçe en az 5 karakter olmalı.');
+  if(msj.indexOf('MOC_ZATEN_ACIK')>=0)      return t('Bu PSSR zaten sonuçlanmamış.');
+  if(msj.indexOf('MOC_ZATEN_KARARLI')>=0)   return t('Bu adım için zaten karar verilmiş. Sayfa yenileniyor…');
+  if(msj.indexOf('MOC_GECERSIZ_KARAR')>=0)  return t('Geçersiz karar değeri.');
 
   return t('İşlem tamamlanamadı. Lütfen tekrar deneyin.');
 }

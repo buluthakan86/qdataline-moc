@@ -1,5 +1,71 @@
 # MOC (Değişiklik Yönetimi) — Proje Notları
 
+## 🔒 FAZ N (17.09.2026) — Denetimde bulunan 4 gerçek açık kapatıldı
+
+Dış denetimde 4 kanıtlanmış açık bulundu, dördü de aynı turda kapatıldı, canlı test
+edildi, test verisi temizlendi. Migration: `moc_schema_faz_n_guvenlik_sertlestirme.sql`.
+
+**1) PSSR sonucu artık immutable.** `moc_pssr_checklists.result` düz `UPDATE` ile her
+yönde değiştirilebiliyordu (RELEASED verilmiş bir kayıt bile). Yeni `moc_pssr_kilit()`
+trigger'ı: sonuç bir kez dolunca (NULL değilken) her türlü değişikliği reddediyor —
+**TEK istisna** KALICI KİLİT 2'nin (05.09.2026) meşru NOT_RELEASED→NULL yeniden-deneme
+döngüsü, o dokunulmadan aynen çalışmaya devam ediyor. Düzeltme gerekirse (yanlış RELEASED
+girilmiş vb.) yalnız yönetici `moc_admin_reopen_pssr(id, gerekçe)` RPC'sini çağırabilir
+(gerekçe zorunlu, min 5 karakter, `is_admin()` şart) — bu olay `moc_audit_log`'a
+`PSSR_REOPEN` action'ı ile düşer. UI: PSSR panelinde sonuç varsa ve kullanıcı admin'se
+"PSSR'ı Yeniden Aç (yönetici)" düğmesi.
+
+**2+3) Onay kararı: gerçek sunucu-taraflı SHA-256 + tek transaction'lı RPC.**
+Eskiden `decideApproval()` istemcide düz `btoa()` ile "hash" üretip `evidence_hash`'e
+yazıyordu (kriptografik değil, taklit edilebilir) ve karar→zincir kontrolü→
+`moc_requests.status` güncellemesi üç ayrı bağımsız istekti (`update` + `select` +
+`Promise.all` + `update`) — ara adımda bağlantı koparsa tutarsız durum riski vardı. Artık
+tek bir SECURITY DEFINER RPC: `moc_decide_approval(p_approval_id, p_decision)`. Fonksiyon
+içinde `pgcrypto digest(...,'sha256')` ile GERÇEK 64 karakterlik hex hash üretilip
+`moc_approvals.evidence_hash`'e sunucuda yazılıyor; aynı fonksiyon gövdesinde (tek
+transaction) zincir kontrolü (`checkApprovalAuto` ile birebir aynı mantık: REJECTED varsa
+→REJECTED, RETURNED varsa →TECHNICAL_REVIEW + o adımların kararı sıfırlanır, hepsi
+APPROVED ise →IMPLEMENTATION) ve gerekiyorsa `moc_requests.status` güncellemesi de
+yapılıyor. Var olan `moc_onay_kontrol`/`moc_durum_kontrol` trigger'ları (kendi-talebini-
+onaylayamama, mükerrer-onay engeli, geçerli durum geçişleri) RPC içindeki `UPDATE`'lerde
+aynen tetiklenmeye devam ediyor — dokunulmadı. Zaten karar verilmiş bir adıma tekrar karar
+verme girişimi artık `MOC_ZATEN_KARARLI` ile reddediliyor (öncesinde sessizce üzerine
+yazılabiliyordu). **Not:** platformun merkezi e-posta onay dağıtımı (`moc_onay_uygula`,
+15.09.2026) ayrı bir fonksiyon — o token'lı/e-posta akışına özel (recipient_email bazlı,
+approver_id/evidence_hash yok), bu RPC yalnız uygulama-içi (giriş yapılmış) karar akışını
+kapsıyor, ikisi çakışmıyor.
+
+**4) Dosya yükleme artık ya tam başarılı ya hiç iz bırakmıyor.** `docYukle()`'de
+`storage.upload()` başarılı olup `moc_documents.insert()` başarısız olursa, az önce
+yüklenen storage nesnesi otomatik geri siliniyor (`storage.remove([key])`) — önceden
+kalıcı yetim dosya kalıyordu.
+
+**Canlı test (Management API ile, tüm test verisi silindi, 0 kalıntı):**
+- PSSR: RELEASED sonrası aynı sonuca `UPDATE` denemesi → `MOC_PSSR_KILITLI` ile reddedildi;
+  RELEASED sonrası NULL'a çekme denemesi → aynı şekilde reddedildi; admin olmayan RPC
+  çağrısı → `MOC_YETKI_YOK`; kısa gerekçe → `MOC_GEREKCE_ZORUNLU`; geçerli admin reopen →
+  başarılı + `moc_audit_log`'da `PSSR_REOPEN` satırı doğrulandı + reopen sonrası yeni sonuç
+  (CONDITIONAL) yazılabildi; ayrı bir kayıtta meşru NOT_RELEASED→NULL→RELEASED döngüsü
+  sorunsuz çalıştı (kilit bu döngüyü hiç engellemedi).
+- Onay: gerçek bir test talebi (MOC-2026-0001, id=55) DRAFT→…→APPROVAL'a ilerletildi, 2
+  adımlı onay zinciri; `moc_decide_approval` ile ilk adım APPROVED → durum APPROVAL'da
+  kaldı (2. adım bekliyor) + `evidence_hash` 64 karakter hex; ikinci adım APPROVED →
+  durum otomatik IMPLEMENTATION'a geçti; aynı adıma tekrar karar verme → `MOC_ZATEN_KARARLI`
+  ile reddedildi. Ayrı bir test talebinde (id=56) RETURNED kararı → durum otomatik
+  TECHNICAL_REVIEW'a geçti ve o adımın kararı doğru şekilde `null`'a sıfırlandı.
+- Sözdizimi: iki `<script>` bloğu da `new Function(...)` ile hatasız.
+
+**Değişen/eklenen dosyalar:** `moc_schema_faz_n_guvenlik_sertlestirme.sql` (yeni),
+`MOC.html` (`decideApproval`/`checkApprovalAuto`→tek RPC çağrısı, `docYukle` orphan-storage
+temizliği, PSSR panelinde admin "Yeniden Aç" düğmesi + `openReopenPssr()`, `hataMesaji()`'ye
+yeni sunucu sinyalleri, I18N sözlüğüne yeni anahtarlar).
+
+**Kullanıcının hâlâ yapması gereken:** kendi tarayıcı testi (bir onay kararı verip
+zincirin ilerlediğini, bir PSSR sonucunu kilitleyip yönetici olarak yeniden açtığını
+ekranda görmek) — SQL/RPC seviyesinde uçtan uca doğrulandı ama arayüzden hiç denenmedi.
+
+---
+
 ## ⚡ EK (14.09.2026) — Faz 1 "Görünürlük": sürüm damgası + tarayıcı hata toplama
 
 Platform-geneli. Ayrıntı ve gerekçeler: `_platform-ortak/README.md` → "Faz 1 — Görünürlük",
