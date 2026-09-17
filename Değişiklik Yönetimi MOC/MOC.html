@@ -300,7 +300,7 @@ textarea{resize:vertical;min-height:70px}
       <div class="sp"></div>
       <div class="side-search"><input id="sideSearch" placeholder="MOC no / başlık ara…"></div>
       <button class="btn-leaf" id="btnNewRequest">+ Yeni Değişiklik Talebi</button>
-      <button class="btn-line sm" id="btnTourShow" title="Turu göster" onclick="startTour()">?</button>
+      <button class="btn-line sm" id="btnTourShow" title="Turu göster">?</button>
       <button class="btn-line sm" id="btnThemeToggle" title="Açık/Koyu tema">🌙</button>
       <button class="btn-line sm" id="langBtn" title="Language">EN</button>
       <span id="userLabel"></span>
@@ -336,7 +336,7 @@ textarea{resize:vertical;min-height:70px}
     #sorunBildirBtn .sbLbl{display:none;}
   }
 </style>
-<button id="sorunBildirBtn" style="display:none" onclick="sorunBildirAc()"
+<button id="sorunBildirBtn" style="display:none"
         title="Sorun bildir" aria-label="Sorun bildir">
   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8A2.5 2.5 0 0 1 17.5 16H10l-4.2 3.5a.6.6 0 0 1-.98-.46V16A2.5 2.5 0 0 1 4 13.5v-8Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
@@ -1000,7 +1000,7 @@ function viewDashboard(){
 function renderDashboardHtml(d){
   var html='<div class="view">';
   html+='<div style="display:flex;justify-content:flex-end;margin-bottom:8px">'
-    +'<button class="btn-line sm" id="dashCustomBtn" onclick="openDashCustomize()">⚙ '+t('Özelleştir')+'</button></div>';
+    +'<button class="btn-line sm" id="dashCustomBtn">⚙ '+t('Özelleştir')+'</button></div>';
   html+='<div class="kpis" data-widget="kpi">'
     +'<div class="kpi"><div class="val">'+d.openCount+'</div><div class="lbl">'+t('Açık MOC')+'</div></div>'
     +'<div class="kpi'+(d.pendingCount?' warn':'')+'"><div class="val">'+d.pendingCount+'</div><div class="lbl">'+t('Onay Bekleyen (Bende)')+'</div></div>'
@@ -3236,6 +3236,13 @@ function initThemeToggle(){
   });
   document.getElementById('btnLogout').onclick=function(){ sb.auth.signOut().then(function(){ location.reload(); }); };
   document.getElementById('btnNewRequest').onclick=openNewRequest;
+  document.getElementById('btnTourShow').onclick=function(){ startTour(); };
+  document.getElementById('sorunBildirBtn').onclick=function(){ sorunBildirAc(); };
+  // dashCustomBtn innerHTML ile sonradan eklendiği için event delegation kullanılıyor (CSP: onclick attribute yok)
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('#dashCustomBtn');
+    if(b) openDashCustomize();
+  });
   initThemeToggle();
   document.getElementById('overlay').onclick=function(){
     var mb = document.getElementById('modalBox');
