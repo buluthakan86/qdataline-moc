@@ -1232,3 +1232,8 @@ Onay Bekleyenler (`renderApprovalQueue`, CTA yok), Aksiyonlar paneli
 korundu), Risk Değerlendirmesi paneli (`renderRiskPanel`, CTA
 `openAddRisk`'e bağlı). Veri çekme/API mantığına dokunulmadı, yalnız
 görünüm. `new Function()` ile sözdizimi doğrulandı.
+
+## Faz O — MOC Proje Takip ilk dikey dilim (22.09.2026)
+- `MOC_PROJE_TAKIP_MASTER_2026-09-23.md` ürün kapsamı ve kalan fazların tek referansıdır.
+- `moc_schema_faz_o_proje_takip.sql` önce staging, sonra prod Supabase Management API `db query --file` ile uygulandı. `supabase db push` kullanılmamalı: bu depoda uzak migration geçmişinin eski SQL dosyaları yok; yeni bir migration zinciri başlatılmış değil.
+- Uygulama: oturum sonrası MOC / Proje Yönetimi alan seçimi; MOC uygulama aşamalarından plan açma, proje bilgisi düzenleme, faz ve görev takibi. RLS her tenant ve `modul_yetki(moc)` üyeliğini doğrular. İleride migration takibi standartlaştırılırsa önce mevcut uzaktaki migration geçmişi repo ile eşleştirilmeli.
