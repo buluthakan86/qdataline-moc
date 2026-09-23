@@ -112,6 +112,41 @@ if (process.argv[2]) {
   const path = require('node:path');
   const target = path.resolve(process.argv[2]);
   fs.mkdirSync(path.dirname(target), {recursive:true});
+  if (process.argv[3] === 'dataset') {
+    const payload=JSON.parse(fs.readFileSync(path.resolve(process.argv[4]),'utf8').replace(/^\uFEFF/,''));
+    assert.equal(payload.project.moc_id,null,'Preview must be an independent project');
+    ctx.PROJECT_CTX=Object.assign({moc:{}},payload);
+    ctx.PROJECT_TASK_VIEW='list';
+    ctx.projectCanWorkTask=()=>true;
+    ctx.projectTaskStatusLabel=(status)=>({TODO:'Yapılacak',IN_PROGRESS:'Sürüyor',IN_REVIEW:'İncelemede',BLOCKED:'Bloklandı',DONE:'Tamamlandı',CANCELLED:'İptal edildi'})[status]||status;
+    ctx.fmtMoney=(value)=>new Intl.NumberFormat('tr-TR',{maximumFractionDigits:2}).format(Number(value)||0);
+    ctx.pDate=(value)=>value?new Date(value+'T00:00:00Z').toLocaleDateString('tr-TR',{timeZone:'UTC'}):'—';
+    vm.runInContext(pick('projectTaskBoardMarkup','projectBindBoard'),ctx);
+    const css=html.match(/<style>([\s\S]*?)<\/style>/)[1];
+    const outputs=[['liste','list'],['kanban','kanban'],['gantt','list']];
+    for(const [name,view] of outputs){
+      ctx.PROJECT_TASK_VIEW=view;
+      ctx.projectRenderDetail();
+      assert.match(detail, /Dijital üretim izleme pilotu/);
+      assert.match(detail, /Aylık gider eğilimi/);
+      assert.match(detail, /2026-09/);
+      assert.match(detail, /2026-12/);
+      if (view === 'kanban') {
+        for (const [status,label,count] of [['TODO','Yapılacak',4],['IN_PROGRESS','Sürüyor',2],['IN_REVIEW','İncelemede',1],['BLOCKED','Bloklandı',1],['DONE','Tamamlandı',4]]) {
+          assert.match(detail,new RegExp('data-pr-lane="'+status+'"[^]*?'+label+'</b><span>'+count+'</span>'));
+        }
+      }
+      if (name === 'gantt') {
+        assert.equal((detail.match(/class="project-time-bar/g)||[]).length, 12);
+        assert.equal((detail.match(/class="project-time-milestone/g)||[]).length, 4);
+      }
+      const nav='<nav style="display:flex;gap:10px;flex-wrap:wrap;padding:14px 0;font:14px sans-serif"><b>DEMO · Salt okunur önizleme</b> '+outputs.map(([label])=>'<a style="color:#85d5b0" href="'+path.basename(target)+'-'+label+'.html'+(label==='gantt'?'#timeline':'')+'">'+label.toUpperCase()+'</a>').join(' ')+'</nav>';
+      const previewDetail=detail.replace('<div class="panel"><div class="ph"><b>Plan zaman çizelgesi','<div class="panel" id="timeline"><div class="ph"><b>Plan zaman çizelgesi');
+      fs.writeFileSync(target+'-'+name+'.html','<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DEMO proje · '+name+'</title><style>'+css+'</style><body><main style="padding:20px;max-width:1400px;margin:auto">'+nav+previewDetail+'</main></body></html>');
+    }
+    console.log('Demo project previews written: '+outputs.map(([name])=>target+'-'+name+'.html').join(', '));
+    process.exit(0);
+  }
   if (process.argv[3] === 'starter') {
     ctx.PROJECT_CTX.project.moc_id=null;
     ctx.PROJECT_CTX.tasks=[];
