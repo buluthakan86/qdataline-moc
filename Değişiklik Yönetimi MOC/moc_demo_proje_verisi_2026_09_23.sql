@@ -94,7 +94,7 @@ BEGIN
  PERFORM public.moc_project_set_predecessor(v_doc,v_implementation);
  PERFORM set_config('request.jwt.claim.sub',v_editor::text,true);
  UPDATE public.moc_project_tasks SET status='IN_PROGRESS',progress=35 WHERE id=v_doc;
- UPDATE public.moc_project_tasks SET status='BLOCKED',progress=0 WHERE id=v_training;
+ UPDATE public.moc_project_tasks SET status='BLOCKED',progress=25,actual_hours=2 WHERE id=v_training;
  PERFORM set_config('request.jwt.claim.sub',v_manager::text,true);
  INSERT INTO public.moc_project_milestones(tenant_id,project_id,name,milestone_type,target_date,completed_at,completed_by)
  VALUES(v_tenant,v_project,'[DEMO] MOC onayı','APPROVAL',current_date-1,now(),v_manager),
