@@ -1244,3 +1244,6 @@ görünüm. `new Function()` ile sözdizimi doğrulandı.
 
 ## 23.09.2026 — Modül adı
 Kullanıcıya görünen modül adı Proje&MOC; EN karşılığı Project & MOC. Ana site katalog kaydı, giriş metni, tarayıcı başlığı, üst çubuk ve çalışma alanı etiketi senkron tutulur. Teknik modül kodu `moc` değiştirilmeyecek.
+
+## 23.09.2026 — Proje planı baz çizgisi
+Açılır panelde başlangıç tarihleri/görev kapsamı snapshot olarak sürüm ve SHA-256 özetiyle tutulur; değişen/eklenen/silinen görev adedi güncel planla karşılaştırılır. Bu karşılaştırma referansı resmi onay veya MOC kapanış kapısı değildir. DB tablosu mevcut `moc_project_baselines`; yeni şema gerektirmez.

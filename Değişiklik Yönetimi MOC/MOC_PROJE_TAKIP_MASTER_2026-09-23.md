@@ -266,3 +266,6 @@ Bu dikey dilim Gantt/Kanban, milestone-baseline arayüzü, dosya/kanıt saklama,
 ## Ürün adı standardı (23.09.2026)
 - Kullanıcıya görünen modül adı **Proje&MOC** olarak birleştirildi. Ana site katalog başlık/etiketleri, giriş ekranı, tarayıcı başlığı, üst çubuk ve çalışma alanı etiketi bu adı kullanır; İngilizce arayüzde “Project & MOC” görünür.
 - Uygulama içindeki iki çalışma alanı “MOC” ve “Proje Yönetimi” olarak kalır; modül kodu, Supabase yetkileri, tablolar, URL ve teknik API sözleşmesi `moc` olarak korunur.
+
+## Faz 3 devamı — plan baz çizgisi (23.09.2026)
+Proje detayına açılır-kapanır bir “Plan başlangıç noktası” paneli eklendi. Yetkili kullanıcı mevcut proje tarihleri, bütçe para birimi ve görev kapsamını sürümlü bir baz çizgisi olarak SHA-256 özetiyle kaydedebilir. Son baz çizgi ile güncel görev başlığı, fazı, başlangıç/termini, sorumlusu ve tahmini saati karşılaştırılır; eklenen, kaldırılan veya değişen görev adedi görünür. Panel kapalı başlar; görev ekranının ana akışını kalabalıklaştırmaz. Bu kayıt karşılaştırma referansıdır, onay kapısı veya MOC kapatma engeli değildir. Gerçek yetkili hesap ve proje kaydı olmadığından canlı yazma testi yapılmadı.
