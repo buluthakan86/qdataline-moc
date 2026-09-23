@@ -269,3 +269,6 @@ Bu dikey dilim Gantt/Kanban, milestone-baseline arayüzü, dosya/kanıt saklama,
 
 ## Faz 3 devamı — plan baz çizgisi (23.09.2026)
 Proje detayına açılır-kapanır bir “Plan başlangıç noktası” paneli eklendi. Yetkili kullanıcı mevcut proje tarihleri, bütçe para birimi ve görev kapsamını sürümlü bir baz çizgisi olarak SHA-256 özetiyle kaydedebilir. Son baz çizgi ile güncel görev başlığı, fazı, başlangıç/termini, sorumlusu ve tahmini saati karşılaştırılır; eklenen, kaldırılan veya değişen görev adedi görünür. Panel kapalı başlar; görev ekranının ana akışını kalabalıklaştırmaz. Bu kayıt karşılaştırma referansıdır, onay kapısı veya MOC kapatma engeli değildir. Gerçek yetkili hesap ve proje kaydı olmadığından canlı yazma testi yapılmadı.
+
+## Faz 5 devamı — proje maliyet kalemleri (23.09.2026)
+Proje detayına açılır “Maliyet kalemleri” paneli eklendi. Yetkili kullanıcı İşçilik, Satın alma, Dış hizmet, Üretim duruşu veya Diğer türlerinde görevle ilişkilendirilebilir maliyet kaydı ekleyip düzenleyebilir; planlanan/gerçekleşen tutar, para birimi ve belge referansı saklanır. Toplamlar para birimi bazında gösterilir. Mevcut proje bütçe alanları otomatik değiştirilmez; kalemlerin toplama dönüştürülmesi ayrıca finansal mutabakat gerektirir. Yeni şema yok; gerçek kullanıcı hesabıyla kayıt testi yapılmadı.

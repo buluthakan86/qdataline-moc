@@ -1247,3 +1247,6 @@ Kullanıcıya görünen modül adı Proje&MOC; EN karşılığı Project & MOC. 
 
 ## 23.09.2026 — Proje planı baz çizgisi
 Açılır panelde başlangıç tarihleri/görev kapsamı snapshot olarak sürüm ve SHA-256 özetiyle tutulur; değişen/eklenen/silinen görev adedi güncel planla karşılaştırılır. Bu karşılaştırma referansı resmi onay veya MOC kapanış kapısı değildir. DB tablosu mevcut `moc_project_baselines`; yeni şema gerektirmez.
+
+## 23.09.2026 — Maliyet kayıt ekranı
+Maliyet tablosu proje detayında kapalı başlayan bir panelden yönetilir. Kalemler görev, maliyet türü, planlanan/gerçekleşen tutar, para birimi ve belge ref. ile eklenir/düzenlenir. Para birimine göre toplam gösterilir; proje ana bütçesini otomatik güncellemez.
