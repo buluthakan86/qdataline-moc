@@ -74,6 +74,14 @@ ctx.PROJECT_CTX.project.moc_id=null;
 ctx.projectRenderDetail();
 assert.match(detail,/Bağımsız proje/);
 assert.doesNotMatch(detail,/prLinkedMoc/);
+const savedTasks=ctx.PROJECT_CTX.tasks;
+ctx.PROJECT_CTX.tasks=[];
+ctx.projectRenderDetail();
+assert.match(detail,/Projeyi başlatın/);
+assert.match(detail,/prStarterTask/);
+assert.match(detail,/prStarterInfo/);
+assert.match(detail,/prStarterCost/);
+ctx.PROJECT_CTX.tasks=savedTasks;
 ctx.PROJECT_CTX.project.moc_id=2;
 const ids=[...detail.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
 assert.equal(ids.length,new Set(ids).size,'Detail must not contain duplicate IDs');
@@ -88,6 +96,13 @@ assert.match(detail,/Plan timeline/);
 assert.match(detail,/Planned budget/);
 assert.match(detail,/Purchase/);
 assert.doesNotMatch(detail,/>Maliyet analizi</);
+ctx.PROJECT_CTX.project.moc_id=null;
+ctx.PROJECT_CTX.tasks=[];
+ctx.projectRenderDetail();
+assert.match(detail,/Get your project started/);
+assert.match(detail,/Add first task/);
+ctx.PROJECT_CTX.project.moc_id=2;
+ctx.PROJECT_CTX.tasks=savedTasks;
 const projectPart=html.slice(html.indexOf('function workspaceAc('),html.indexOf('function go('));
 const missing=[...projectPart.matchAll(/pT\('([^']+)'\)/g)].map(x=>x[1]).filter(x=>!ctx.PT_EN[x]&&!ctx.I18N[x]);
 assert.deepEqual([...new Set(missing)],[],'All literal project UI labels must have English translations');
@@ -97,6 +112,11 @@ if (process.argv[2]) {
   const path = require('node:path');
   const target = path.resolve(process.argv[2]);
   fs.mkdirSync(path.dirname(target), {recursive:true});
+  if (process.argv[3] === 'starter') {
+    ctx.PROJECT_CTX.project.moc_id=null;
+    ctx.PROJECT_CTX.tasks=[];
+    ctx.projectRenderDetail();
+  }
   const css = html.match(/<style>([\s\S]*?)<\/style>/)[1];
   fs.writeFileSync(target, '<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Proje görünümü kontrolü</title><style>'+css+'</style><body><main style="padding:20px;max-width:1400px;margin:auto">'+detail+'</main></body></html>');
 }

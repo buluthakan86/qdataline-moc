@@ -1,13 +1,13 @@
 # QDATALINE MOC + Proje Takip Master Planı
 
-**Sürüm:** 1.0  
+**Sürüm:** 1.1
 **Tarih:** 23 Eylül 2026  
 **Durum:** Uygulama başlangıç standardı  
-**Kapsam:** Mevcut MOC Değişiklik Yönetimi modülüne, değişikliğin uygulanmasını izleyen proje takip katmanının eklenmesi.
+**Kapsam:** Proje&MOC modülünde bağımsız projeler ve MOC uygulama planları.
 
 ## 1. Ürün kararı
 
-QDATALINE'da proje takibi bağımsız ve genel amaçlı bir görev uygulaması olarak konumlanmayacak. **MOC Uygulama Planı**, onaylanmış bir değişikliğin görev, tarih, sorumlu, bağımlılık, maliyet, kanıt ve kapanış koşullarını yöneten MOC alt çalışma alanı olacak.
+**23.09.2026 ürün kararı:** Proje, MOC kaydı olmadan da açılabilir. Proje&MOC modülünde iki yol vardır: bağımsız proje ve onaylı bir değişikliğe bağlanan MOC uygulama planı. İkisi görev, tarih, sorumlu, maliyet ve kanıt takibinin ortak ekranını kullanır; MOC'ye özgü PSSR, doküman, eğitim ve kapanış kapıları yalnız MOC bağlantılı projeye uygulanır. Aşağıdaki ilk faz maddelerinde “MOC uygulama planı” ifadesi geçen kısımlar bu ikinci yolu anlatır.
 
 Ana akış:
 
@@ -46,7 +46,7 @@ QDATALINE karşılıkları:
 
 | Piyasa deseni | MOC karşılığı |
 |---|---|
-| Proje | MOC uygulama planı |
+| Proje | Bağımsız proje veya MOC uygulama planı |
 | Faz | MOC uygulama, doküman, eğitim, PSSR, devreye alma |
 | Görev | Sorumlusu ve kanıtı olan uygulama aksiyonu |
 | Milestone | Onay tamam, doküman yürürlükte, eğitim tamam, PSSR geçti |
@@ -313,3 +313,4 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 - Bağımsız proje ad, açıklama ve isteğe bağlı başlangıç/bitiş tarihleriyle açılır; Başlatma, Planlama, Uygulama, İzleme ve kontrol, Kapanış aşamaları hazırlanır. Görevler, kilometre taşları, zaman çizelgesi, maliyet kalemleri, baz çizgi, kontrol listesi, kanıt ve bildirim aynı proje ekranını kullanır. MOC bağlantılı projelerin altı aşamalı kapanış kuralları korunur.
 - `moc_schema_faz_t_bagimsiz_proje.sql` MOC bağını isteğe bağlı yapar; yetki/RLS, görev bildirimi ve özel kanıt dosyalarını bağımsız projeye genişletir. Migration canlıda uygulanmadan önce `ROLLBACK` ile proje/görev/bildirim/kanıt uçtan uca denendi; test verisi kalmadı.
 - [Asana](https://help.asana.com/s/article/how-to-create-a-project) proje oluşturmayı belirgin bir üst eylem ve kısa kurulumla başlatır; [Monday.com](https://support.monday.com/hc/en-us/articles/22598441769746-Project-boards-on-monday-com) bağımsız proje, genel bakış, bağımlılık, efor ve bütçeyi bir araya getirir. [ClickUp](https://help.clickup.com/hc/en-us/articles/6310249474967-Create-and-share-a-Gantt-view) görevleri Gantt içinden oluşturup bağlantıları görünür kılar; [Jira](https://www.atlassian.com/software/jira/templates/project-management-templates) liste/pano/zaman çizelgesi şablonları sunar. Qdataline için çıkarım: oluşturma tek ve anlaşılır girişte, ayrıntı takibi mevcut proje ekranında; gereksiz iç içe hiyerarşi eklenmez. Apify bir proje yönetim ürünü değil, araştırma otomasyonu aracı olduğundan ürün karşılaştırmasına dahil edilmez.
+- Bağımsız proje görev içermiyorsa ilk açılışta kısa başlangıç alanı gösterilir: ilk görev, kapsam/tarih ve bütçe kalemi. İlk görev eklendiğinde alan kaybolur; mevcut faz, grafik ve zaman çizelgesi akışı korunur. Bu alan veri üretmez, yalnız mevcut formlara yönlendirir.
