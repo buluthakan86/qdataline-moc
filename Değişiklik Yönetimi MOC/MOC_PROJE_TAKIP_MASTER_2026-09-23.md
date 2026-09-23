@@ -257,3 +257,8 @@ Bu dikey dilim Gantt/Kanban, milestone-baseline arayüzü, dosya/kanıt saklama,
 ## 15. Dil ve güvenli durum güncellemesi (23.09.2026)
 
 Çalışma alanı seçimi TR/EN etiketleriyle birlikte değişir; proje fazlarının standart adları da iki dilde gösterilir. Kanban'daki durum değişimi klavye/dokunmatik seçicisiyle ve sürükle-bırakla yapılabilir; tamamlanan görev tekrar açılırsa ilerleme yüzdesi de tutarlı biçimde sıfırlanır. Milestone tamamlayan kullanıcı DB tetikleyicisiyle oturum kimliğine bağlanır. Bu aşamada milestone kanıt dosyası ve kanıta bağlı kapanış zorunluluğu yoktur; bu, sonraki kabul kapıları işidir.
+
+## Faz O devamı — görev zaman çizelgesi ve başlangıç kontrol listesi (23.09.2026)
+- Proje görevlerinde Liste, Kanban ve Zaman çizelgesi görünümleri bulunur. Zaman çizelgesi planlanan başlangıç ve termin alanlarından çizilir; tarihsiz görevler ayrı listelenir, tarihler düzenlenerek çizelgeye alınabilir.
+- MOC kaydından proje planı oluşturulduğunda altı faza birer başlangıç görevi eklenir: uygulama planı, doküman güncelleme, eğitim, PSSR/devreye alma, etkinlik kontrolü ve kapanış gözden geçirmesi. Bunlar düzenlenebilir öneri görevleridir; otomatik onay veya zorunlu kapatma kuralı oluşturmaz.
+- Canlı ve staging veritabanında yetkili MOC düzenleyicisi ve kaynak kayıt bulunmadığından RPC uçtan uca çağrı testi yapılmadı; yeni veri uydurulmadı. Şema/işlev SQL'i her iki ortamda uygulandı, mevcut kullanıcı verisi değiştirilmedi.

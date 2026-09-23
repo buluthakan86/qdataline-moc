@@ -197,6 +197,18 @@ BEGIN
  INSERT INTO public.moc_project_phases(tenant_id,project_id,name,sort_order) VALUES
  (v_tenant,v_project_id,'Uygulama',0),(v_tenant,v_project_id,'Doküman güncelleme',1),(v_tenant,v_project_id,'Eğitim',2),(v_tenant,v_project_id,'PSSR / Devreye alma',3),(v_tenant,v_project_id,'Etkinlik kontrolü',4),(v_tenant,v_project_id,'Kapanış',5)
  ON CONFLICT(project_id,sort_order) DO NOTHING;
+ INSERT INTO public.moc_project_tasks(tenant_id,project_id,phase_id,title,description,status,created_by)
+ SELECT v_tenant,v_project_id,p.id,x.title,x.description,'TODO',auth.uid()
+ FROM (VALUES
+  (0,'Uygulama planını ve sorumluları netleştir','Onaylı değişiklik için uygulanacak adımları ve sorumluları doğrula.'),
+  (1,'Etkilenen dokümanları güncelle','İlgili prosedür, talimat ve kayıtların revizyon ihtiyacını değerlendir.'),
+  (2,'Etkilenen personel eğitimlerini tamamla','Yeni veya güncellenen iş adımları için eğitimleri planla ve kaydet.'),
+  (3,'PSSR kontrollerini tamamla','Devreye alma öncesi gerekli saha ve güvenlik kontrollerini gözden geçir.'),
+  (4,'Etkinlik kontrolünü gerçekleştir','Değişiklik sonrası beklenen sonucun sağlandığını belirlenen ölçütlerle doğrula.'),
+  (5,'Açık aksiyonları ve kapanışı gözden geçir','Kalan işleri değerlendir ve MOC kapanışına hazırla.')
+ ) AS x(phase_order,title,description)
+ JOIN public.moc_project_phases p ON p.project_id=v_project_id AND p.tenant_id=v_tenant AND p.sort_order=x.phase_order
+ WHERE NOT EXISTS(SELECT 1 FROM public.moc_project_tasks t WHERE t.project_id=v_project_id AND t.phase_id=p.id AND t.title=x.title);
  RETURN v_project_id;
 END $$;
 REVOKE ALL ON FUNCTION public.moc_project_create_for_request(bigint) FROM PUBLIC, anon;
