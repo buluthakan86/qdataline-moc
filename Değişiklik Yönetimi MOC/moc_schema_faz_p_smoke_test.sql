@@ -80,6 +80,12 @@ DO $$ DECLARE v_task bigint; v_moc bigint; v_key text; BEGIN
  UPDATE public.moc_requests SET status='CLOSED' WHERE id=v_moc;
  IF NOT EXISTS(SELECT 1 FROM public.moc_projects WHERE moc_id=v_moc AND status='COMPLETED')
   THEN RAISE EXCEPTION 'TEST FAILED: project not completed on MOC closure'; END IF;
+ BEGIN UPDATE public.moc_project_tasks SET title='Post-closure edit' WHERE id=v_task;
+  RAISE EXCEPTION 'TEST FAILED: closed task changed';
+ EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'MOC_KAPALI_PROJE_DEGISTIRILEMEZ' THEN RAISE; END IF; END;
+ BEGIN DELETE FROM public.moc_project_tasks WHERE id=v_task;
+  RAISE EXCEPTION 'TEST FAILED: closed task deleted';
+ EXCEPTION WHEN raise_exception THEN IF SQLERRM <> 'MOC_KAPALI_PROJE_DEGISTIRILEMEZ' THEN RAISE; END IF; END;
 END $$;
 SELECT 'PASS: owner permissions, checklist, upload, completion and closure' AS result;
 ROLLBACK;

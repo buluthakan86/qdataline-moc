@@ -36,6 +36,10 @@ DROP TRIGGER IF EXISTS moc_project_task_integrity_guard ON public.moc_project_ta
 DROP TRIGGER IF EXISTS moc_project_close_guard ON public.moc_requests;
 DROP TRIGGER IF EXISTS moc_project_task_notify ON public.moc_project_tasks;
 DROP TRIGGER IF EXISTS moc_project_status_guard ON public.moc_projects;
+DROP TRIGGER IF EXISTS moc_project_closed_delete ON public.moc_projects;
+DROP TRIGGER IF EXISTS moc_project_task_closed_delete ON public.moc_project_tasks;
+DROP TRIGGER IF EXISTS moc_task_checklist_closed_delete ON public.moc_task_checklist_items;
+DROP TRIGGER IF EXISTS moc_project_milestone_closed_delete ON public.moc_project_milestones;
 DO $$ DECLARE p text; BEGIN
  FOREACH p IN ARRAY ARRAY['moc_task_checklist_select','moc_task_checklist_insert','moc_task_checklist_update','moc_task_checklist_delete'] LOOP
   EXECUTE format('DROP POLICY IF EXISTS %I ON public.moc_task_checklist_items',p);
@@ -165,6 +169,8 @@ BEGIN
  IF EXISTS(SELECT 1 FROM public.moc_projects p JOIN public.moc_requests r ON r.id=p.moc_id
    WHERE p.id=NEW.project_id AND r.status='CLOSED')
   THEN RAISE EXCEPTION 'MOC_KAPALI_PROJE_DEGISTIRILEMEZ'; END IF;
+ IF TG_OP='UPDATE' AND (NEW.tenant_id,NEW.project_id) IS DISTINCT FROM (OLD.tenant_id,OLD.project_id)
+  THEN RAISE EXCEPTION 'MOC_GOREV_PROJESI_DEGISTIRILEMEZ'; END IF;
  IF TG_OP='INSERT' AND auth.uid() IS NOT NULL AND NOT public.moc_project_can_manage(NEW.project_id)
   THEN RAISE EXCEPTION 'MOC_GOREV_YETKI_YOK'; END IF;
  IF TG_OP='UPDATE' AND auth.uid() IS NOT NULL AND NOT public.moc_project_can_manage(OLD.project_id) THEN
@@ -221,6 +227,25 @@ BEGIN
 END $$;
 CREATE TRIGGER moc_project_status_guard BEFORE UPDATE OF status ON public.moc_projects
  FOR EACH ROW EXECUTE FUNCTION public.moc_project_status_guard();
+
+CREATE OR REPLACE FUNCTION public.moc_project_closed_delete_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+DECLARE v_project bigint;
+BEGIN
+ v_project:=CASE WHEN TG_TABLE_NAME='moc_projects' THEN OLD.id ELSE OLD.project_id END;
+ IF EXISTS(SELECT 1 FROM public.moc_projects p JOIN public.moc_requests r ON r.id=p.moc_id
+  WHERE p.id=v_project AND p.tenant_id=OLD.tenant_id AND r.status='CLOSED')
+  THEN RAISE EXCEPTION 'MOC_KAPALI_PROJE_DEGISTIRILEMEZ'; END IF;
+ RETURN OLD;
+END $$;
+CREATE TRIGGER moc_project_closed_delete BEFORE DELETE ON public.moc_projects
+ FOR EACH ROW EXECUTE FUNCTION public.moc_project_closed_delete_guard();
+CREATE TRIGGER moc_project_task_closed_delete BEFORE DELETE ON public.moc_project_tasks
+ FOR EACH ROW EXECUTE FUNCTION public.moc_project_closed_delete_guard();
+CREATE TRIGGER moc_task_checklist_closed_delete BEFORE DELETE ON public.moc_task_checklist_items
+ FOR EACH ROW EXECUTE FUNCTION public.moc_project_closed_delete_guard();
+CREATE TRIGGER moc_project_milestone_closed_delete BEFORE DELETE ON public.moc_project_milestones
+ FOR EACH ROW EXECUTE FUNCTION public.moc_project_closed_delete_guard();
 
 CREATE OR REPLACE FUNCTION public.moc_project_close_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
