@@ -1,5 +1,9 @@
 # MOC (Değişiklik Yönetimi) — Proje Notları
 
+## Faz P (23.09.2026) — proje kapanış güvenliği
+
+`moc_schema_faz_p_kontrol_kanit.sql` staging ve canlı veritabanında uygulandı. Görev kontrol listesi/kanıtı ve MOC `STARTUP → CLOSED` kapısı artık sunucu tarafındadır. Altı başlangıç görevi zorunlu; doküman, eğitim, PSSR ve etkinlik görevleri kanıt ister. Görev sahibi yalnız kendi görevinin durumunu/ilerlemesini değiştirebilir; proje kurucusu/lideri, MOC koordinatörü ve yönetici tam düzenleme yapabilir. Görev atama/termin/durum bildirimleri uygulama içidir. `moc_schema_faz_p_smoke_test.sql` yalnız staging'de çalıştırılır; işlem sonunda `ROLLBACK` vardır. Üç canlı hesabın yetkisi okuma sorgusuyla doğrulandı. Canlıda proje verisi sıfır olduğundan oturum açmış gerçek kullanıcıyla proje oluşturma/kanıt yükleme arayüz testi henüz yapılmadı; ilk pilot kaydında doğrulanmalı. Ayrıntı ve kapsam: `MOC_PROJE_TAKIP_MASTER_2026-09-23.md`.
+
 ## 🔒 FAZ N (17.09.2026) — Denetimde bulunan 4 gerçek açık kapatıldı
 
 Dış denetimde 4 kanıtlanmış açık bulundu, dördü de aynı turda kapatıldı, canlı test

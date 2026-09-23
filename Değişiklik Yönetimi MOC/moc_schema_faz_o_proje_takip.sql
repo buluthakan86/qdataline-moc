@@ -197,8 +197,8 @@ BEGIN
  INSERT INTO public.moc_project_phases(tenant_id,project_id,name,sort_order) VALUES
  (v_tenant,v_project_id,'Uygulama',0),(v_tenant,v_project_id,'Doküman güncelleme',1),(v_tenant,v_project_id,'Eğitim',2),(v_tenant,v_project_id,'PSSR / Devreye alma',3),(v_tenant,v_project_id,'Etkinlik kontrolü',4),(v_tenant,v_project_id,'Kapanış',5)
  ON CONFLICT(project_id,sort_order) DO NOTHING;
- INSERT INTO public.moc_project_tasks(tenant_id,project_id,phase_id,title,description,status,created_by)
- SELECT v_tenant,v_project_id,p.id,x.title,x.description,'TODO',auth.uid()
+ INSERT INTO public.moc_project_tasks(tenant_id,project_id,phase_id,title,description,status,created_by,required,evidence_required)
+ SELECT v_tenant,v_project_id,p.id,x.title,x.description,'TODO',auth.uid(),true,x.phase_order IN (1,2,3,4)
  FROM (VALUES
   (0,'Uygulama planını ve sorumluları netleştir','Onaylı değişiklik için uygulanacak adımları ve sorumluları doğrula.'),
   (1,'Etkilenen dokümanları güncelle','İlgili prosedür, talimat ve kayıtların revizyon ihtiyacını değerlendir.'),
