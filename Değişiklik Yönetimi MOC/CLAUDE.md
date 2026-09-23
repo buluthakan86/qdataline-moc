@@ -1250,3 +1250,6 @@ Açılır panelde başlangıç tarihleri/görev kapsamı snapshot olarak sürüm
 
 ## 23.09.2026 — Maliyet kayıt ekranı
 Maliyet tablosu proje detayında kapalı başlayan bir panelden yönetilir. Kalemler görev, maliyet türü, planlanan/gerçekleşen tutar, para birimi ve belge ref. ile eklenir/düzenlenir. Para birimine göre toplam gösterilir; proje ana bütçesini otomatik güncellemez.
+
+## 23.09.2026 — Görev bağımlılığı
+`moc_schema_faz_o_gorev_bagimlilik.sql` staging ve prod'a uygulandı. UI tek FINISH_TO_START öncülü gösterir ve `moc_project_set_predecessor` RPC ile atomik değiştirir. Trigger çevrimi ve bağımlılık ihlal eden durum geçişlerini engeller. Teknik `moc` kodu değişmez. Canlıda mevcut proje/görev bulunmadığından gerçek oturumla yazma testi yapılamadı.
