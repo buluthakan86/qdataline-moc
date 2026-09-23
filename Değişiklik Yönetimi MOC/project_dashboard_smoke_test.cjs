@@ -18,6 +18,7 @@ const ctx = {
   fmtMoney: (x) => String(x),
   esc: (x) => String(x ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),
   projectCostTypeLabel: (x) => x,
+  projectTaskStatusLabel: (x) => x,
   projectTaskDependencyNote: () => '',
   PROJECT_CTX: {
     project: {id:2,name:'[DEMO] Paketleme hattı sensör yenilemesi',status:'ACTIVE',currency:'TRY', budget_planned:185000, planned_start:'2026-09-20', planned_end:'2026-10-28'},
@@ -26,7 +27,7 @@ const ctx = {
     phases: [{id:1,name:'Uygulama'},{id:2,name:'Doküman'},{id:3,name:'Eğitim'}],
     tasks: [
       {id:1,phase_id:1,title:'Biten görev',status:'DONE',planned_start:'2026-09-20',due_date:'2026-09-22'},
-      {id:2,phase_id:2,title:'Açık görev',status:'IN_PROGRESS',planned_start:'2026-09-23',due_date:'2026-09-29'},
+      {id:2,phase_id:2,title:'Açık görev',status:'IN_PROGRESS',progress:65,planned_start:'2026-09-23',due_date:'2026-09-29'},
       {id:3,phase_id:3,title:'<test>',status:'BLOCKED',planned_start:'2026-10-02',due_date:'2026-10-09'}
     ],
     milestones: [{name:'Onay',target_date:'2026-09-22',completed_at:'2026-09-22'}],
@@ -39,11 +40,13 @@ const ctx = {
   }
 };
 vm.createContext(ctx);
-vm.runInContext(pick('projectTimelineMarkup','projectBaselineMarkup') + pick('projectOverviewMarkup','projectCostMarkup'), ctx);
+vm.runInContext(pick('projectTimelineMarkup','projectBaselineMarkup') + pick('projectProgressPercent','projectCostMarkup'), ctx);
 const overview = ctx.projectOverviewMarkup();
 const timeline = ctx.projectTimelineMarkup(ctx.PROJECT_CTX.tasks);
 assert.match(overview, /Proje akışı/);
 assert.match(overview, /Kaydedilen gider/);
+assert.equal(ctx.projectProgressPercent(ctx.PROJECT_CTX.tasks),55);
+assert.match(overview, /width:65%/);
 assert.match(overview, /6500/);
 assert.match(overview, /185000/);
 assert.match(overview, /2026-09/);

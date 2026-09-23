@@ -77,6 +77,18 @@ DO $$ DECLARE v_task bigint; v_moc bigint; v_key text; BEGIN
  PERFORM public.moc_project_add_task_evidence(v_task,'Stage evidence',v_key,'application/pdf',1024);
  UPDATE public.moc_project_tasks SET status='DONE',progress=100 WHERE id=v_task;
  PERFORM set_config('request.jwt.claim.sub','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',true);
+ INSERT INTO public.moc_project_milestones(tenant_id,project_id,name,milestone_type,target_date)
+ SELECT tenant_id,id,'Stage PSSR','PSSR',current_date FROM public.moc_projects
+ WHERE tenant_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+ BEGIN
+  UPDATE public.moc_projects SET status='COMPLETED'
+  WHERE tenant_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  RAISE EXCEPTION 'TEST FAILED: manual project completion skipped milestone';
+ EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM <> 'MOC_KILOMETRE_TASI_EKSIK' THEN RAISE; END IF;
+ END;
+ UPDATE public.moc_project_milestones SET completed_at=now(),completed_by=auth.uid()
+ WHERE tenant_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
  UPDATE public.moc_requests SET status='CLOSED' WHERE id=v_moc;
  IF NOT EXISTS(SELECT 1 FROM public.moc_projects WHERE moc_id=v_moc AND status='COMPLETED')
   THEN RAISE EXCEPTION 'TEST FAILED: project not completed on MOC closure'; END IF;

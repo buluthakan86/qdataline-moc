@@ -300,3 +300,9 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 - `moc_schema_faz_q_onay_yetki.sql` ile onay RPC'sinde oturum/tenant/modül/editör/atanan onaycı/kendi talebi/adım sırası denetimleri eklendi; staging smoke testi geçti, aynı migration canlıya uygulandı.
 - Doğrulama: inline JavaScript derleme; proje detayının TR/EN render testi, farklı para birimleri ve tarihli maliyet hesabı, HTML kaçışları, benzersiz ID'ler; tarayıcıda masaüstü/390px görsel kontrolü; gerçek giriş HTML'inde Türkçe→English ve yenileme sonrası tercih kalıcılığı. Canlı demo kayıt, kanıt ve maliyet tarihleri SQL okumasıyla doğrulandı.
 - Sınır: giriş yapılmış gerçek tarayıcı oturumunda tüm yazma işlemleri bu kontrolde denenmedi. Arayüz testleri sentetik yerel veri, canlı demo doğrulaması SQL/RPC düzeyindedir. Canlıya çıkışta sürüm dosyası, CSP ve HTTP kontrolleri zorunludur.
+
+## 23.09.2026 — Kısmi ilerleme, termin sapması ve proje kapanış kapısı
+
+- Görev sahibi **Kontrol / Kanıt** penceresinden 0–99% ilerleme kaydedebilir. Yönetici görev formunda ilerleme, tahmini/gerçekleşen saat ve durumunu düzenler. Tamamlanan görev 100%, iptal edilen görev hesap dışıdır. Proje ve faz yüzdeleri aktif görevlerin aritmetik ortalamasıdır; iş yükü ağırlıklı kazanılmış değer hesabı değildir.
+- Görev listesi ve plan zaman çizelgesi kısmi ilerlemeyi gösterir. Kilometre taşı terminleri geçmişse gecikme görünür. Baz çizgide güncel termini kayıtlı ilk terminden ileri taşınan görev adedi ayrı gösterilir.
+- `moc_schema_faz_s_proje_kapanis_kapisi.sql` manuel **Tamamlandı** durumunu zorunlu görev, kontrol listesi, görev kanıtı ve zorunlu kilometre taşı denetimine bağlar. Staging `moc_schema_faz_p_smoke_test.sql` açık kilometre taşıyla manuel kapanışı reddetti ve normal MOC kapanışını geçirdi. Aynı kural canlıya uygulandı.

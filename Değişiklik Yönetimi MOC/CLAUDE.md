@@ -1273,3 +1273,7 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 - `moc_schema_faz_q_onay_yetki.sql` ile onay RPC'sinde oturum/tenant/modül/editör/atanan onaycı/kendi talebi/adım sırası denetimleri eklendi; staging smoke testi geçti, aynı migration canlıya uygulandı.
 - Doğrulama: inline JavaScript derleme; proje detayının TR/EN render testi, farklı para birimleri ve tarihli maliyet hesabı, HTML kaçışları, benzersiz ID'ler; tarayıcıda masaüstü/390px görsel kontrolü; gerçek giriş HTML'inde Türkçe→English ve yenileme sonrası tercih kalıcılığı. Canlı demo kayıt, kanıt ve maliyet tarihleri SQL okumasıyla doğrulandı.
 - Sınır: giriş yapılmış gerçek tarayıcı oturumunda tüm yazma işlemleri bu kontrolde denenmedi. Arayüz testleri sentetik yerel veri, canlı demo doğrulaması SQL/RPC düzeyindedir. Canlıya çıkışta sürüm dosyası, CSP ve HTTP kontrolleri zorunludur.
+
+## 23.09.2026 — Proje takip devamı
+
+`moc_schema_faz_s_proje_kapanis_kapisi.sql` staging ve canlıda uygulanmıştır. Manuel proje tamamlaması; zorunlu görev, kontrol maddesi, kanıt ve kilometre taşlarını MOC kapanışıyla aynı kapsamda denetler. Staging'deki geri alınan işlem testi başarıyla geçti. Görev ilerlemesi görev sahibi tarafından 0–99% kaydedilir; yönetici formunda düzenlenir. Liste, fazlar ve zaman çizelgesi kısmi ilerlemeyi gösterir. Baz çizgide ileri taşınan termin sayısı ve geciken kilometre taşları ayrıca belirtilir.
