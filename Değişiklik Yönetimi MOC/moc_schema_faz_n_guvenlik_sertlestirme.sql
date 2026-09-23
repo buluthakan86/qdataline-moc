@@ -154,6 +154,24 @@ begin
   if v_req.id is null then
     raise exception 'MOC_KAYIT_YOK' using hint = 'Talep bulunamadi.';
   end if;
+  -- SECURITY DEFINER kullanicinin RLS'ini asar; kimlik ve sirali onay burada zorlanir.
+  if auth.uid() is null
+     or v_req.tenant_id is distinct from public.current_tenant_id()
+     or not public.is_editor()
+     or not exists(select 1 from public.modul_yetki
+                   where user_id=auth.uid() and modul='moc') then
+    raise exception 'MOC_YETKI_YOK';
+  end if;
+  if v_req.status <> 'APPROVAL' then raise exception 'MOC_GECERSIZ_GECIS'; end if;
+  if v_req.initiator_id = auth.uid() then raise exception 'MOC_KENDI_ONAYI'; end if;
+  if v_appr.approver_id is not null and v_appr.approver_id <> auth.uid() then
+    raise exception 'MOC_YETKI_YOK';
+  end if;
+  if v_appr.id is distinct from (
+    select a.id from public.moc_approvals a
+     where a.moc_id=v_req.id and a.decision is null
+     order by a.step_order,a.id limit 1
+  ) then raise exception 'MOC_GECERSIZ_GECIS'; end if;
 
   -- Sunucu tarafinda hesaplanan gercek SHA-256 kanit ozeti — istemciden gelen
   -- deger asla kullanilmaz (eski kod istemci Base64'unu evidence_hash'e yaziyordu).

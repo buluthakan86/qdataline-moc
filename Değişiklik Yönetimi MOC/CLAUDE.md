@@ -1257,3 +1257,19 @@ Maliyet tablosu proje detayında kapalı başlayan bir panelden yönetilir. Kale
 
 ## 23.09.2026 — Görev bağımlılığı
 `moc_schema_faz_o_gorev_bagimlilik.sql` staging ve prod'a uygulandı. UI tek FINISH_TO_START öncülü gösterir ve `moc_project_set_predecessor` RPC ile atomik değiştirir. Trigger çevrimi ve bağımlılık ihlal eden durum geçişlerini engeller. Teknik `moc` kodu değişmez. Canlıda mevcut proje/görev bulunmadığından gerçek oturumla yazma testi yapılamadı.
+
+
+## 23.09.2026 — Proje özeti, maliyet grafikleri, çalışma alanı geçişi ve TR/EN
+
+Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum notlarının güncel karşılığıdır.
+
+- Üst çubukta sürekli görünen MOC / Proje geçişi vardır. Proje detayından bağlı MOC kaydı doğrudan açılır; çift ekran yüklemesinin birbirini ezmesi engellendi.
+- Proje detayında faz ilerlemesi, sıradaki açık iş, sorumlu/termin, geciken ve bloke görevler, proje lideri/sponsor ve tahmini/gerçekleşen saat toplamı görünür. Görev düzenleme saat alanlarını içerir.
+- Zaman çizelgesi detay ekranında doğrudan görünür: görev aralıkları, bugünün çizgisi, kilometre taşları ve tarihsiz görev uyarısı. Liste/Kanban görev yönetimi ve kontrol/kanıt işlemleri devam eder.
+- Maliyet dağılımı ve aylık plan/gerçekleşen grafikleri maliyet kalemlerinden hesaplanır. Bütçe, kaydedilen gider ve kalan bütçe gösterilir. Farklı para birimleri toplanmaz. Tarihsiz gerçekleşen gider ayrı belirtilir. Yeni pozitif gerçekleşen gider için tarih istenir.
+- `moc_schema_faz_r_maliyet_tarihleri.sql` staging ve canlıya uygulandı: `planned_on`, `incurred_on`. Eski kayıtlar için tarih uydurulmadı. Eski `budget_actual` alanı silinmedi; yeni ekranın gider toplamı maliyet kayıtlarından hesaplanır, manuel ikinci toplam düzenlenmez.
+- Giriş ve üst çubukta Türkçe / English seçicisi var. `qdl_language` ve eski `moc_lang` tercihi desteklenir. Dil değişimi açık proje ekranını korur. Proje etiketleri, maliyet/takvim açıklamaları, varsayılan görev metinleri ve doğrulama mesajları çevrilir; kullanıcıların yazdığı özel metinler otomatik çevrilmez.
+- Gerçek firma verisi değiştirilmeden demo tenant içinde `[DEMO] Paketleme hattı sensör yenilemesi` oluşturuldu: MOC `MOC-2026-0002` (id 61), proje id 2; 6 faz/görev, 5 kilometre taşı, 3 maliyet kalemi, bağımlılık/baz çizgisi ve sentetik kanıt dosyası. Plan 185.000 TRY, kayıtlı gider 6.500 TRY. Seed SQL dosyaları yalnız belirtilen demo kaydını hedefler.
+- `moc_schema_faz_q_onay_yetki.sql` ile onay RPC'sinde oturum/tenant/modül/editör/atanan onaycı/kendi talebi/adım sırası denetimleri eklendi; staging smoke testi geçti, aynı migration canlıya uygulandı.
+- Doğrulama: inline JavaScript derleme; proje detayının TR/EN render testi, farklı para birimleri ve tarihli maliyet hesabı, HTML kaçışları, benzersiz ID'ler; tarayıcıda masaüstü/390px görsel kontrolü; gerçek giriş HTML'inde Türkçe→English ve yenileme sonrası tercih kalıcılığı. Canlı demo kayıt, kanıt ve maliyet tarihleri SQL okumasıyla doğrulandı.
+- Sınır: giriş yapılmış gerçek tarayıcı oturumunda tüm yazma işlemleri bu kontrolde denenmedi. Arayüz testleri sentetik yerel veri, canlı demo doğrulaması SQL/RPC düzeyindedir. Canlıya çıkışta sürüm dosyası, CSP ve HTTP kontrolleri zorunludur.
