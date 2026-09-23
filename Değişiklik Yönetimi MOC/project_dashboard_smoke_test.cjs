@@ -21,7 +21,7 @@ const ctx = {
   projectTaskStatusLabel: (x) => x,
   projectTaskDependencyNote: () => '',
   PROJECT_CTX: {
-    project: {id:2,name:'[DEMO] Paketleme hattı sensör yenilemesi',status:'ACTIVE',currency:'TRY', budget_planned:185000, planned_start:'2026-09-20', planned_end:'2026-10-28'},
+    project: {id:2,moc_id:2,name:'[DEMO] Paketleme hattı sensör yenilemesi',status:'ACTIVE',currency:'TRY', budget_planned:185000, planned_start:'2026-09-20', planned_end:'2026-10-28'},
     moc: {moc_no:'MOC-2026-0002',title:'[DEMO] Paketleme hattı sensör yenilemesi'},
     baselines: [], dependencies: [],
     phases: [{id:1,name:'Uygulama'},{id:2,name:'Doküman'},{id:3,name:'Eğitim'}],
@@ -70,6 +70,11 @@ ctx.projectRenderDetail();
 assert.match(detail,/prLinkedMoc/);
 assert.match(detail,/Plan zaman çizelgesi/);
 assert.match(detail,/Maliyet kalemleri/);
+ctx.PROJECT_CTX.project.moc_id=null;
+ctx.projectRenderDetail();
+assert.match(detail,/Bağımsız proje/);
+assert.doesNotMatch(detail,/prLinkedMoc/);
+ctx.PROJECT_CTX.project.moc_id=2;
 const ids=[...detail.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
 assert.equal(ids.length,new Set(ids).size,'Detail must not contain duplicate IDs');
 vm.runInContext(html.slice(html.indexOf('var I18N='),html.indexOf('function t(s)'))+
