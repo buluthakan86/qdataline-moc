@@ -1241,3 +1241,6 @@ görünüm. `new Function()` ile sözdizimi doğrulandı.
 - Güvenlik düzeltmesi: milestone `completed_by` alanı DB trigger'ında `auth.uid()` ile doğrulanır; iptal edilen görev Kanban'da ayrı sütunda görünür. Çalışma alanı kartları ve varsayılan faz adları TR/EN destekler.
 
 - 23.09.2026 devamı: Görev paneline Liste/Kanban/Zaman çizelgesi görünümü eklendi. Çizelge görev başlangıç ve terminine göre hesaplanır; tarihsiz görevler ayrıca gösterilir. Yeni proje planlarında altı faz için düzenlenebilir başlangıç kontrol görevleri otomatik açılır (onay/kapatma kapısı değildir). TR/EN etiketler ve CSP hash'i birlikte güncellenmelidir.
+
+## 23.09.2026 — Modül adı
+Kullanıcıya görünen modül adı Proje&MOC; EN karşılığı Project & MOC. Ana site katalog kaydı, giriş metni, tarayıcı başlığı, üst çubuk ve çalışma alanı etiketi senkron tutulur. Teknik modül kodu `moc` değiştirilmeyecek.

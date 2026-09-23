@@ -262,3 +262,7 @@ Bu dikey dilim Gantt/Kanban, milestone-baseline arayüzü, dosya/kanıt saklama,
 - Proje görevlerinde Liste, Kanban ve Zaman çizelgesi görünümleri bulunur. Zaman çizelgesi planlanan başlangıç ve termin alanlarından çizilir; tarihsiz görevler ayrı listelenir, tarihler düzenlenerek çizelgeye alınabilir.
 - MOC kaydından proje planı oluşturulduğunda altı faza birer başlangıç görevi eklenir: uygulama planı, doküman güncelleme, eğitim, PSSR/devreye alma, etkinlik kontrolü ve kapanış gözden geçirmesi. Bunlar düzenlenebilir öneri görevleridir; otomatik onay veya zorunlu kapatma kuralı oluşturmaz.
 - Canlı ve staging veritabanında yetkili MOC düzenleyicisi ve kaynak kayıt bulunmadığından RPC uçtan uca çağrı testi yapılmadı; yeni veri uydurulmadı. Şema/işlev SQL'i her iki ortamda uygulandı, mevcut kullanıcı verisi değiştirilmedi.
+
+## Ürün adı standardı (23.09.2026)
+- Kullanıcıya görünen modül adı **Proje&MOC** olarak birleştirildi. Ana site katalog başlık/etiketleri, giriş ekranı, tarayıcı başlığı, üst çubuk ve çalışma alanı etiketi bu adı kullanır; İngilizce arayüzde “Project & MOC” görünür.
+- Uygulama içindeki iki çalışma alanı “MOC” ve “Proje Yönetimi” olarak kalır; modül kodu, Supabase yetkileri, tablolar, URL ve teknik API sözleşmesi `moc` olarak korunur.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Değişiklik Yönetimi · Qdataline</title>
+<title>Proje&amp;MOC · Qdataline</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -90,6 +90,7 @@ h1,h2,h3,h4{font-family:"Space Grotesk","Inter","Segoe UI",system-ui,sans-serif;
 .topbar .logo-mark{width:28px;height:28px;flex-shrink:0}
 .topbar .logo-txt .n{font-size:14.5px;font-weight:500;letter-spacing:.4px;color:var(--ink);line-height:1}
 .topbar .logo-txt .n b{font-weight:700;background:linear-gradient(90deg,#7C3AED,#C4B5FD);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.topbar .logo-txt .s{font-size:9px;letter-spacing:.8px;color:var(--muted);margin-top:3px;line-height:1}
 .topbar h1{font-size:16px;font-weight:700}
 .topbar .crumb{font-size:12px;color:var(--muted)}
 .topbar .sp{flex:1}
@@ -295,7 +296,7 @@ textarea{resize:vertical;min-height:70px}
       </svg>
       <h1 style="margin:0">Q<b style="background:linear-gradient(90deg,#7C3AED,#C4B5FD);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">data</b>line</h1>
     </div>
-    <div class="s" id="loSub">Değişiklik Yönetimi (MOC)</div>
+    <div class="s" id="loSub">Proje&amp;MOC Modülü</div>
     <form id="loginForm">
       <label id="loLblEmail">E-posta</label>
       <input id="loginEmail" type="email" autocomplete="username" required>
@@ -314,9 +315,9 @@ textarea{resize:vertical;min-height:70px}
 <div id="app">
     <div id="workspacePicker" aria-labelledby="workspaceTitle">
     <div class="workspace-inner">
-      <div class="workspace-kicker" id="workspaceKicker">QDATALINE · ÇALIŞMA ALANI</div>
+      <div class="workspace-kicker" id="workspaceKicker">QDATALINE · PROJE&amp;MOC MODÜLÜ</div>
       <h1 id="workspaceTitle" class="workspace-title">Nereden devam etmek istersiniz?</h1>
-      <p class="workspace-sub" id="workspaceSub">Değişikliğin kendisini MOC alanında yönetin; onaylanan değişikliğin uygulama planını Proje Yönetimi alanında takip edin.</p>
+      <p class="workspace-sub" id="workspaceSub">Değişiklik ve proje çalışmalarınızı ilgili çalışma alanından yönetin.</p>
       <div class="workspace-grid">
         <button class="workspace-card" id="workspaceMoc" type="button">
           <div class="wk-icon">↗</div><h2>MOC</h2><p id="workspaceMocDesc">Değişiklik talepleri, risk değerlendirmesi, onaylar, doküman/eğitim adımları ve PSSR.</p><div class="wk-foot"><span id="workspaceMocAction">Mevcut MOC ekranlarını aç</span><span class="wk-arrow">→</span></div>
@@ -335,6 +336,7 @@ textarea{resize:vertical;min-height:70px}
         </svg>
         <div class="logo-txt">
           <div class="n">Q<b>data</b>line</div>
+          <div class="s" id="moduleBrandName">PROJE&amp;MOC</div>
         </div>
       </div>
       <h1 id="pageTitle">Değişiklik Talepleri</h1>
@@ -489,7 +491,7 @@ var I18N={
   'Seçilirse tamamlanma durumu Eğitim Platformu\'ndan canlı izlenir, elle işaretlemeye gerek kalmaz.':'If selected, completion status is tracked live from the Training Platform — no manual marking needed.',
   '— Manuel (serbest metin konu) —':'— Manual (free text topic) —','Yenileniyor…':'Refreshing…',
   'Özet':'Overview','Değişiklik Talepleri':'Change Requests','Onay Bekleyenler':'Pending Approvals',
-  'Tüm Değişiklikler':'All Changes','Ayarlar':'Settings','Değişiklik Yönetimi (MOC)':'Management of Change (MOC)',
+  'Tüm Değişiklikler':'All Changes','Ayarlar':'Settings','Proje&MOC Modülü':'Project & MOC Module','Bu hesabın Proje&MOC modülüne erişimi yok.':'This account does not have access to the Project & MOC module.',
   'E-posta':'Email','Şifre':'Password','Giriş Yap':'Log In','Çıkış':'Log Out','Açık/Koyu tema':'Light/Dark theme',
   'MOC no / başlık ara…':'MOC no / title search…','+ Yeni Değişiklik Talebi':'+ New Change Request',
   'Yükleniyor…':'Loading…','Kayıt yok.':'No records.','Kaydet':'Save','Vazgeç':'Cancel','Kapat':'Close',
@@ -622,15 +624,17 @@ function applyMocLangStatic(){
   var loLang=document.getElementById('loLangBtn');
   if(loLang){
     loLang.textContent=LANG==='tr'?'EN':'TR';
-    var loSub=document.getElementById('loSub'); if(loSub) loSub.textContent=t('Değişiklik Yönetimi (MOC)');
+    document.title=LANG==='tr'?'Proje&MOC · Qdataline':'Project & MOC · Qdataline';
+    var loSub=document.getElementById('loSub'); if(loSub) loSub.textContent=t('Proje&MOC Modülü');
     var loE=document.getElementById('loLblEmail'); if(loE) loE.textContent=t('E-posta');
     var loP=document.getElementById('loLblPass'); if(loP) loP.textContent=t('Şifre');
     var loB=document.getElementById('loginBtn'); if(loB) loB.textContent=t('Giriş Yap');
   }
-  var workspaceCopy={workspaceKicker:['QDATALINE · ÇALIŞMA ALANI','QDATALINE · WORKSPACE'],workspaceTitle:['Nereden devam etmek istersiniz?','Where would you like to continue?'],workspaceSub:['Değişikliğin kendisini MOC alanında yönetin; onaylanan değişikliğin uygulama planını Proje Yönetimi alanında takip edin.','Manage the change in MOC; track the approved change implementation plan in Project Management.'],workspaceMocDesc:['Değişiklik talepleri, risk değerlendirmesi, onaylar, doküman/eğitim adımları ve PSSR.','Change requests, risk assessment, approvals, document and training steps, and PSSR.'],workspaceMocAction:['Mevcut MOC ekranlarını aç','Open existing MOC workspace'],workspaceProjectTitle:['Proje Yönetimi','Project Management'],workspaceProjectDesc:['Onaylanan değişikliğin fazlarını, görevlerini, sorumlularını, tarihlerini ve maliyetini takip et.','Track phases, tasks, owners, dates, and costs for approved changes.'],workspaceProjectAction:['Uygulama planını aç','Open implementation plans']};
+  var workspaceCopy={workspaceKicker:['QDATALINE · PROJE&MOC MODÜLÜ','QDATALINE · PROJECT & MOC MODULE'],workspaceTitle:['Nereden devam etmek istersiniz?','Where would you like to continue?'],workspaceSub:['Değişiklik ve proje çalışmalarınızı ilgili çalışma alanından yönetin.','Manage change and project work from the relevant workspace.'],workspaceMocDesc:['Değişiklik talepleri, risk değerlendirmesi, onaylar, doküman/eğitim adımları ve PSSR.','Change requests, risk assessment, approvals, document and training steps, and PSSR.'],workspaceMocAction:['MOC çalışma alanını aç','Open MOC workspace'],workspaceProjectTitle:['Proje Yönetimi','Project Management'],workspaceProjectDesc:['Onaylanan değişikliğin fazlarını, görevlerini, sorumlularını, tarihlerini ve maliyetini takip et.','Track phases, tasks, owners, dates, and costs for approved changes.'],workspaceProjectAction:['Uygulama planını aç','Open implementation plans']};
   Object.keys(workspaceCopy).forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=workspaceCopy[id][LANG==='en'?1:0];});
   var appLang=document.getElementById('langBtn');
   if(appLang){
+    var brandName=document.getElementById('moduleBrandName'); if(brandName) brandName.textContent=LANG==='tr'?'PROJE&MOC':'PROJECT & MOC';
     appLang.textContent=LANG==='tr'?'EN':'TR';
     var tt=document.getElementById('btnThemeToggle'); if(tt) tt.title=t('Açık/Koyu tema');
     var lo=document.getElementById('btnLogout'); if(lo) lo.textContent=t('Çıkış');
@@ -772,7 +776,7 @@ function afterLogin(session){
     if(p.is_active===false){ loginMsg('Hesabınız pasif.'); return; }
     cloudTenantId=p.tenant_id; cloudRole=p.role||'VIEWER'; cloudFullName=p.full_name||'';
     sb.from('modul_yetki').select('modul').eq('user_id',cloudUserId).eq('modul',MOC_MODUL).maybeSingle().then(function(mr){
-      if(mr.error||!mr.data){ loginMsg('Bu hesabın Değişiklik Yönetimi (MOC) modülüne erişimi yok.'); return; }
+      if(mr.error||!mr.data){ loginMsg(t('Bu hesabın Proje&MOC modülüne erişimi yok.')); return; }
       loginMsg('Veriler yükleniyor…');
       fetchExchangeRates();
       loadLookups().then(function(){
