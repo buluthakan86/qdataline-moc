@@ -249,3 +249,11 @@ MOC.html giriş sonrası iki büyük çalışma alanı kartı gösterecek şekil
 - Şema 22.09.2026'da önce staging (`cfcwsoufsnwpycebhxdb`), ardından canlı Eksenpro veritabanına (`bbltvuxxtacrpgrqnfoh`) idempotent olarak uygulandı.
 
 Bu dikey dilim Gantt/Kanban, milestone-baseline arayüzü, dosya/kanıt saklama, otomatik bildirim, MOC kapanış kapıları, portföy raporu ve Apify entegrasyonunu henüz içermez; sonraki fazlarda ele alınacaktır. Proje alanında temel işlevlerin kabul testi sonrası faz 3 planlamasına geçilir.
+
+## 14. Görev panosu ve kilometre taşları (23.09.2026)
+
+İkinci dikey dilim proje detayına erişilebilir liste/Kanban geçişi ekler. Kanban kartları masaüstünde sürüklenerek; klavye ve dokunmatik kullanımında kart içindeki durum seçicisiyle taşınabilir. İptal edilen işler de ayrı sütunda görünür. Kilometre taşları tür/tarih/kanıt gereksinimi ile eklenir ve yetkili kişi tarafından tamamlandı/yeniden açıldı olarak işaretlenir. Bu kayıtlar henüz MOC kapanışını otomatik engellemez; kapanış kapıları ayrı güvenlik kabul testine bırakılmıştır.
+
+## 15. Dil ve güvenli durum güncellemesi (23.09.2026)
+
+Çalışma alanı seçimi TR/EN etiketleriyle birlikte değişir; proje fazlarının standart adları da iki dilde gösterilir. Kanban'daki durum değişimi klavye/dokunmatik seçicisiyle ve sürükle-bırakla yapılabilir; tamamlanan görev tekrar açılırsa ilerleme yüzdesi de tutarlı biçimde sıfırlanır. Milestone tamamlayan kullanıcı DB tetikleyicisiyle oturum kimliğine bağlanır. Bu aşamada milestone kanıt dosyası ve kanıta bağlı kapanış zorunluluğu yoktur; bu, sonraki kabul kapıları işidir.

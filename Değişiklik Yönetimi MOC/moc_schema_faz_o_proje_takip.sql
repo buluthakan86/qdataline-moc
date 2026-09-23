@@ -140,6 +140,20 @@ BEGIN
  RETURN NEW;
 END $$;
 DO $$ DECLARE t text; BEGIN FOREACH t IN ARRAY ARRAY['moc_projects','moc_project_tasks','moc_task_dependencies','moc_project_costs'] LOOP EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.%I',t||'_created_by_guard',t); EXECUTE format('CREATE TRIGGER %I BEFORE INSERT OR UPDATE ON public.%I FOR EACH ROW EXECUTE FUNCTION public.moc_project_created_by_guard()',t||'_created_by_guard',t); END LOOP; END $$;
+CREATE OR REPLACE FUNCTION public.moc_project_milestone_actor_guard() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$
+BEGIN
+ IF NEW.completed_at IS NULL THEN
+  NEW.completed_by:=NULL;
+ ELSIF TG_OP='INSERT' THEN
+  IF NEW.completed_by IS DISTINCT FROM auth.uid() THEN RAISE EXCEPTION 'Tamamlayan kullanıcı oturumla aynı olmalıdır'; END IF;
+ ELSIF NEW.completed_at IS DISTINCT FROM OLD.completed_at OR NEW.completed_by IS DISTINCT FROM OLD.completed_by THEN
+  IF NEW.completed_by IS DISTINCT FROM auth.uid() THEN RAISE EXCEPTION 'Tamamlayan bilgisi oturum kullanıcısıyla aynı olmalıdır'; END IF;
+ END IF;
+ RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS moc_project_milestones_actor_guard ON public.moc_project_milestones;
+CREATE TRIGGER moc_project_milestones_actor_guard BEFORE INSERT OR UPDATE OF completed_at,completed_by ON public.moc_project_milestones FOR EACH ROW EXECUTE FUNCTION public.moc_project_milestone_actor_guard();
+
 CREATE OR REPLACE FUNCTION public.moc_project_updated_at() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$ BEGIN NEW.updated_at=now(); RETURN NEW; END $$;
 DO $$ DECLARE t text; BEGIN FOREACH t IN ARRAY ARRAY['moc_projects','moc_project_phases','moc_project_tasks'] LOOP EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.%I',t||'_updated_at',t); EXECUTE format('CREATE TRIGGER %I BEFORE UPDATE ON public.%I FOR EACH ROW EXECUTE FUNCTION public.moc_project_updated_at()',t||'_updated_at',t); END LOOP; END $$;
 
