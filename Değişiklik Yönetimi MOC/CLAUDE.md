@@ -1277,3 +1277,15 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 ## 23.09.2026 — Proje takip devamı
 
 `moc_schema_faz_s_proje_kapanis_kapisi.sql` staging ve canlıda uygulanmıştır. Manuel proje tamamlaması; zorunlu görev, kontrol maddesi, kanıt ve kilometre taşlarını MOC kapanışıyla aynı kapsamda denetler. Staging'deki geri alınan işlem testi başarıyla geçti. Görev ilerlemesi görev sahibi tarafından 0–99% kaydedilir; yönetici formunda düzenlenir. Liste, fazlar ve zaman çizelgesi kısmi ilerlemeyi gösterir. Baz çizgide ileri taşınan termin sayısı ve geciken kilometre taşları ayrıca belirtilir.
+
+
+## EK (25.09.2026) — Platform geneli turu (takvim, uyarı, KPI, İngilizce, E2E P2, demo veri)
+- **Ortak istemci dosyaları** (kaynak: `_platform-ortak/istemci/`, modül kökünde birebir kopya, qdl-hata.js ile aynı yöntem):
+  - `qdl-takvim.js` — tüm `input[type=date|datetime-local]` için modül renginde (CSS `--leaf`) takvim, Pazartesi başlangıç. Alan türüne/değerine dokunmaz. Hariç: `data-qdl-takvim="yok"`.
+  - `qdl-dialog.js` — `qdlDialog()`, `qdlKirliMi(kok)`, `qdlKapatSor(kok)`: form dışına tıklama / Vazgeç / ✕ → YALNIZ gerçek değişiklik varsa modül renkli "Kaydedilmemiş değişiklikler" penceresi.
+  - `qdl-ceviri.js` + modüle özel `qdl-en.js` — `<html lang="en">` iken ekrandaki Türkçe arayüz metinlerini (ve placeholder/title) sözlükten çevirir; TR'ye dönünce geri yazar. Dil değişiminde `document.documentElement.lang` güncellenmeli. Yeni arayüz metni eklenince `qdl-en.js`'e de eklenmeli (tarama aracı: `C:/temp/pw/entara2.js`).
+- **Tıklanabilir KPI**: ana sayfa kartları ilgili listeyi (gerekirse süzülmüş, üstte "Filtre: … ✕ Filtreyi kaldır" şeridi) açar; menüden geçişte filtre sıfırlanır.
+- **Sayı alanları** yeni kayıtta 0 yerine boş başlar (kayıtta boş = 0/varsayılan).
+- **Test araçları**: `C:/temp/pw/kpitest.js`, `entara2.js`, `final.js` (puppeteer-core + Edge; service_role ile demo.yonetici magic link → SSO; yerel HTML canlı adrese enjekte edilerek yayından önce test). CSP: `cspsync.js` (HEAD~1→HEAD), `cspadd.js` (eksik hash ekle), `cspcheck.js`.
+- MOC: KPI → Açık MOC (LISTE_KPI='acik'), Onay Bekleyen, Tüm Değişiklikler. **Kur servisi** api.frankfurter.app 301+CORS nedeniyle hiç çalışmıyordu → `api.frankfurter.dev/v1` (+ CSP connect-src). Boş başlıkta alan vurgusu. İlerleme/sıra alanları boş başlar.
+- Kullanıcının paralel push'u (ae2aa8b) üzerine rebase edildi. E2E MOC-2026-0003 silindi.
