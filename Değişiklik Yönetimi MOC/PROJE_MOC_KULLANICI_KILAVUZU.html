@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Proje&MOC Kullanıcı Kılavuzu · Qdataline</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#17131f;color:#f4f1fa;font:16px/1.7 Inter,system-ui,sans-serif}
+header{position:sticky;top:0;background:#211a2c;border-bottom:1px solid #453853;padding:13px max(18px,calc((100vw - 900px)/2));z-index:3}
+header a{color:#d7bbff;text-decoration:none;font-weight:700}main{max-width:900px;margin:auto;padding:26px 18px 64px}
+h1,h2,h3{line-height:1.23;letter-spacing:-.025em}h1{font-size:clamp(28px,4vw,42px)}h2{margin-top:45px;border-top:1px solid #40364c;padding-top:28px}
+p,li{color:#d2cbdc}strong{color:#fff}li{margin:8px 0}figure{margin:25px 0;padding:10px;border:1px solid #40364c;border-radius:12px;background:#211a2c}
+figure img{display:block;width:100%;height:auto;border-radius:7px}figcaption{color:#ab9db8;font-size:12px;margin:8px 4px 2px}
+</style></head><body><header><a href="/">← Proje&MOC</a></header><main><h1>Proje&amp;MOC kullanıcı kılavuzu</h1>
+<p>Bu kılavuz, ilk kez kullanan birinin değişiklik talebi ile bağımsız proje arasındaki farkı, her ekranda ne yapacağını ve hangi işlemin sonrakini başlatacağını anlaması için hazırlanmıştır. Görseller demo verisiyle yerel önizlemeden alınmıştır.</p>
+<h2>1. Giriş ve çalışma alanı</h2>
+<p>Proje&amp;MOC modülüne yetkili hesabınızla giriş yapın. İlk ekranda iki çalışma alanı vardır. <strong>MOC</strong>, değişiklik talebinin değerlendirme ve onay sürecidir. <strong>Proje Yönetimi</strong>, aynı talebin uygulama planı veya MOC’a bağlı olmayan bağımsız projeler içindir. Üstteki <strong>MOC / Proje</strong> düğmeleriyle geçiş yapabilirsiniz; geçişte her çalışma alanında son açtığınız ekran korunur.</p>
+<figure><img src="kilavuz-gorselleri/moc-local-workspace.png" alt="MOC ve Proje Yönetimi çalışma alanları" loading="lazy"><figcaption>MOC ve Proje Yönetimi çalışma alanları</figcaption></figure>
+<h2>2. Yeni proje ve görevler</h2>
+<p><strong>Proje → Yeni Proje Oluştur</strong> ile bağımsız bir proje açabilir veya uygulama aşamasındaki bir MOC kaydına bağlı plan oluşturabilirsiniz. Bağımsız proje MOC onayı gerektirmeden başlar. Proje adı zorunludur; başlangıç ve hedef bitiş tarihi isteğe bağlıdır. Planı açınca başlıktaki <strong>Görev ekle</strong> düğmesi görünür. Her görev için ad, isteğe bağlı faz, sorumlu, durum, öncelik, başlangıç ve termin girin. Aynı projeye istediğiniz sayıda görev ekleyebilirsiniz. Başka bir görev tamamlanmasını gerektirmeyen işleri paralel yürütebilirsiniz; yalnız gerçek bir önkoşul varsa görevde <strong>Bağımlılığı düzenle</strong> kullanın.</p>
+<figure><img src="kilavuz-gorselleri/moc-local-detail.png" alt="Proje özeti, maliyet ve zaman çizelgesi" loading="lazy"><figcaption>Proje özeti, maliyet ve zaman çizelgesi</figcaption></figure>
+<figure><img src="kilavuz-gorselleri/moc-local-task-form.png" alt="Yeni görev formu" loading="lazy"><figcaption>Yeni görev formu</figcaption></figure>
+<p>Görevleri <strong>Liste</strong> veya <strong>Kanban</strong> görünümünde takip edin. Kanban, yapılacak, süren, incelemedeki, bloklanan ve tamamlanan işleri durumlarına göre gösterir. <strong>Plan zaman çizelgesi</strong> tarihli görevleri ve kilometre taşlarını gösterir. Görevde <strong>Kontrol / Kanıt</strong> alanına girilen kanıtlar ve tamamlanma koşulları görevin kapanışını destekler. Bir göreve bağlı önkoşul bitmeden o görevi sürüyor veya tamamlandı durumuna taşıyamazsınız. İş ilerledikçe gerçekleşen saat ve tamamlanma yüzdesini güncelleyin.</p>
+<p>Proje açılışında ilk hedef tarihler otomatik korunur. Tarihi sonradan değiştirirseniz gerekçe yazmanız gerekir. Proje başlığının altında <strong>İlk plan</strong> ve <strong>Güncel plan</strong>, görev tablosunda ise değişmiş terminlerin altında <strong>İlk termin</strong> görünür. <strong>Plan başlangıç noktası → Baz çizgi kaydet</strong> kapsam, görev, sorumlu ve bütçe dahil karşılaştırma fotoğrafıdır; önemli kapsam kararlarında yeni sürüm kaydedin. Baz çizgi ilk tarih korumasının yerine geçmez.</p>
+<h2>3. Maliyet ve raporlama</h2>
+<p>Proje özetinde planlanan bütçe, kaydedilen gider ve kalan bütçe görünür. <strong>Maliyet kalemleri</strong> bölümüne işçilik, satın alma, dış hizmet, üretim duruşu veya diğer türden kalem ekleyin. Bir kalemin planlanan ve gerçekleşen tutarını, para birimini ve tarihini girin. Özet, maliyet dağılımını ve aylık gider eğilimini gösterir. Proje maliyeti kaydı MOC değişiklik talebinin onay akışını tek başına değiştirmez.</p>
+<h2>4. MOC akışı ve hatırlatma</h2>
+<p><strong>MOC → Yeni Değişiklik Talebi</strong> ile taslak açın. Akış türü ve kategori seçimi, risk değerlendirme ve kontrol listesindeki ilgili maddeleri belirler. Talep sırasıyla ön tarama, risk değerlendirme, teknik inceleme ve onaydan geçer. Onaydan sonra uygulama, etkilenen dokümanlar, eğitim, gerekirse PSSR (Devreye Alma Öncesi Güvenlik İncelemesi), devreye alma ve kapanış izlenir. Ekrandaki geçiş düğmesi gerekli kayıtlar, yanıtlar ve açık aksiyonlar tamamlanmadığında ilerlemez; açıklama sebebi gösterir.</p>
+<p>Kayıt ayrıntısındaki <strong>Süreç durumu</strong> alanı mevcut aşamayı, bilinen sorumluyu ve bu aşamada geçirilen gün sayısını gösterir. Bir onay adımında belirli kişi henüz atanmadıysa rol görünür; koordinatör veya sorumlu kaydı yoksa atanmadığı belirtilir. <strong>Hatırlatma taslağı hazırla</strong> ile alıcıyı seçip metni düzenleyin. Taslak bir e-posta uygulamasında açılır; otomatik gönderilmez. İçerikteki kayıt bağlantısı, oturumu kapalı kullanıcıyı önce giriş ekranına götürür ve yetkili girişten sonra ilgili MOC kaydını açar.</p>
+<figure><img src="kilavuz-gorselleri/moc-local-record-light.png" alt="MOC kaydının aşaması ve işlem panelleri" loading="lazy"><figcaption>MOC kaydının aşaması ve işlem panelleri</figcaption></figure>
+<figure><img src="kilavuz-gorselleri/moc-local-reminder-light.png" alt="Düzenlenebilir hatırlatma e-posta taslağı" loading="lazy"><figcaption>Düzenlenebilir hatırlatma e-posta taslağı</figcaption></figure>
+<h2>5. Yetki ve ayarlar</h2>
+<p>Görüntüleme, görev ekleme, görev düzenleme ve MOC onayı hesabın yetkilerine göre ayrılır. Projede görev ekleyebilen bir kullanıcı, başkasının görevini düzenleyemeyebilir; proje lideri, kurucu veya koordinatör düzenleme yapabilir. <strong>Ayarlar → Kullanıcılar → MOC görev profili</strong> kişinin süreçteki işlevini belirtir: saha operatörü uygulama, sorumlu takip, üst yönetim karar, denetçi inceleme. Bu etiket erişim yetkisi vermez. Yetki değişiklikleri ayrı kullanıcı yönetimiyle yapılır.</p>
+<h2>Hızlı örnek</h2>
+<ol>
+<li>Bağımsız <strong>Yeni Proje Oluştur</strong> ile “Dolum hattı otomasyonu” projesini açın.</li>
+<li>“Elektrik çizimini hazırla” ve “Yazılımı geliştir” görevlerini aynı proje içinde, aynı başlangıç haftasıyla ekleyin. İkisi paralel ilerler.</li>
+<li>“Saha kabul testi” görevini ekleyin; yazılım görevi tamamlanmadan başlayamayacaksa bu göreve bağımlılık tanımlayın.</li>
+<li>Satın alma ve işçilik maliyetlerini ayrı kalemler olarak girin. Plan zaman çizelgesi ile Kanban’ı birlikte izleyin.</li>
+<li>Yazılım testinin terminini değiştirirken gerekçeyi yazın. İlk termin ekranda kalır; yeni bir baz çizgi kaydederek güncel kapsamı da sabitleyin.</li>
+</ol></main></body></html>
