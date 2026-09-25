@@ -898,7 +898,7 @@ function catByIdAny(id){ return ALL_CATEGORIES.find(function(c){return c.id===id
 var MOC_CURRENCIES=['TRY','USD','EUR','GBP'];
 var EXCHANGE_RATES={TRY:1}, EXCHANGE_DATE=null, EXCHANGE_READY=false;
 function fetchExchangeRates(){
-  return fetch('https://api.frankfurter.app/latest?base=TRY&symbols='+MOC_CURRENCIES.filter(function(c){return c!=='TRY';}).join(','))
+  return fetch('https://api.frankfurter.dev/v1/latest?base=TRY&symbols='+MOC_CURRENCIES.filter(function(c){return c!=='TRY';}).join(','))
     .then(function(r){ return r.json(); })
     .then(function(j){
       if(j&&j.rates){ EXCHANGE_RATES=Object.assign({TRY:1}, j.rates); EXCHANGE_DATE=j.date; EXCHANGE_READY=true; }
@@ -3149,7 +3149,7 @@ function toggleEndDate(){
 function readRequestForm(){
   var t=typeById(Number(val('fType')));
   var title=val('fTitle');
-  if(!title.trim()){ toast('Başlık zorunlu.',true); return null; }
+  if(!title.trim()){ toast('Başlık zorunlu.',true); var _ft=document.getElementById('fTitle'); if(_ft){ _ft.style.borderColor='var(--crit)'; _ft.focus(); } return null; }
   if(t&&t.requires_end_date&&!val('fEnd')){ toast('Bu akış türünde planlanan bitiş tarihi zorunlu.',true); return null; }
   return {
     title:title, description:val('fDesc'), category_id:Number(val('fCat')), type_id:Number(val('fType')),
