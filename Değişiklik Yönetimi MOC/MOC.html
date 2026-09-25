@@ -181,6 +181,9 @@ button.sm{padding:5px 10px;font-size:11.5px}
 .panel .ph{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
 .panel .ph h2{font-size:15px}
 .panel .pb{padding:16px 18px}
+.kpi-link{cursor:pointer;transition:border-color .15s,transform .15s}
+.kpi-link:hover,.kpi-link:focus-visible{border-color:var(--leaf);transform:translateY(-1px);outline:none}
+.kpi-filtre{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;border:1px solid var(--leaf);border-radius:10px;font-size:13px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:15px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--leaf)}
 .kpi.warn::before{background:var(--warn)} .kpi.crit::before{background:var(--crit)}
@@ -581,6 +584,7 @@ var I18N={
   'Tamamlanma Sonrası Maliyet':'Post-Completion Cost','Risk Değerlendirmesi Ekle':'Add Risk Assessment',
   'Tehlike Tanımı':'Hazard Description','Alınacak Önlemler':'Controls to Take','Onay Adımı Ekle':'Add Approval Step',
   'Aksiyon Ekle':'Add Action','Bağlantı Ekle':'Add Link','Özet\'i Özelleştir':'Customize Overview','Uygula':'Apply',
+  'Filtre':'Filter','Filtreyi kaldır':'Clear filter','Listeyi aç':'Open list',
   'Açık MOC':'Open MOC','Onay Bekleyen (Bende)':'Pending My Approval','Toplam Başlangıç Bütçesi':'Total Initial Budget',
   'Toplam Sapma':'Total Deviation','Kategoriye Göre Açık MOC Dağılımı':'Open MOC Distribution by Category',
   'Açık MOC yok.':'No open MOC.','Geçici Değişiklikler — T-7 / Süresi Geçen':'Temporary Changes — T-7 / Overdue',
@@ -1240,6 +1244,7 @@ function navItem(v,lbl){
     +'</button>';
 }
 function go(view,id){
+  if(!window.__kpiGo) LISTE_KPI='';
   CURRENT_VIEW=view; CURRENT_ID=id||null;
   renderNav();
   if(view==='dashboard') viewDashboard();
@@ -1317,10 +1322,10 @@ function renderDashboardHtml(d){
   html+='<div style="display:flex;justify-content:flex-end;margin-bottom:8px">'
     +'<button class="btn-line sm" id="dashCustomBtn">⚙ '+t('Özelleştir')+'</button></div>';
   html+='<div class="kpis" data-widget="kpi">'
-    +'<div class="kpi"><div class="val">'+d.openCount+'</div><div class="lbl">'+t('Açık MOC')+'</div></div>'
-    +'<div class="kpi'+(d.pendingCount?' warn':'')+'"><div class="val">'+d.pendingCount+'</div><div class="lbl">'+t('Onay Bekleyen (Bende)')+'</div></div>'
-    +'<div class="kpi"><div class="val">'+fmtMoney(d.costTotalStart)+' ₺</div><div class="lbl">'+t('Toplam Başlangıç Bütçesi')+(EXCHANGE_READY?'':' *')+'</div></div>'
-    +'<div class="kpi'+(d.costTotalDeviation>0?' crit':(d.costTotalDeviation<0?'':''))+'"><div class="val">'+(d.costTotalDeviation>0?'+':'')+fmtMoney(d.costTotalDeviation)+' ₺</div><div class="lbl">'+t('Toplam Sapma')+(EXCHANGE_READY?'':' *')+'</div></div>'
+    +'<div class="kpi kpi-link" data-moc-kpi="acik" role="button" tabindex="0" title="'+t('Listeyi aç')+'"><div class="val">'+d.openCount+'</div><div class="lbl">'+t('Açık MOC')+'</div></div>'
+    +'<div class="kpi kpi-link'+(d.pendingCount?' warn':'')+'" data-moc-kpi="pending" role="button" tabindex="0" title="'+t('Listeyi aç')+'"><div class="val">'+d.pendingCount+'</div><div class="lbl">'+t('Onay Bekleyen (Bende)')+'</div></div>'
+    +'<div class="kpi kpi-link" data-moc-kpi="all" role="button" tabindex="0" title="'+t('Listeyi aç')+'"><div class="val">'+fmtMoney(d.costTotalStart)+' ₺</div><div class="lbl">'+t('Toplam Başlangıç Bütçesi')+(EXCHANGE_READY?'':' *')+'</div></div>'
+    +'<div class="kpi kpi-link'+(d.costTotalDeviation>0?' crit':(d.costTotalDeviation<0?'':''))+'" data-moc-kpi="all" role="button" tabindex="0" title="'+t('Listeyi aç')+'"><div class="val">'+(d.costTotalDeviation>0?'+':'')+fmtMoney(d.costTotalDeviation)+' ₺</div><div class="lbl">'+t('Toplam Sapma')+(EXCHANGE_READY?'':' *')+'</div></div>'
     +'</div>';
   if(!EXCHANGE_READY) html+='<p class="hint" style="margin-top:-12px;margin-bottom:16px">* '+t('Güncel kur servisine şu an ulaşılamadı, TRY dışı tutarlar bu toplamlara dahil edilemedi.')+'</p>';
 
@@ -1436,11 +1441,12 @@ function viewList(kind){
 /* DÜZELTME (2026-09-05): üstteki arama kutusu ekranda duruyordu ama hiçbir olaya bağlı
    değildi — kullanıcı yazıyor, hiçbir şey olmuyordu. Listeler zaten bellekte olduğu için
    sunucuya gitmeye gerek yok; MOC numarası ve başlıkta yerel filtre yeterli. */
-var LISTE_SATIRLARI=[], LISTE_TURU='mine', ARAMA='';
+var LISTE_SATIRLARI=[], LISTE_TURU='mine', ARAMA='', LISTE_KPI='';
 function filtreliListe(){
   var q=(ARAMA||'').trim().toLocaleLowerCase('tr-TR');
-  if(!q) return LISTE_SATIRLARI;
-  return LISTE_SATIRLARI.filter(function(r){
+  var kaynak = LISTE_KPI==='acik' ? LISTE_SATIRLARI.filter(function(r){ return ['CLOSED','REJECTED','CANCELLED'].indexOf(r.status)<0; }) : LISTE_SATIRLARI;
+  if(!q) return kaynak;
+  return kaynak.filter(function(r){
     var hay=[r.moc_no, r.title, r.description].filter(Boolean).join(' ').toLocaleLowerCase('tr-TR');
     return hay.indexOf(q)>=0;
   });
@@ -1456,6 +1462,23 @@ function bindListeAramasi(){
     }
   });
 }
+/* 25.09.2026: tıklanabilir KPI kartları (Özet) — kart ilgili listeyi süzülmüş açar */
+var _renderRequestTableOrj = renderRequestTable;
+renderRequestTable = function(rows, kind){
+  _renderRequestTableOrj(rows, kind);
+  if(!LISTE_KPI) return;
+  var c=document.getElementById('content');
+  c.insertAdjacentHTML('afterbegin','<div class="kpi-filtre"><b>'+t('Filtre')+':</b> '+t('Açık MOC')+' <button class="btn-line sm" id="mocKpiTemizle">✕ '+t('Filtreyi kaldır')+'</button></div>');
+  document.getElementById('mocKpiTemizle').onclick=function(){ LISTE_KPI=''; renderRequestTable(filtreliListe(), LISTE_TURU); };
+};
+document.addEventListener('click', function(e){
+  var k=e.target.closest && e.target.closest('[data-moc-kpi]'); if(!k) return;
+  var f=k.getAttribute('data-moc-kpi');
+  window.__kpiGo=true; try{ LISTE_KPI = f==='acik' ? 'acik' : ''; go(f==='pending'?'pending':'all'); } finally { window.__kpiGo=false; }
+});
+document.addEventListener('keydown', function(e){
+  if((e.key==='Enter'||e.key===' ') && e.target.getAttribute && e.target.getAttribute('data-moc-kpi')){ e.preventDefault(); e.target.click(); }
+});
 function renderApprovalQueue(rows){
   if(!rows.length){
     var apIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4m5 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>';
