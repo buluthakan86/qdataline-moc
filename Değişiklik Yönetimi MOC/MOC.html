@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Proje&amp;MOC · Qdataline</title>
+<title>Değişiklik &amp; Proje Yönetimi · Qdataline</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -321,7 +321,7 @@ textarea{resize:vertical;min-height:70px}
       </svg>
       <h1 style="margin:0">Q<b style="background:linear-gradient(90deg,#7C3AED,#C4B5FD);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">data</b>line</h1>
     </div>
-    <div class="s" id="loSub">Proje&amp;MOC Modülü</div>
+    <div class="s" id="loSub">Değişiklik &amp; Proje Yönetimi Modülü</div>
     <form id="loginForm">
       <label id="loLblEmail">E-posta</label>
       <input id="loginEmail" type="email" autocomplete="username" required>
@@ -518,7 +518,7 @@ var I18N={
   'Seçilirse tamamlanma durumu Eğitim Platformu\'ndan canlı izlenir, elle işaretlemeye gerek kalmaz.':'If selected, completion status is tracked live from the Training Platform — no manual marking needed.',
   '— Manuel (serbest metin konu) —':'— Manual (free text topic) —','Yenileniyor…':'Refreshing…',
   'Özet':'Overview','Değişiklik Talepleri':'Change Requests','Onay Bekleyenler':'Pending Approvals',
-  'Tüm Değişiklikler':'All Changes','Ayarlar':'Settings','Proje&MOC Modülü':'Project & MOC Module','Bu hesabın Proje&MOC modülüne erişimi yok.':'This account does not have access to the Project & MOC module.',
+  'Tüm Değişiklikler':'All Changes','Ayarlar':'Settings','Değişiklik & Proje Yönetimi Modülü':'Change & Project Management Module','Bu hesabın Değişiklik & Proje Yönetimi modülüne erişimi yok.':'This account does not have access to the Change & Project Management module.',
   'E-posta':'Email','Şifre':'Password','Giriş Yap':'Log In','Çıkış':'Log Out','Açık/Koyu tema':'Light/Dark theme',
   'MOC no / başlık ara…':'MOC no / title search…','+ Yeni Değişiklik Talebi':'+ New Change Request',
   'Yükleniyor…':'Loading…','Kayıt yok.':'No records.','Kaydet':'Save','Vazgeç':'Cancel','Kapat':'Close',
@@ -654,8 +654,8 @@ function applyMocLangStatic(){
   document.querySelectorAll('[data-moc-lang]').forEach(function(b){var selected=b.dataset.mocLang===LANG;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});
   var loLang=document.getElementById('loLangBtn');
   if(loLang){
-    document.title=LANG==='tr'?'Proje&MOC · Qdataline':'Project & MOC · Qdataline';
-    var loSub=document.getElementById('loSub'); if(loSub) loSub.textContent=t('Proje&MOC Modülü');
+    document.title=LANG==='tr'?'Değişiklik & Proje Yönetimi · Qdataline':'Change & Project Management · Qdataline';
+    var loSub=document.getElementById('loSub'); if(loSub) loSub.textContent=t('Değişiklik & Proje Yönetimi Modülü');
     var loE=document.getElementById('loLblEmail'); if(loE) loE.textContent=t('E-posta');
     var loP=document.getElementById('loLblPass'); if(loP) loP.textContent=t('Şifre');
     var loB=document.getElementById('loginBtn'); if(loB) loB.textContent=t('Giriş Yap');
@@ -806,7 +806,7 @@ function afterLogin(session){
     if(p.is_active===false){ loginMsg('Hesabınız pasif.'); return; }
     cloudTenantId=p.tenant_id; cloudRole=p.role||'VIEWER'; cloudFullName=p.full_name||'';
     sb.from('modul_yetki').select('modul').eq('user_id',cloudUserId).eq('modul',MOC_MODUL).maybeSingle().then(function(mr){
-      if(mr.error||!mr.data){ loginMsg(t('Bu hesabın Proje&MOC modülüne erişimi yok.')); return; }
+      if(mr.error||!mr.data){ loginMsg(t('Bu hesabın Değişiklik & Proje Yönetimi modülüne erişimi yok.')); return; }
       loginMsg('Veriler yükleniyor…');
       fetchExchangeRates();
       loadLookups().then(function(){
