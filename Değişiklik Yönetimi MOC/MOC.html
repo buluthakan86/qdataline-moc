@@ -301,7 +301,7 @@ textarea{resize:vertical;min-height:70px}
 .project-overview{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr);gap:12px;margin:14px 0}.project-overview .panel{margin:0}.project-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.project-flow-step{border:1px solid var(--line);border-radius:9px;padding:11px;background:var(--card);min-width:0}.project-flow-step.current{border-color:var(--leaf);background:var(--mint)}.project-flow-step.done{border-color:var(--ok)}.project-flow-step .num{font-size:10px;color:var(--muted)}.project-flow-step b{display:block;font-size:12px;margin:4px 0;overflow-wrap:anywhere}.project-flow-step small{color:var(--muted);font-size:10px}.project-flow-progress,.project-cost-track{height:7px;border-radius:99px;background:var(--line-2);overflow:hidden;margin-top:8px}.project-flow-progress span,.project-cost-track span{display:block;height:100%;background:var(--leaf);border-radius:99px}.project-flow-step.done .project-flow-progress span{background:var(--ok)}.project-next{padding:12px;border:1px solid var(--line);border-radius:9px;background:var(--mint-2);line-height:1.5}.project-next b{display:block;margin-bottom:4px}.project-chart-row{display:grid;grid-template-columns:minmax(100px,150px) 1fr auto;gap:9px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:11px}.project-chart-row:last-child{border:0}.project-chart-bars{display:grid;gap:4px}.project-chart-bars span{display:block;height:8px;border-radius:99px;min-width:0}.project-chart-bars .plan{background:var(--blue)}.project-chart-bars .actual{background:var(--leaf)}.project-chart-legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin:0 0 8px}.project-chart-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}.project-budget-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}.project-budget-metrics div{padding:10px;border:1px solid var(--line);border-radius:8px}.project-budget-metrics b{display:block;font-size:13px}.project-budget-metrics small{font-size:10px;color:var(--muted)}.project-health{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.project-time-today{position:absolute;top:0;bottom:0;border-left:2px dashed var(--crit);z-index:2;pointer-events:none}.project-time-today:before{content:'';position:absolute;top:-15px;left:3px;font-size:9px;color:var(--crit)}.project-time-milestone{position:absolute;top:8px;width:12px;height:12px;transform:translateX(-50%) rotate(45deg);border:2px solid var(--leaf);background:var(--card)}
 @media(max-width:900px){.project-overview{grid-template-columns:1fr}.project-flow{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-switch{order:3}.topbar{flex-wrap:wrap}}
 @media(max-width:560px){.project-portfolio-head{flex-wrap:wrap}.project-portfolio-head .sp{display:none}.project-portfolio-head h2{width:100%}.project-flow{grid-template-columns:1fr 1fr}.project-budget-metrics{grid-template-columns:1fr}.project-chart-row{grid-template-columns:90px 1fr}.project-chart-row strong{grid-column:2}.workspace-switch{width:100%}.workspace-switch button{flex:1}}
-.moc-language-switch{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;flex-shrink:0}.moc-language-switch button{border:0;border-radius:5px;padding:5px 8px;font:inherit;font-size:11px;background:transparent;color:var(--muted);cursor:pointer}.moc-language-switch button.active{background:var(--leaf);color:#fff}.moc-language-switch button:focus-visible{outline:2px solid var(--leaf);outline-offset:2px}
+.moc-language-switch{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;flex-shrink:0}.moc-language-switch button{border:0;border-radius:5px;padding:5px 0;min-width:34px;font-weight:500;font:inherit;font-size:11px;background:transparent;color:var(--muted);cursor:pointer}.moc-language-switch button.active{background:var(--leaf);color:#fff;font-weight:800}.moc-language-switch button:focus-visible{outline:2px solid var(--leaf);outline-offset:2px}
 </style>
 <script src="/qdl-hata.js"></script>
 <script src="/qdl-takvim.js"></script>
@@ -331,7 +331,7 @@ textarea{resize:vertical;min-height:70px}
       <div id="loginMsg"></div>
     </form>
     <div style="text-align:center;margin-top:14px">
-      <div class="moc-language-switch" id="loLangBtn" role="group" aria-label="Language"><button type="button" data-moc-lang="tr" lang="tr">Türkçe</button><button type="button" data-moc-lang="en" lang="en">English</button></div>
+      <div class="moc-language-switch" id="loLangBtn" role="group" aria-label="Language"><button type="button" data-moc-lang="tr" lang="tr" aria-label="Türkçe">TR</button><button type="button" data-moc-lang="en" lang="en" aria-label="English">EN</button></div>
     </div>
   </div>
 </div>
@@ -372,8 +372,8 @@ textarea{resize:vertical;min-height:70px}
       <button class="btn-leaf" id="btnNewRequest">+ Yeni Değişiklik Talebi</button>
       <button class="btn-line sm" id="btnTourShow" title="Turu göster">?</button>
       <a class="btn-line sm" href="/De%C4%9Fi%C5%9Fiklik%20Y%C3%B6netimi%20MOC/PROJE_MOC_KULLANICI_KILAVUZU.html" target="_blank" rel="noopener" style="text-decoration:none" id="mocGuideLink">Kılavuz</a>
-      <button class="btn-line sm" id="btnThemeToggle" title="Açık/Koyu tema">🌙</button>
-      <div class="moc-language-switch" id="langBtn" role="group" aria-label="Language"><button type="button" data-moc-lang="tr" lang="tr">Türkçe</button><button type="button" data-moc-lang="en" lang="en">English</button></div>
+      <button class="btn-line sm" id="btnThemeToggle" title="Açık/Koyu tema" style="width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px;border-radius:8px">☾</button>
+      <div class="moc-language-switch" id="langBtn" role="group" aria-label="Language"><button type="button" data-moc-lang="tr" lang="tr" aria-label="Türkçe">TR</button><button type="button" data-moc-lang="en" lang="en" aria-label="English">EN</button></div>
       <span id="userLabel"></span>
       <button class="btn-line sm" id="btnLogout">Çıkış</button>
     </div>
@@ -3619,7 +3619,7 @@ function initThemeToggle(){
   var btn=document.getElementById('btnThemeToggle');
   if(!btn) return;
   function current(){ try{ return localStorage.getItem('moc_theme')==='light'?'light':'dark'; }catch(e){ return 'dark'; } }
-  function paint(t){ btn.textContent = t==='light' ? '☀' : '🌙'; }
+  function paint(t){ btn.textContent = t==='light' ? '☀' : '☾'; }
   paint(current());
   btn.onclick=function(){
     var next = current()==='light' ? 'dark' : 'light';
