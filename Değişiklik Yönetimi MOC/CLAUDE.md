@@ -1289,3 +1289,9 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 - **Test araçları**: `C:/temp/pw/kpitest.js`, `entara2.js`, `final.js` (puppeteer-core + Edge; service_role ile demo.yonetici magic link → SSO; yerel HTML canlı adrese enjekte edilerek yayından önce test). CSP: `cspsync.js` (HEAD~1→HEAD), `cspadd.js` (eksik hash ekle), `cspcheck.js`.
 - MOC: KPI → Açık MOC (LISTE_KPI='acik'), Onay Bekleyen, Tüm Değişiklikler. **Kur servisi** api.frankfurter.app 301+CORS nedeniyle hiç çalışmıyordu → `api.frankfurter.dev/v1` (+ CSP connect-src). Boş başlıkta alan vurgusu. İlerleme/sıra alanları boş başlar.
 - Kullanıcının paralel push'u (ae2aa8b) üzerine rebase edildi. E2E MOC-2026-0003 silindi.
+
+## 30.09.2026 — Uçtan uca (E2E) test turu düzeltmeleri
+
+- P0: moc-onay.html CSP uyumlu (onclick kaldırıldı, hash eklendi); /moc-onay.html ve /imza-dogrula.html _redirects kuralları; moc_onay_uygula artık talebi ilerletiyor (REJECTED/IMPLEMENTATION).
+- Açık: sunucuda durum atlama (SCREENING→CLOSED), kapalı talebe aksiyon/risk, 'Reddedildi' düğmesi gerekçe kaydı, mobil taşma.
+- Ders: git add -A ile yerel dosyalar eklendi → çıkarıldı (.gitignore güncellendi).
