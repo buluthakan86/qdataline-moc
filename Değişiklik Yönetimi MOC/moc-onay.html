@@ -39,7 +39,7 @@
 <body>
 <div class="wrap">
   <div class="card" style="position:relative">
-    <button class="lang" id="langBtn" onclick="toggleLang()">EN</button>
+    <button class="lang" id="langBtn">EN</button>
     <h1 id="hTitle">MOC Onay</h1>
     <div class="sub" id="hSub">Yükleniyor…</div>
     <div id="details" style="display:none">
@@ -48,8 +48,8 @@
       <div class="field"><b id="lStatus">Durum</b><span class="badge" id="vStatus"></span></div>
     </div>
     <div class="btns" id="btns" style="display:none">
-      <button class="btn-approve" id="btnApprove" onclick="decide('APPROVED')">Onayla</button>
-      <button class="btn-reject" id="btnReject" onclick="decide('REJECTED')">Reddet</button>
+      <button class="btn-approve" id="btnApprove">Onayla</button>
+      <button class="btn-reject" id="btnReject">Reddet</button>
     </div>
     <div class="msg" id="msg"></div>
   </div>
@@ -189,6 +189,9 @@ function decide(decision){
 }
 
 load();
+document.getElementById('langBtn').addEventListener('click', toggleLang);
+document.getElementById('btnApprove').addEventListener('click', function(){ decide('APPROVED'); });
+document.getElementById('btnReject').addEventListener('click', function(){ decide('REJECTED'); });
 </script>
 </body>
 </html>
