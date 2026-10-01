@@ -1300,3 +1300,6 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 
 - Kullanıcı (EDITOR) E2E: P0/P1 yok. Açık küçük: doğrulama hatası sonrası Kaydet 2,5 sn kilidi (`modalFoot` ~3479), EN'de 'Confirmation', ham APPROVED/REJECTED rozeti, kategoride 'Ürün/Reçete Değişikliği' iki kez.
 - Destek ajanı tarifi: giriş sonrası işaret `#workspacePicker` (açılış ekranı), `#btnLogout` değil.
+
+## 01.10.2026 E2E P2
+- Onay kararı rozeti TR/EN etiketli; modal Kaydet kilidi 700 ms; yinelenen "Ürün/Reçete Değişikliği" kategorisi (id 10, kullanılmıyordu) silindi. Açık: detay ekranı mobil taşma, "Sıradaki sorumlu" ham rol kodu.
