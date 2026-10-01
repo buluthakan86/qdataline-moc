@@ -1295,3 +1295,8 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 - P0: moc-onay.html CSP uyumlu (onclick kaldırıldı, hash eklendi); /moc-onay.html ve /imza-dogrula.html _redirects kuralları; moc_onay_uygula artık talebi ilerletiyor (REJECTED/IMPLEMENTATION).
 - Açık: sunucuda durum atlama (SCREENING→CLOSED), kapalı talebe aksiyon/risk, 'Reddedildi' düğmesi gerekçe kaydı, mobil taşma.
 - Ders: git add -A ile yerel dosyalar eklendi → çıkarıldı (.gitignore güncellendi).
+
+## 01.10.2026 — Kullanıcı-rol E2E turu düzeltmeleri
+
+- Kullanıcı (EDITOR) E2E: P0/P1 yok. Açık küçük: doğrulama hatası sonrası Kaydet 2,5 sn kilidi (`modalFoot` ~3479), EN'de 'Confirmation', ham APPROVED/REJECTED rozeti, kategoride 'Ürün/Reçete Değişikliği' iki kez.
+- Destek ajanı tarifi: giriş sonrası işaret `#workspacePicker` (açılış ekranı), `#btnLogout` değil.
