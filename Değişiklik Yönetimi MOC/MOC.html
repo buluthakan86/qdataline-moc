@@ -2767,7 +2767,7 @@ function renderApprovalsPanel(){
       var can = canDecideApproval(a);
       var decLbl;
       if(a.decision){
-        decLbl = '<span class="pill '+(a.decision==='APPROVED'?'ok':a.decision==='REJECTED'?'crit':'warn')+'">'+a.decision+'</span> · '+fmtDT(a.decided_at);
+        decLbl = '<span class="pill '+(a.decision==='APPROVED'?'ok':a.decision==='REJECTED'?'crit':'warn')+'">'+({APPROVED:t('Onaylandı'),REJECTED:t('Reddedildi'),RETURNED:t('Geri gönderildi')}[a.decision]||a.decision)+'</span> · '+fmtDT(a.decided_at);
       } else if(active && active.id===a.id){
         decLbl = '<span class="pill warn">'+t('Bekliyor (sıradaki adım)')+'</span>';
       } else {
@@ -3488,7 +3488,7 @@ function modalFoot(saveLbl,cancelLbl,onSave){
     sv.onclick = onSave ? function(ev){
       if(sv.disabled) return;
       sv.disabled=true;
-      try{ onSave(ev); } finally { setTimeout(function(){ sv.disabled=false; }, 2500); }
+      try{ onSave(ev); } finally { setTimeout(function(){ sv.disabled=false; }, 700); }
     } : null;
   } else sv.style.display='none';
   cn.textContent=t(cancelLbl||'Kapat');

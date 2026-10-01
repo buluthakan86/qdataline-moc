@@ -1,5 +1,6 @@
 /* qdl-en.js — Proje & MOC: EN modunda Türkçe kalan arayüz metinleri (qdl-ceviri.js). 25.09.2026 */
 window.QDL_EN = {
+  'Onaylandı': 'Approved', 'Reddedildi': 'Rejected', 'Geri gönderildi': 'Returned',
   'Prosedür / Doküman': 'Procedure / Document', 'Ekipman': 'Equipment', 'Proses': 'Process', 'Tesis / Altyapı': 'Facility / Infrastructure', 'Turu göster': 'Show tour',
   'Kalıcı Değişiklik': 'Permanent Change', 'Geçici Değişiklik': 'Temporary Change', 'Acil Değişiklik': 'Emergency Change', 'Organizasyonel Değişiklik': 'Organisational Change',
   'Prosedürel Değişiklik': 'Procedural Change', 'Yeni Ürün Geliştirme': 'New Product Development', 'Yazılım / Otomasyon': 'Software / Automation', 'Ürün/Reçete Değişikliği': 'Product/Recipe Change',
