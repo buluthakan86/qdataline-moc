@@ -245,6 +245,8 @@ textarea{resize:vertical;min-height:70px}
 
 .detail-grid{display:grid;grid-template-columns:2fr 1fr;gap:20px}
 @media(max-width:980px){.detail-grid{grid-template-columns:1fr}}
+.detail-grid>*{min-width:0}
+@media(max-width:640px){.detail-grid .panel,.detail-grid .card{overflow-x:auto}.detail-grid table{display:block;overflow-x:auto;max-width:100%}.detail-grid h1,.detail-grid h2,.detail-grid h3{overflow-wrap:anywhere}}
 .step-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:11px;font-weight:800;background:var(--mint);color:var(--muted);flex-shrink:0}
 .step-badge.done{background:var(--ok-bg);color:var(--ok)}
 .step-badge.act{background:var(--leaf);color:var(--ink-on-accent)}
@@ -1492,7 +1494,7 @@ function renderApprovalQueue(rows){
   var body=rows.map(function(a){
     var r=a.moc_requests;
     return '<tr class="rowclk" data-id="'+r.id+'"><td>'+esc(r.moc_no||('#'+r.id))+'</td><td>'+esc(r.title)+'</td>'
-      +'<td>'+t('Adım')+' '+a.step_order+' · '+esc(a.role_code)+'</td><td>'+statusPill(r.status)+'</td></tr>';
+      +'<td>'+t('Adım')+' '+a.step_order+' · '+esc(rolAd(a.role_code))+'</td><td>'+statusPill(r.status)+'</td></tr>';
   }).join('');
   document.getElementById('content').innerHTML='<div class="panel"><table><thead><tr><th>'+t('MOC No')+'</th><th>'+t('Başlık')+'</th><th>'+t('Onay Adımı')+'</th><th>'+t('Durum')+'</th></tr></thead><tbody>'+body+'</tbody></table></div>';
   bindRowClicks();
@@ -1767,7 +1769,7 @@ function mocCurrentStageInfo(){
   var approval=req.status==='APPROVAL'?activeApprovalStep(ctx.approvals):null;
   var ownerId=approval&&approval.approver_id||((req.status==='DRAFT')?req.initiator_id:req.coordinator_id);
   var person=(ctx.people||[]).find(function(x){return x.id===ownerId;});
-  var owner=person&&person.full_name||approval&&approval.role_code||'Atanmamış';
+  var owner=person&&person.full_name||approval&&rolAd(approval.role_code)||'Atanmamış';
   return {since:since,days:days,owner:owner};
 }
 function renderMocWaitingPanel(){
@@ -2267,7 +2269,7 @@ function denetimDosyasi(){
     h+='<h2 style="font-size:14px;margin:16px 0 6px">'+esc(t('Onay Zinciri'))+'</h2>'
       +'<table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr><th style="'+th+'">'+esc(t('Sıra'))+'</th><th style="'+th+'">'+esc(t('Rol'))+'</th><th style="'+th+'">'+esc(t('Karar'))+'</th><th style="'+th+'">'+esc(t('Tarih'))+'</th></tr>';
     ctx.approvals.forEach(function(a){
-      h+='<tr><td style="'+td+';text-align:center">'+esc(a.step_order)+'</td><td style="'+td+'">'+esc(a.role_code||'—')+'</td>'
+      h+='<tr><td style="'+td+';text-align:center">'+esc(a.step_order)+'</td><td style="'+td+'">'+esc(rolAd(a.role_code)||'—')+'</td>'
         +'<td style="'+td+'">'+esc(a.decision||t('Bekliyor'))+'</td><td style="'+td+'">'+esc(a.decided_at?fmtDT(a.decided_at):'—')+'</td></tr>';
     });
     h+='</table>';
@@ -2747,6 +2749,7 @@ function focusNextChecklistItem(afterId){
    adımlar APPROVED olmadıkça bir sonraki adım görünmez/kararlaştırılamaz.
    Zincirde bir REJECTED/RETURNED varsa (checkApprovalAuto zaten MOC'u
    APPROVAL dışına çıkarır) burada aktif adım yoktur (null döner). */
+function rolAd(c){var m={HSE:'İSG / Çevre',ENGINEERING:'Mühendislik',PLANT_MANAGER:'Tesis Müdürü',QUALITY:'Kalite',PRODUCTION:'Üretim',MAINTENANCE:'Bakım',ADMIN:'Yönetici'};var k=String(c||'').trim();if(!k)return '';var u=k.toUpperCase();if(m[u])return m[u];return k.replace(/_/g,' ').toLowerCase().replace(/(^|\s)\S/g,function(x){return x.toUpperCase();});}
 function activeApprovalStep(approvals){
   var list=(approvals||[]).slice().sort(function(a,b){return a.step_order-b.step_order;});
   for(var i=0;i<list.length;i++){
@@ -2782,7 +2785,7 @@ function renderApprovalsPanel(){
           +'<button class="sm btn-crit apdec" data-id="'+a.id+'" data-dec="REJECTED">'+t('Reddet')+'</button>';
       }
       return '<div class="approval-row"><div class="step-badge'+(a.decision==='APPROVED'?' done':'')+'">'+a.step_order+'</div>'
-        +'<div style="flex:1"><b>'+esc(a.role_code)+'</b><div class="hint">'+decLbl+'</div></div>'
+        +'<div style="flex:1"><b>'+esc(rolAd(a.role_code))+'</b><div class="hint">'+decLbl+'</div></div>'
         +'<div style="display:flex;gap:6px">'+actions+'</div></div>';
     }).join('');
   }

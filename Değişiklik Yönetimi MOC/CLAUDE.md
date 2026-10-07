@@ -1309,3 +1309,7 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 - Red ve iade kararında gerekçe zorunlu (≥5 karakter): `moc_decide_approval(id, karar, p_comment)`; gerekçe moc_approvals.comment'e ve reddedilen talebin `reason` alanına yazılır. REJECTED'a her geçişte gerekçe şart (tetikleyici; e-posta linkiyle ret yorumu otomatik dolar). Arayüz: Reddet/İade için gerekçe penceresi.
 - Kapalı/Reddedilen/İptal talepte moc_action_items ve moc_risk_assessments INSERT/UPDATE/DELETE engellenir (MOC_KAPALI_TALEP; servis rolü hariç).
 - İlk uygulamada kapalı-talep tetikleyicisi moc_id'yi uuid sanıp TÜM aksiyon/risk eklemelerini birkaç dakika bozdu (bigint olmalıydı) — test sırasında yakalanıp düzeltildi. Ders: tetikleyicide kolon tiplerini information_schema'dan doğrula.
+
+## 07.10.2026 — Kozmetik
+- Ham rol kodu (HSE, PLANT_MANAGER…) artık okunur ad gösterir (`rolAd`): "Sıradaki sorumlu", onay tabloları, onay listesi. Bilinmeyen kodlar Başlık Biçimine çevrilir.
+- Detay ekranında dar ekranda yatay taşmayı önleyen CSS (min-width:0 + kaydırılabilir tablo). Gerçek telefonda doğrulanmadı.
