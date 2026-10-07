@@ -3027,12 +3027,24 @@ function openAddApproval(){
    moc_onay_kontrol/moc_durum_kontrol trigger'ları (kendi-onayı/mükerrer-onay engeli) RPC
    içindeki UPDATE'lerde aynen tetiklenmeye devam eder — dokunulmadı. */
 function decideApproval(id, decision){
-  confirmBox('Bu onay adımı için karar: <b>'+decision+'</b>. Onaylıyor musunuz?','Onayla',function(){
-    sb.rpc('moc_decide_approval', {p_approval_id:id, p_decision:decision}).then(function(res){
+  /* 07.10.2026: red ve iade kararında gerekçe zorunlu (sunucuda da zorunlu; kayıt denetim izine yazılır) */
+  var kaydet=function(gerekce){
+    sb.rpc('moc_decide_approval', {p_approval_id:id, p_decision:decision, p_comment:gerekce||null}).then(function(res){
       if(res.error){ toast(hataMesaji(res.error),true); return; }
       closeModal(); toast(t('Karar kaydedildi')); viewDetail(DETAIL_CTX.req.id);
     });
-  }, decision==='REJECTED');
+  };
+  if(decision==='APPROVED'){
+    confirmBox('Bu onay adımı için karar: <b>'+decision+'</b>. Onaylıyor musunuz?','Onayla',function(){ kaydet(null); }, false);
+    return;
+  }
+  modalTitle(decision==='REJECTED'?'Red gerekçesi':'İade gerekçesi');
+  setModalBody('<div style="font-size:13px;margin-bottom:8px">'+(decision==='REJECTED'?t('Talep reddedilecek ve yeniden açılamaz.'):t('Talep teknik incelemeye geri gönderilecek.'))+'</div><label>'+t('Gerekçe (en az 5 karakter)')+' *</label><textarea id="apGerekce" rows="3" style="width:100%"></textarea>');
+  modalFoot(decision==='REJECTED'?'Reddet':'İade Et','Vazgeç',function(){
+    var g=(val('apGerekce')||'').trim();
+    if(g.length<5){ toast(t('Gerekçe en az 5 karakter olmalı.'),true); return; }
+    kaydet(g);
+  });
 }
 
 /* ---- Aksiyon ekleme/tamamlama ---- */
@@ -3591,6 +3603,8 @@ function hataMesaji(err){
   if(msj.indexOf('MOC_ZATEN_ACIK')>=0)      return t('Bu PSSR zaten sonuçlanmamış.');
   if(msj.indexOf('MOC_ZATEN_KARARLI')>=0)   return t('Bu adım için zaten karar verilmiş. Sayfa yenileniyor…');
   if(msj.indexOf('MOC_GECERSIZ_KARAR')>=0)  return t('Geçersiz karar değeri.');
+  if(msj.indexOf('MOC_GEREKCE_GEREKLI')>=0) return t('Red veya iade için en az 5 karakterlik gerekçe yazılmalıdır.');
+  if(msj.indexOf('MOC_KAPALI_TALEP')>=0)    return t('Kapanmış, reddedilmiş veya iptal edilmiş talebe kayıt eklenemez ya da değiştirilemez.');
 
   return t('İşlem tamamlanamadı. Lütfen tekrar deneyin.');
 }

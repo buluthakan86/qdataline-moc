@@ -1303,3 +1303,9 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 
 ## 01.10.2026 E2E P2
 - Onay kararı rozeti TR/EN etiketli; modal Kaydet kilidi 700 ms; yinelenen "Ürün/Reçete Değişikliği" kategorisi (id 10, kullanılmıyordu) silindi. Açık: detay ekranı mobil taşma, "Sıradaki sorumlu" ham rol kodu.
+
+## 07.10.2026 — Bütünlük sertleştirmesi (moc_butunluk_gerekce_kapali_kilit_2026_10_07.sql, CANLI)
+- Durum atlama: sunucuda zaten durum makinesi vardı (moc_durum_kontrol); SCREENING→CLOSED bilinçli (RIK/muafiyet), eski "durum atlama" notu geçersiz.
+- Red ve iade kararında gerekçe zorunlu (≥5 karakter): `moc_decide_approval(id, karar, p_comment)`; gerekçe moc_approvals.comment'e ve reddedilen talebin `reason` alanına yazılır. REJECTED'a her geçişte gerekçe şart (tetikleyici; e-posta linkiyle ret yorumu otomatik dolar). Arayüz: Reddet/İade için gerekçe penceresi.
+- Kapalı/Reddedilen/İptal talepte moc_action_items ve moc_risk_assessments INSERT/UPDATE/DELETE engellenir (MOC_KAPALI_TALEP; servis rolü hariç).
+- İlk uygulamada kapalı-talep tetikleyicisi moc_id'yi uuid sanıp TÜM aksiyon/risk eklemelerini birkaç dakika bozdu (bigint olmalıydı) — test sırasında yakalanıp düzeltildi. Ders: tetikleyicide kolon tiplerini information_schema'dan doğrula.
