@@ -6,5 +6,8 @@ window.QDL_EN = {
   'Prosedürel Değişiklik': 'Procedural Change', 'Yeni Ürün Geliştirme': 'New Product Development', 'Yazılım / Otomasyon': 'Software / Automation', 'Ürün/Reçete Değişikliği': 'Product/Recipe Change',
   'Saha Operatörü': 'Field Operator', 'Sorumlu': 'Owner', 'Üst Yönetim': 'Top Management', 'Denetçi': 'Auditor',
   "Genel Risk Değerlendirme Checklist'i": 'General Risk Assessment Checklist', 'Gıda Güvenliği Etki Değerlendirmesi': 'Food Safety Impact Assessment',
-  'Devreye Alma Öncesi Güvenlik İncelemesi': 'Pre-Startup Safety Review'
+  'Devreye Alma Öncesi Güvenlik İncelemesi': 'Pre-Startup Safety Review',
+  'Veriler yükleniyor…': 'Loading data…',
+  'Diğer': 'Other',
+  'Kapat': 'Close',
 };
