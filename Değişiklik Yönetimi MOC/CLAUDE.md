@@ -1313,3 +1313,6 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 ## 07.10.2026 — Kozmetik
 - Ham rol kodu (HSE, PLANT_MANAGER…) artık okunur ad gösterir (`rolAd`): "Sıradaki sorumlu", onay tabloları, onay listesi. Bilinmeyen kodlar Başlık Biçimine çevrilir.
 - Detay ekranında dar ekranda yatay taşmayı önleyen CSS (min-width:0 + kaydırılabilir tablo). Gerçek telefonda doğrulanmadı.
+
+## 08.10.2026 — Yüzen düğmeler
+- Q-AI ve Sorun bildir düğmeleri 36 px yuvarlak simge, sağ altta alt alta (ortak QDL-DOCK bloğu, qdl-ajan.js + qdl-destek-link.js). Q-AI rengi koyu menekşe #5B45A8. Modal açıkken gizlenir, küçültülebilir.
