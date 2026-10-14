@@ -1354,3 +1354,9 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
   - `moc_daily_notify()` (cron 06:20) yeni 4. bölüm: koordinatörü olduğu, SLA'sını aşan değişiklikler ("X aşamasında N gündür").
 - İstemci: `mocCurrentStageInfo` / `mocSatirBilgi` önce `stage_entered_at`'ı kullanır (yoksa audit).
 - **Yapılmadı (bilinçli):** `moc_approvals.due_date` — onay terimi stage_entered_at/önceki karar + SLA'dan türetilebiliyor, alan eklemek her güncellemede audit gürültüsü yaratırdı. Aksiyon↔proje görev tablosu birleştirme: karar bekliyor.
+
+## 15.10.2026 (4) — Faz 5: Aksiyon ↔ Proje görevi (tablolar BİRLEŞTİRİLMEDİ — sahip kararı)
+- Gerekçe: aksiyon = aşama kapı koşulu (durum geçişi ona bağlı), görev = planlanan iş (faz/bağımlılık/kanıt/ilerleme). Kullanıcı derdi "bana düşen iş nerede" → Bana Düşenler zaten tek listede.
+- Aksiyonlar sekmesinde açıklama ("Aksiyon = kapı koşulu işi…") + MOC'un projesi varsa ipucu şeridi ve "Planı aç"; boş durum metni "koşul işleri".
+- "Aksiyon Ekle" penceresinde (MOC'un bağlı projesi varsa) **"Projeye de görev olarak ekle"**: aksiyon kapı koşulu kalır, ayrıca projede ilgili faza (Uygulama/Doküman/Eğitim/PSSR; onay öncesi → fazsız) görev açılır (`mocAksiyonuProjeyeEkle`). Görev açılamazsa (yetki) aksiyon yine eklenir, uyarı verilir.
+- Yeni DB değişikliği yok. Geri alma: Faz 5 bloğu + openAddAction/renderActionsPanel yamaları.
