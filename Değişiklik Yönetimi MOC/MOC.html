@@ -304,6 +304,34 @@ textarea{resize:vertical;min-height:70px}
 @media(max-width:900px){.project-overview{grid-template-columns:1fr}.project-flow{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-switch{order:3}.topbar{flex-wrap:wrap}}
 @media(max-width:560px){.project-portfolio-head{flex-wrap:wrap}.project-portfolio-head .sp{display:none}.project-portfolio-head h2{width:100%}.project-flow{grid-template-columns:1fr 1fr}.project-budget-metrics{grid-template-columns:1fr}.project-chart-row{grid-template-columns:90px 1fr}.project-chart-row strong{grid-column:2}.workspace-switch{width:100%}.workspace-switch button{flex:1}}
 .moc-language-switch{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;flex-shrink:0}.moc-language-switch button{border:0;border-radius:5px;padding:5px 0;min-width:34px;font-weight:500;font:inherit;font-size:11px;background:transparent;color:var(--muted);cursor:pointer}.moc-language-switch button.active{background:var(--leaf);color:#fff;font-weight:800}.moc-language-switch button:focus-visible{outline:2px solid var(--leaf);outline-offset:2px}
+
+/* Süreç izleyici (15.10.2026) */
+.mt-wrap{margin:0 0 16px}
+.mt-bar{display:flex;overflow-x:auto;padding:12px 6px 10px;background:var(--card);border:1px solid var(--line);border-radius:12px 12px 0 0}
+.mt-step{flex:1 0 92px;text-align:center;position:relative;padding:0 3px;font-size:11.5px;color:var(--muted)}
+.mt-step:not(:last-child)::after{content:"";position:absolute;top:13px;left:calc(50% + 15px);right:calc(-50% + 15px);height:2px;background:var(--line)}
+.mt-step.done:not(:last-child)::after{background:var(--ok)}
+.mt-dot{width:26px;height:26px;border-radius:50%;margin:0 auto 5px;display:grid;place-items:center;font-weight:800;font-size:12px;border:2px solid var(--line);background:var(--card);color:var(--muted);position:relative;z-index:1}
+.mt-step.done .mt-dot{background:var(--ok);border-color:var(--ok);color:#fff}
+.mt-step.now .mt-dot{background:var(--leaf);border-color:var(--leaf);color:#fff;box-shadow:0 0 0 4px var(--mint)}
+.mt-step.bad .mt-dot{background:var(--crit);border-color:var(--crit);color:#fff}
+.mt-step.now .mt-n,.mt-step.done .mt-n{color:var(--ink);font-weight:700}
+.mt-n{line-height:1.25}
+.mt-t{font-size:11px;font-weight:700;color:var(--ink);margin-top:2px}
+.mt-p{font-size:10.5px;color:var(--muted)}
+.mt-r{color:var(--warn);font-weight:800}
+.mt-ozet{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px;overflow:hidden}
+.mt-kutu{background:var(--card);padding:9px 12px;min-width:0}
+.mt-genis{grid-column:span 2;min-width:200px}
+.mt-k{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.mt-v{font-size:14px;font-weight:700;color:var(--ink);margin-top:2px;overflow-wrap:anywhere}
+.mt-s{font-size:13px}
+.mt-m{font-size:11px;color:var(--muted);font-weight:600}
+.mt-bar2{height:5px;background:var(--line);border-radius:9px;margin-top:5px;overflow:hidden}.mt-bar2 i{display:block;height:100%;background:var(--leaf)}
+.mt-eng{margin-top:4px;font-size:12px;color:var(--warn);display:flex;flex-direction:column;gap:1px;font-weight:500}
+.mt-eksik{margin-top:10px;padding:9px 12px;border-radius:10px;background:var(--warn-bg);color:var(--warn);font-size:12.5px}
+.mt-eksik b{display:block;margin-bottom:3px}
+@media(max-width:700px){.mt-genis{grid-column:span 1}}
 </style>
 <script src="/qdl-hata.js"></script>
 <script src="/qdl-takvim.js"></script>
@@ -651,7 +679,7 @@ var I18N={
   'Yüklenemedi':'Could not load','Yüksek':'High','Öncelik':'Priority',
   'Şiddet (sonra, 1-5)':'Severity (after, 1-5)','Şiddet (önce, 1-5)':'Severity (before, 1-5)',
 };
-Object.assign(I18N,{'Süreç durumu':'Process status','Mevcut aşama':'Current stage','Sıradaki sorumlu':'Current owner','Bu aşamada bekleme':'Time in this stage','Aşamaya giriş':'Entered stage','gün':'days','Hatırlatma taslağı hazırla':'Prepare reminder draft','Hatırlatma taslağı':'Reminder draft','Alıcı adresini girip taslağı e-posta uygulamanızda açın. Mesaj otomatik gönderilmez.':'Enter a recipient and open the draft in your email app. The message is not sent automatically.','Alıcı e-posta':'Recipient email','Konu':'Subject','Mesaj':'Message','E-postada aç':'Open in email app','Geçerli alıcı e-postası girin.':'Enter a valid recipient email.','MOC görev profili':'MOC responsibility profile','MOC görev profili, kişinin süreçteki işlevini belirtir: saha operatörü uygulama yapar, sorumlu işi takip eder, üst yönetim karar verir, denetçi kayıtları inceler. Bu seçim erişim yetkisini değiştirmez; kullanıcı yetkileri ayrı yönetilir.':'The MOC responsibility profile describes each person’s function in the process. This selection does not change access rights; permissions are managed separately.'});
+Object.assign(I18N,{'geçişi için eksikler':'transition blockers','Onayınız bekleniyor':'Your approval is awaited','Geçişi siz yapabilirsiniz':'You can make the transition','Sıradaki adım':'Next step','İlerleme':'Progress','Aşama':'Stage','Onay bekleniyor':'Awaiting approval','Hazır':'Ready','Süreç tamamlandı.':'Process completed.','Süreç sonlandırıldı.':'Process ended.','gündür bekliyor':'days waiting','Bu aşamaya geri dönüldü':'Returned to this stage','yetkili kişi geçişi yapar':'an authorised person makes the transition','Onay zinciri sonuçlanıyor':'Approval chain concluding','Onay adımı tanımlı değil':'No approval step defined','checklist maddesi':'checklist items','aksiyon':'actions','onay':'approvals','doküman':'documents','eğitim':'trainings','Süreç durumu':'Process status','Mevcut aşama':'Current stage','Sıradaki sorumlu':'Current owner','Bu aşamada bekleme':'Time in this stage','Aşamaya giriş':'Entered stage','gün':'days','Hatırlatma taslağı hazırla':'Prepare reminder draft','Hatırlatma taslağı':'Reminder draft','Alıcı adresini girip taslağı e-posta uygulamanızda açın. Mesaj otomatik gönderilmez.':'Enter a recipient and open the draft in your email app. The message is not sent automatically.','Alıcı e-posta':'Recipient email','Konu':'Subject','Mesaj':'Message','E-postada aç':'Open in email app','Geçerli alıcı e-postası girin.':'Enter a valid recipient email.','MOC görev profili':'MOC responsibility profile','MOC görev profili, kişinin süreçteki işlevini belirtir: saha operatörü uygulama yapar, sorumlu işi takip eder, üst yönetim karar verir, denetçi kayıtları inceler. Bu seçim erişim yetkisini değiştirmez; kullanıcı yetkileri ayrı yönetilir.':'The MOC responsibility profile describes each person’s function in the process. This selection does not change access rights; permissions are managed separately.'});
 function t(s){ return (LANG==='en' && Object.prototype.hasOwnProperty.call(I18N,s)) ? I18N[s] : s; }
 function applyMocLangStatic(){
   document.documentElement.lang=LANG;
@@ -1016,7 +1044,7 @@ function workspaceProjectAc(){ACTIVE_WORKSPACE='project';document.getElementById
 function projectShell(x){document.getElementById('content').innerHTML='<div class="view">'+x+'</div>';}
 function projectStatusLabel(s){return pT(({PLANNING:'Planlama',ACTIVE:'Devam ediyor',BLOCKED:'Engellendi',ON_HOLD:'Beklemede',COMPLETED:'Tamamlandı',CANCELLED:'İptal edildi'})[s]||s||'Planlama');}
 function projectLoadIndex(){LAST_PROJECT_ID=null;PROJECT_CTX=null;projectShell('<div class="panel"><div class="pb empty">'+pT('Yükleniyor…')+'</div></div>');Promise.all([sb.from('moc_projects').select('*').eq('tenant_id',cloudTenantId).order('created_at',{ascending:false}),sb.from('moc_requests').select('id,moc_no,title,status,planned_start,planned_end').is('deleted_at',null).order('created_at',{ascending:false}),sb.from('moc_notifications').select('id,moc_id,project_id,subject,body,is_read,sent_at').eq('tenant_id',cloudTenantId).eq('user_id',cloudUserId).order('sent_at',{ascending:false}).limit(10)]).then(function(r){if(r[0].error)throw r[0].error;if(r[1].error)throw r[1].error;if(r[2].error)console.warn('notifications',r[2].error);projectRenderIndex(r[0].data||[],r[1].data||[],r[2].data||[]);}).catch(function(e){if(ACTIVE_WORKSPACE!=='project')return;console.error(e);projectShell('<div class="panel"><div class="pb"><div class="alert-chip crit">'+pT('MOC kayıtları yüklenemedi.')+'</div><button class="btn-line" id="prRetry">'+pT('Yeniden yükle')+'</button></div></div>');document.getElementById('prRetry').onclick=projectLoadIndex;});}
-function projectRenderIndex(ps,ms,ns){ns=ns||[];var by={};ps.forEach(function(x){if(x.moc_id)by[String(x.moc_id)]=1;});var tq=ps.length?sb.from('moc_project_tasks').select('project_id,status,due_date').eq('tenant_id',cloudTenantId):Promise.resolve({data:[]});tq.then(function(q){if(ACTIVE_WORKSPACE!=='project')return;if(q.error)throw q.error;var ts=q.data||[],dn=ts.filter(function(x){return x.status==='DONE';}).length,late=ts.filter(function(x){return x.due_date&&x.due_date<new Date().toISOString().slice(0,10)&&!['DONE','CANCELLED'].includes(x.status);}).length;var rows=ps.map(function(x){var m=ms.find(function(y){return String(y.id)===String(x.moc_id);})||{},a=ts.filter(function(y){return String(y.project_id)===String(x.id);});return '<tr data-pr-row data-pr-status="'+esc(x.status)+'" data-pr-search="'+esc((x.name+' '+(m.moc_no||'')+' '+(m.title||'')).toLocaleLowerCase('tr-TR'))+'"><td><b>'+esc(x.name)+'</b><div class="hint">'+(x.moc_id?esc(m.moc_no||'MOC')+' · '+esc(m.title||''):pT('Bağımsız proje'))+'</div></td><td><span class="pill">'+esc(projectStatusLabel(x.status))+'</span></td><td>'+a.filter(function(y){return y.status==='DONE';}).length+' / '+a.length+' · '+projectProgressPercent(a)+'%</td><td>'+pDate(x.planned_end)+'</td><td><button class="btn-line sm" data-pr-open="'+x.id+'">'+pT('Planı aç')+' →</button></td></tr>';}).join('');var ready=ms.filter(function(x){return ['IMPLEMENTATION','DOC_UPDATE','TRAINING','PSSR','STARTUP'].includes(x.status)&&!by[String(x.id)];});var rr=ready.map(function(x){return '<tr><td><b>'+esc(x.moc_no)+'</b><div class="hint">'+esc(x.title||'')+'</div></td><td>'+esc(t(x.status))+'</td><td>'+pDate(x.planned_start)+' – '+pDate(x.planned_end)+'</td><td>'+(projectRoleCanEdit()?'<button class="btn-leaf sm" data-pr-create="'+x.id+'">'+pT('Plan oluştur')+'</button>':'')+'</td></tr>';}).join('');var unread=ns.filter(function(n){return !n.is_read;}).length,notifPanel=ns.length?'<details class="panel"><summary class="ph"><b>'+pT('Bildirimler')+'</b><span class="sp"></span><span class="pill">'+unread+' '+pT('yeni')+'</span></summary><div class="pb">'+ns.map(function(n){return '<div class="barrow"><div><b>'+esc(n.subject||'')+'</b><div class="hint">'+esc(n.body||'')+'</div></div><span class="sp"></span>'+(n.project_id||n.moc_id?'<button type="button" class="btn-line sm" data-pr-notif="'+n.id+'" data-pr-notif-moc="'+(n.moc_id||'')+'" data-pr-notif-project="'+(n.project_id||'')+'">'+pT('Aç')+'</button>':'')+'</div>';}).join('')+'</div></details>':'';var html='<div class="kpi-row"><div class="kpi"><div class="val">'+ps.length+'</div><div class="lbl">'+pT('Toplam plan')+'</div></div><div class="kpi"><div class="val">'+ps.filter(function(x){return !['COMPLETED','CANCELLED'].includes(x.status);}).length+'</div><div class="lbl">'+pT('Aktif plan')+'</div></div><div class="kpi"><div class="val">'+dn+' / '+ts.length+'</div><div class="lbl">'+pT('Tamamlanan')+' / '+pT('Görevler')+'</div></div><div class="kpi"><div class="val">'+late+'</div><div class="lbl">'+pT('Geciken')+'</div></div></div>'+notifPanel+'<div class="panel"><div class="ph project-portfolio-head"><h2>'+pT('Projeler')+'</h2><div class="sp"></div>'+(projectRoleCanEdit()?'<button class="btn-leaf sm" id="prNew">+ '+pT('Yeni Proje Oluştur')+'</button>':'')+'<button class="btn-line sm" id="prWork">← '+pT('Çalışma alanları')+'</button><button class="btn-line sm" id="prMoc">'+pT('MOC’ye dön')+'</button></div><div class="pb"><div class="row2"><input id="prPortfolioSearch" placeholder="'+pT('Proje veya MOC ara')+'"><select id="prPortfolioStatus"><option value="">'+pT('Tüm durumlar')+'</option>'+['PLANNING','ACTIVE','BLOCKED','ON_HOLD','COMPLETED','CANCELLED'].map(function(st){return '<option value="'+st+'">'+projectStatusLabel(st)+'</option>';}).join('')+'</select></div>'+(rows?'<table><thead><tr><th>'+pT('Proje adı')+'</th><th>'+pT('Durum')+'</th><th>'+pT('Görevler')+'</th><th>'+pT('Termin')+'</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>':'<div class="empty-state"><div class="es-title">'+pT('Henüz proje planı yok.')+'</div><p>'+pT('Yeni Proje Oluştur ile bağımsız veya MOC bağlantılı proje açın.')+'</p></div>')+'</div></div>'+(ready.length?'<div class="panel"><div class="ph"><b>'+pT('Onaylanan MOC kayıtları')+'</b></div><div class="pb"><table><thead><tr><th>'+pT('MOC kaydı')+'</th><th>'+pT('Durum')+'</th><th>'+pT('Planlanan tarih')+'</th><th></th></tr></thead><tbody>'+rr+'</tbody></table></div></div>':'');projectShell(html);var prFilter=function(){var term=(document.getElementById('prPortfolioSearch').value||'').toLocaleLowerCase('tr-TR'),st=document.getElementById('prPortfolioStatus').value;document.querySelectorAll('[data-pr-row]').forEach(function(row){row.style.display=(!st||row.dataset.prStatus===st)&&(!term||row.dataset.prSearch.includes(term))?'':'none';});};document.getElementById('prPortfolioSearch').oninput=prFilter;document.getElementById('prPortfolioStatus').onchange=prFilter;document.querySelectorAll('[data-pr-notif]').forEach(function(b){b.onclick=function(){var moc=b.dataset.prNotifMoc,projectId=b.dataset.prNotifProject,project=projectId?ps.find(function(x){return String(x.id)===String(projectId);}):ps.find(function(x){return moc&&String(x.moc_id)===String(moc);});sb.from('moc_notifications').update({is_read:true}).eq('id',b.dataset.prNotif).eq('user_id',cloudUserId).then(function(r){if(r.error)console.warn(r.error);});if(project)projectOpen(project.id);else{workspaceMocAc(Number(moc));}};});var newBtn=document.getElementById('prNew');if(newBtn)newBtn.onclick=function(){projectNewDialog(ready);};document.getElementById('prWork').onclick=workspaceAc;document.getElementById('prMoc').onclick=workspaceMocAc;document.querySelectorAll('[data-pr-open]').forEach(function(b){b.onclick=function(){projectOpen(b.dataset.prOpen);};});document.querySelectorAll('[data-pr-create]').forEach(function(b){b.onclick=function(){projectCreateFromMoc(b.dataset.prCreate);};});}).catch(function(e){console.error(e);});}
+function projectRenderIndex(ps,ms,ns){ns=ns||[];var by={};ps.forEach(function(x){if(x.moc_id)by[String(x.moc_id)]=1;});var tq=ps.length?sb.from('moc_project_tasks').select('project_id,status,due_date,progress').eq('tenant_id',cloudTenantId):Promise.resolve({data:[]});tq.then(function(q){if(ACTIVE_WORKSPACE!=='project')return;if(q.error)throw q.error;var ts=q.data||[],dn=ts.filter(function(x){return x.status==='DONE';}).length,late=ts.filter(function(x){return x.due_date&&x.due_date<new Date().toISOString().slice(0,10)&&!['DONE','CANCELLED'].includes(x.status);}).length;var rows=ps.map(function(x){var m=ms.find(function(y){return String(y.id)===String(x.moc_id);})||{},a=ts.filter(function(y){return String(y.project_id)===String(x.id);});return '<tr data-pr-row data-pr-status="'+esc(x.status)+'" data-pr-search="'+esc((x.name+' '+(m.moc_no||'')+' '+(m.title||'')).toLocaleLowerCase('tr-TR'))+'"><td><b>'+esc(x.name)+'</b><div class="hint">'+(x.moc_id?esc(m.moc_no||'MOC')+' · '+esc(m.title||''):pT('Bağımsız proje'))+'</div></td><td><span class="pill">'+esc(projectStatusLabel(x.status))+'</span></td><td>'+a.filter(function(y){return y.status==='DONE';}).length+' / '+a.length+' · '+projectProgressPercent(a)+'%</td><td>'+pDate(x.planned_end)+'</td><td><button class="btn-line sm" data-pr-open="'+x.id+'">'+pT('Planı aç')+' →</button></td></tr>';}).join('');var ready=ms.filter(function(x){return ['IMPLEMENTATION','DOC_UPDATE','TRAINING','PSSR','STARTUP'].includes(x.status)&&!by[String(x.id)];});var rr=ready.map(function(x){return '<tr><td><b>'+esc(x.moc_no)+'</b><div class="hint">'+esc(x.title||'')+'</div></td><td>'+esc(t(x.status))+'</td><td>'+pDate(x.planned_start)+' – '+pDate(x.planned_end)+'</td><td>'+(projectRoleCanEdit()?'<button class="btn-leaf sm" data-pr-create="'+x.id+'">'+pT('Plan oluştur')+'</button>':'')+'</td></tr>';}).join('');var unread=ns.filter(function(n){return !n.is_read;}).length,notifPanel=ns.length?'<details class="panel"><summary class="ph"><b>'+pT('Bildirimler')+'</b><span class="sp"></span><span class="pill">'+unread+' '+pT('yeni')+'</span></summary><div class="pb">'+ns.map(function(n){return '<div class="barrow"><div><b>'+esc(n.subject||'')+'</b><div class="hint">'+esc(n.body||'')+'</div></div><span class="sp"></span>'+(n.project_id||n.moc_id?'<button type="button" class="btn-line sm" data-pr-notif="'+n.id+'" data-pr-notif-moc="'+(n.moc_id||'')+'" data-pr-notif-project="'+(n.project_id||'')+'">'+pT('Aç')+'</button>':'')+'</div>';}).join('')+'</div></details>':'';var html='<div class="kpi-row"><div class="kpi"><div class="val">'+ps.length+'</div><div class="lbl">'+pT('Toplam plan')+'</div></div><div class="kpi"><div class="val">'+ps.filter(function(x){return !['COMPLETED','CANCELLED'].includes(x.status);}).length+'</div><div class="lbl">'+pT('Aktif plan')+'</div></div><div class="kpi"><div class="val">'+dn+' / '+ts.length+'</div><div class="lbl">'+pT('Tamamlanan')+' / '+pT('Görevler')+'</div></div><div class="kpi"><div class="val">'+late+'</div><div class="lbl">'+pT('Geciken')+'</div></div></div>'+notifPanel+'<div class="panel"><div class="ph project-portfolio-head"><h2>'+pT('Projeler')+'</h2><div class="sp"></div>'+(projectRoleCanEdit()?'<button class="btn-leaf sm" id="prNew">+ '+pT('Yeni Proje Oluştur')+'</button>':'')+'<button class="btn-line sm" id="prWork">← '+pT('Çalışma alanları')+'</button><button class="btn-line sm" id="prMoc">'+pT('MOC’ye dön')+'</button></div><div class="pb"><div class="row2"><input id="prPortfolioSearch" placeholder="'+pT('Proje veya MOC ara')+'"><select id="prPortfolioStatus"><option value="">'+pT('Tüm durumlar')+'</option>'+['PLANNING','ACTIVE','BLOCKED','ON_HOLD','COMPLETED','CANCELLED'].map(function(st){return '<option value="'+st+'">'+projectStatusLabel(st)+'</option>';}).join('')+'</select></div>'+(rows?'<table><thead><tr><th>'+pT('Proje adı')+'</th><th>'+pT('Durum')+'</th><th>'+pT('Görevler')+'</th><th>'+pT('Termin')+'</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>':'<div class="empty-state"><div class="es-title">'+pT('Henüz proje planı yok.')+'</div><p>'+pT('Yeni Proje Oluştur ile bağımsız veya MOC bağlantılı proje açın.')+'</p></div>')+'</div></div>'+(ready.length?'<div class="panel"><div class="ph"><b>'+pT('Onaylanan MOC kayıtları')+'</b></div><div class="pb"><table><thead><tr><th>'+pT('MOC kaydı')+'</th><th>'+pT('Durum')+'</th><th>'+pT('Planlanan tarih')+'</th><th></th></tr></thead><tbody>'+rr+'</tbody></table></div></div>':'');projectShell(html);var prFilter=function(){var term=(document.getElementById('prPortfolioSearch').value||'').toLocaleLowerCase('tr-TR'),st=document.getElementById('prPortfolioStatus').value;document.querySelectorAll('[data-pr-row]').forEach(function(row){row.style.display=(!st||row.dataset.prStatus===st)&&(!term||row.dataset.prSearch.includes(term))?'':'none';});};document.getElementById('prPortfolioSearch').oninput=prFilter;document.getElementById('prPortfolioStatus').onchange=prFilter;document.querySelectorAll('[data-pr-notif]').forEach(function(b){b.onclick=function(){var moc=b.dataset.prNotifMoc,projectId=b.dataset.prNotifProject,project=projectId?ps.find(function(x){return String(x.id)===String(projectId);}):ps.find(function(x){return moc&&String(x.moc_id)===String(moc);});sb.from('moc_notifications').update({is_read:true}).eq('id',b.dataset.prNotif).eq('user_id',cloudUserId).then(function(r){if(r.error)console.warn(r.error);});if(project)projectOpen(project.id);else{workspaceMocAc(Number(moc));}};});var newBtn=document.getElementById('prNew');if(newBtn)newBtn.onclick=function(){projectNewDialog(ready);};document.getElementById('prWork').onclick=workspaceAc;document.getElementById('prMoc').onclick=workspaceMocAc;document.querySelectorAll('[data-pr-open]').forEach(function(b){b.onclick=function(){projectOpen(b.dataset.prOpen);};});document.querySelectorAll('[data-pr-create]').forEach(function(b){b.onclick=function(){projectCreateFromMoc(b.dataset.prCreate);};});}).catch(function(e){console.error(e);});}
 function projectNewDialog(ready){
   if(!projectRoleCanEdit()){toast(pT('Plan oluşturma yetkisi gerekli.'),true);return;}
   modalTitle(pT('Yeni Proje Oluştur'));
@@ -1696,9 +1724,192 @@ function viewDetail(id){
     });
   });
 }
+/* ============================================================================
+   SÜREÇ İZLEYİCİ (15.10.2026 — Faz 1, MOC/Proje UX analizi)
+   Detay üstünde: yatay aşama çubuğu (✓ tamamlanan: kim/ne zaman · ● şu an: kaç gündür · ○ sıradaki) + 5 saniyelik özet şeridi
+   (aşama, ilerleme %, sıradaki adım, sorumlu, termin, gecikme/engel, benden beklenen). Veri yeni sütun gerektirmez:
+   aşama giriş/çıkış zamanları ve kişiler moc_audit_log'dan türetilir. Geri alma: renderDetail içindeki renderMocTracker() çağrısını sil.
+   ========================================================================= */
+var MOC_ASAMALAR = ['DRAFT','SCREENING','RISK_ASSESSMENT','TECHNICAL_REVIEW','APPROVAL','IMPLEMENTATION','DOC_UPDATE','TRAINING','PSSR','STARTUP','CLOSED'];
+var MOC_ASAMA_SLA_GUN = 14;   /* aşamada bekleme eşiği (gün); SQL'de stage_sla_days gelince ayardan okunur */
+function mocAsamaListesi(ctx){
+  var typ = ctx.type;
+  return MOC_ASAMALAR.filter(function(s){ return s !== 'PSSR' || (typ && typ.requires_pssr); });
+}
+function mocKisiAdi(id){
+  var p = ((DETAIL_CTX && DETAIL_CTX.people) || []).find(function(x){ return x.id === id; });
+  return (p && p.full_name) || '';
+}
+function mocKisaTarih(iso){ if(!iso) return ''; var d = new Date(iso); return p2(d.getDate()) + '.' + p2(d.getMonth() + 1); }
+/* bir aşamadan ÇIKIŞ kaydı (audit): en son çıkış */
+function mocAsamaCikisi(ctx, stage){
+  var l = (ctx.gecmis || []).filter(function(g){
+    return g.table_name === 'moc_requests' && g.old_data && g.new_data && g.old_data.status === stage && g.new_data.status !== stage;
+  }).sort(function(a, b){ return String(b.created_at).localeCompare(String(a.created_at)); });
+  return l[0] || null;
+}
+function mocGeriDonusSayisi(ctx, stage){
+  return (ctx.gecmis || []).filter(function(g){
+    return g.table_name === 'moc_requests' && g.new_data && g.new_data.status === stage && g.old_data && g.old_data.status !== stage;
+  }).length;
+}
+/* Geçişin neden pasif olduğunu insan diliyle söyler (cond fonksiyonlarının aynası) */
+function mocEksikler(req, to, ctx){
+  var e = [], st = req.status;
+  var acik = function(phase){ return (ctx.actions || []).filter(function(a){ return a.phase === phase && a.status !== 'DONE' && a.status !== 'CANCELLED'; }).length; };
+  if(st === 'DRAFT' && to === 'SCREENING'){
+    if(!req.title) e.push('Başlık girilmemiş');
+    if(!req.category_id) e.push('Kategori seçilmemiş');
+    if(!req.type_id) e.push('Akış türü seçilmemiş');
+  }
+  if(st === 'SCREENING' && to === 'CLOSED' && !req.is_rik) e.push('Talep "RIK" olarak işaretli değil');
+  if(st === 'SCREENING' && to === 'REJECTED' && !(req.reason && req.reason.trim())) e.push('Red gerekçesi yazılıp kaydedilmemiş');
+  if(st === 'RISK_ASSESSMENT' && to === 'TECHNICAL_REVIEW' && !(ctx.risks || []).length) e.push('En az bir risk değerlendirmesi eklenmeli');
+  if(st === 'TECHNICAL_REVIEW' && to === 'APPROVAL'){
+    var items = applicableChecklistItems(req.category_id), ans = (ctx.checklistAnswers || []).filter(function(a){ return a.cevap; }).map(function(a){ return a.madde_id; });
+    var kalan = items.filter(function(m){ return ans.indexOf(m.id) < 0; }).length;
+    if(kalan) e.push('Etki değerlendirme checklist\'inde ' + kalan + ' madde yanıtsız');
+    var pre = acik('PRE_APPROVAL'); if(pre) e.push(pre + ' ön-onay aksiyonu açık');
+    if(!(ctx.approvals || []).length) e.push('En az bir onay adımı tanımlanmalı');
+  }
+  if(st === 'IMPLEMENTATION' && to === 'DOC_UPDATE'){ var a1 = acik('IMPLEMENTATION'); if(a1) e.push(a1 + ' uygulama aksiyonu tamamlanmamış'); }
+  if(st === 'DOC_UPDATE' && to === 'TRAINING'){
+    var dk = (ctx.docs || []).filter(function(d){ return d.doc_kind === 'AFFECTED_DOC' && computeAffectedDocStatus(d, ctx).code !== 'YURURLUKTE'; }).length;
+    if(dk) e.push(dk + ' etkilenen doküman henüz yürürlüğe girmemiş');
+  }
+  if(st === 'TRAINING' && (to === 'PSSR' || to === 'STARTUP')){
+    var bk = (ctx.trainings || []).filter(function(tr){ return !trainingIsComplete(tr, ctx); }).length;
+    if(bk) e.push(bk + ' eğitim/bilgilendirme tamamlanmamış');
+    var pssrGerek = !!(ctx.type && ctx.type.requires_pssr);
+    if(to === 'PSSR' && !pssrGerek) e.push('Bu akış türünde PSSR yok');
+    if(to === 'STARTUP' && pssrGerek) e.push('Bu akış türünde PSSR zorunlu');
+  }
+  if(st === 'PSSR' && to === 'STARTUP'){
+    if(!(ctx.pssr && ctx.pssr.result === 'RELEASED')) e.push('PSSR sonucu "Serbest bırakıldı" olmalı');
+    var pi = applicablePssrChecklistItems(), pa = (ctx.checklistAnswers || []).filter(function(a){ return a.cevap; }).map(function(a){ return a.madde_id; });
+    var pk = pi.filter(function(m){ return pa.indexOf(m.id) < 0; }).length; if(pk) e.push('PSSR checklist\'inde ' + pk + ' madde yanıtsız');
+    var pp = acik('PSSR'); if(pp) e.push(pp + ' PSSR aksiyonu açık');
+  }
+  if(st === 'PSSR' && to === 'IMPLEMENTATION' && !(ctx.pssr && ctx.pssr.result === 'NOT_RELEASED')) e.push('PSSR sonucu "Serbest bırakılmadı" olduğunda kullanılır');
+  if(st === 'STARTUP' && to === 'CLOSED'){
+    var ac = (ctx.actions || []).filter(function(a){ return a.status !== 'DONE' && a.status !== 'CANCELLED'; }).length;
+    if(ac) e.push(ac + ' açık aksiyon kapatılmalı');
+  }
+  return e;
+}
+/* aşama içi ilerleme (tamamlanan/toplam) — özet şeridi ve yüzde için */
+function mocAsamaIci(ctx){
+  var req = ctx.req, st = req.status, r = { done: 0, total: 0, etiket: '' };
+  if(st === 'APPROVAL'){ var ap = ctx.approvals || []; r.total = ap.length; r.done = ap.filter(function(a){ return a.decision === 'APPROVED'; }).length; r.etiket = 'onay'; }
+  else if(st === 'IMPLEMENTATION' || st === 'PSSR'){
+    var l = (ctx.actions || []).filter(function(a){ return a.phase === st && a.status !== 'CANCELLED'; });
+    r.total = l.length; r.done = l.filter(function(a){ return a.status === 'DONE'; }).length; r.etiket = 'aksiyon';
+  } else if(st === 'DOC_UPDATE'){
+    var dl = (ctx.docs || []).filter(function(d){ return d.doc_kind === 'AFFECTED_DOC'; });
+    r.total = dl.length; r.done = dl.filter(function(d){ return computeAffectedDocStatus(d, ctx).code === 'YURURLUKTE'; }).length; r.etiket = 'doküman';
+  } else if(st === 'TRAINING'){
+    var tl = ctx.trainings || []; r.total = tl.length; r.done = tl.filter(function(tr){ return trainingIsComplete(tr, ctx); }).length; r.etiket = 'eğitim';
+  } else if(st === 'TECHNICAL_REVIEW'){
+    var it = applicableChecklistItems(req.category_id), an = (ctx.checklistAnswers || []).filter(function(a){ return a.cevap; }).map(function(a){ return a.madde_id; });
+    r.total = it.length; r.done = it.filter(function(m){ return an.indexOf(m.id) >= 0; }).length; r.etiket = 'checklist maddesi';
+  } else if(st === 'STARTUP'){
+    var sl = (ctx.actions || []).filter(function(a){ return a.status !== 'CANCELLED'; }); r.total = sl.length; r.done = sl.filter(function(a){ return a.status === 'DONE'; }).length; r.etiket = 'aksiyon';
+  }
+  return r;
+}
+function mocIlerlemeYuzde(ctx){
+  var req = ctx.req, st = mocAsamaListesi(ctx), n = st.length;
+  if(req.status === 'CLOSED') return 100;
+  var i = st.indexOf(req.status);
+  if(i < 0){ var son = ''; ['REJECTED', 'CANCELLED'].forEach(function(){}); i = 0; }
+  var ic = mocAsamaIci(ctx), frac = ic.total ? ic.done / ic.total : 0;
+  return Math.max(0, Math.min(99, Math.round(100 * (i + frac) / (n - 1))));
+}
+function renderMocTracker(){
+  var ctx = DETAIL_CTX, req = ctx.req, stages = mocAsamaListesi(ctx), terminal = ['CLOSED', 'REJECTED', 'CANCELLED'].indexOf(req.status) > -1;
+  var cur = stages.indexOf(req.status), info = mocCurrentStageInfo();
+  var sonAsama = null;
+  if(req.status === 'REJECTED' || req.status === 'CANCELLED'){
+    var g = (ctx.gecmis || []).filter(function(x){ return x.table_name === 'moc_requests' && x.new_data && x.new_data.status === req.status && x.old_data; })
+      .sort(function(a, b){ return String(b.created_at).localeCompare(String(a.created_at)); })[0];
+    sonAsama = g && g.old_data.status; cur = stages.indexOf(sonAsama);
+  }
+  var h = '<div class="mt-wrap"><div class="mt-bar" role="list">';
+  stages.forEach(function(s, i){
+    var durum = req.status === 'CLOSED' ? 'done' : (i < cur ? 'done' : (i === cur ? (terminal ? 'bad' : 'now') : 'todo'));
+    var alt = '';
+    if(durum === 'done'){
+      var cikis = mocAsamaCikisi(ctx, s);
+      if(cikis) alt = '<div class="mt-t">' + esc(mocKisaTarih(cikis.created_at)) + '</div><div class="mt-p">' + esc(mocKisiAdi(cikis.changed_by).split(' ')[0] || '') + '</div>';
+    } else if(durum === 'now'){
+      var ic = mocAsamaIci(ctx);
+      alt = '<div class="mt-t">' + info.days + ' ' + t('gün') + '</div>' + (ic.total ? '<div class="mt-p">' + ic.done + '/' + ic.total + ' ' + esc(t(ic.etiket)) + '</div>' : '<div class="mt-p">' + esc(info.owner.split(' ')[0]) + '</div>');
+    }
+    var gd = mocGeriDonusSayisi(ctx, s);
+    h += '<div class="mt-step ' + durum + '" role="listitem"><div class="mt-dot">' + (durum === 'done' ? '✓' : (durum === 'bad' ? '✕' : (durum === 'now' ? '●' : (i + 1)))) + '</div>' +
+      '<div class="mt-n">' + esc(t(STATUS_LABEL[s] || s)) + (gd > 1 ? ' <span class="mt-r" title="' + t('Bu aşamaya geri dönüldü') + '">↩' + gd + '</span>' : '') + '</div>' + alt + '</div>';
+  });
+  if(req.status === 'REJECTED' || req.status === 'CANCELLED') h += '<div class="mt-step bad"><div class="mt-dot">✕</div><div class="mt-n">' + esc(t(STATUS_LABEL[req.status])) + '</div></div>';
+  h += '</div>';
+  /* özet şeridi */
+  var pct = mocIlerlemeYuzde(ctx), ic2 = mocAsamaIci(ctx);
+  var sirada = '', engeller = [];
+  var opts = (TRANSITIONS[req.status] || []).filter(function(tr){ return canDo(tr.action); });
+  if(terminal){ sirada = req.status === 'CLOSED' ? t('Süreç tamamlandı.') : t('Süreç sonlandırıldı.'); }
+  else if(req.status === 'APPROVAL'){
+    var act = activeApprovalStep(ctx.approvals);
+    sirada = act ? (t('Onay bekleniyor') + ': ' + (mocKisiAdi(act.approver_id) || rolAd(act.role_code))) : t('Onay zinciri sonuçlanıyor');
+    if(!(ctx.approvals || []).length) engeller.push(t('Onay adımı tanımlı değil'));
+  } else {
+    var tum = (TRANSITIONS[req.status] || []);
+    var ilk = (opts[0] || tum[0]);
+    if(ilk){
+      var ek = mocEksikler(req, ilk.to, ctx);
+      if(ek.length){ sirada = ek[0]; engeller = ek.slice(1); }
+      else sirada = t('Hazır') + ' → ' + t(STATUS_LABEL[ilk.to] || ilk.to) + (opts.length ? '' : ' (' + t('yetkili kişi geçişi yapar') + ')');
+    }
+  }
+  var gec = !terminal && info.days > MOC_ASAMA_SLA_GUN;
+  var benden = '';
+  if(!terminal){
+    var act2 = req.status === 'APPROVAL' ? activeApprovalStep(ctx.approvals) : null;
+    if(act2 && canDecideApproval(act2)) benden = '<span class="pill warn">' + t('Onayınız bekleniyor') + '</span>';
+    else if(opts.length && !mocEksikler(req, opts[0].to, ctx).length) benden = '<span class="pill ok">' + t('Geçişi siz yapabilirsiniz') + '</span>';
+  }
+  h += '<div class="mt-ozet"><div class="mt-kutu"><div class="mt-k">' + t('Aşama') + '</div><div class="mt-v">' + esc(t(STATUS_LABEL[req.status] || req.status)) + (cur > -1 && !terminal ? ' <span class="mt-m">' + (cur + 1) + '/' + stages.length + '</span>' : '') + '</div></div>' +
+    '<div class="mt-kutu"><div class="mt-k">' + t('İlerleme') + '</div><div class="mt-v">%' + pct + '<div class="mt-bar2"><i style="width:' + pct + '%"></i></div></div></div>' +
+    '<div class="mt-kutu mt-genis"><div class="mt-k">' + t('Sıradaki adım') + '</div><div class="mt-v mt-s">' + esc(sirada || '—') + '</div>' +
+      (engeller.length ? '<div class="mt-eng">' + engeller.map(function(x){ return '<span>• ' + esc(x) + '</span>'; }).join('') + '</div>' : '') + '</div>' +
+    '<div class="mt-kutu"><div class="mt-k">' + t('Sorumlu') + '</div><div class="mt-v">' + esc(terminal ? '—' : info.owner) + '</div></div>' +
+    '<div class="mt-kutu"><div class="mt-k">' + t('Termin') + '</div><div class="mt-v">' + esc(req.planned_end || '—') + '</div></div>' +
+    '<div class="mt-kutu"><div class="mt-k">' + t('Durum') + '</div><div class="mt-v">' + (terminal ? '—' : '<span class="pill ' + (gec ? 'crit' : 'blue') + '">' + info.days + ' ' + t('gün') + (gec ? ' ⚠ +' + (info.days - MOC_ASAMA_SLA_GUN) : '') + '</span>') + (benden ? ' ' + benden : '') + '</div></div></div></div>';
+  return h;
+}
+/* onay satırı ayrıntısı: kim karar verdi / kimi bekliyor, yorum, bekleme süresi */
+function mocOnayDetay(a, aktifMi){
+  var ctx = DETAIL_CTX, ad, zaman = '', yorum = '';
+  if(a.decision){
+    var g = (ctx.gecmis || []).filter(function(x){ return x.table_name === 'moc_approvals' && String(x.record_id) === String(a.id) && x.new_data && x.new_data.decision; })
+      .sort(function(p, q){ return String(q.created_at).localeCompare(String(p.created_at)); })[0];
+    ad = mocKisiAdi(a.approver_id) || (g && mocKisiAdi(g.changed_by)) || '';
+    zaman = a.decided_at ? fmtDT(a.decided_at) : (g ? fmtDT(g.created_at) : '');
+    yorum = a.comment ? '"' + a.comment + '"' : '';
+  } else if(aktifMi){
+    ad = mocKisiAdi(a.approver_id) || rolAd(a.role_code);
+    var oncekiler = (ctx.approvals || []).filter(function(x){ return x.step_order < a.step_order && x.decided_at; }).sort(function(p, q){ return String(q.decided_at).localeCompare(String(p.decided_at)); });
+    var baslangic = oncekiler[0] ? oncekiler[0].decided_at : mocCurrentStageInfo().since;
+    var gun = Math.max(0, Math.floor((Date.now() - Date.parse(baslangic)) / 86400000));
+    zaman = gun + ' ' + t('gündür bekliyor');
+  }
+  var parca = [];
+  if(ad) parca.push('<b>' + esc(ad) + '</b>'); if(zaman) parca.push(esc(zaman)); if(yorum) parca.push('<i>' + esc(yorum) + '</i>');
+  return parca.length ? '<div class="hint" style="margin-top:3px">' + parca.join(' · ') + '</div>' : '';
+}
+
 function renderDetail(){
   var ctx=DETAIL_CTX, req=ctx.req, typ=ctx.type, c=ctx.category;
   var html='<div class="view">';
+  html+=renderMocTracker();
 
   if(req.priority==='EMERGENCY'){
     html+='<div class="alert-chip crit">⚠ '+t('ACİL DEĞİŞİKLİK — sözlü ön onayla uygulanmış olabilir. Geriye dönük tam MOC dosyası, oluşturulma anından itibaren')+' '
@@ -2320,8 +2531,14 @@ function renderTransitionsPanel(){
     html+='<div style="display:flex;gap:8px;flex-wrap:wrap">'+opts.map(function(tr,i){
       var ok = !tr.cond || tr.cond(req, ctx);
       var cls = i===0 ? 'btn-leaf' : 'btn-line';
-      return '<button class="'+cls+' transbtn" data-to="'+tr.to+'" '+(ok?'':'disabled title="'+t('Koşul sağlanmadı')+'"')+'>→ '+t(STATUS_LABEL[tr.to]||tr.to)+'</button>';
+      var ek = ok ? [] : mocEksikler(req, tr.to, ctx);
+      return '<button class="'+cls+' transbtn" data-to="'+tr.to+'" '+(ok?'':'disabled title="'+esc(ek.length?ek.join(' · '):t('Koşul sağlanmadı'))+'"')+'>→ '+t(STATUS_LABEL[tr.to]||tr.to)+'</button>';
     }).join('')+'</div>';
+    html+=opts.map(function(tr){
+      if(!tr.cond || tr.cond(req, ctx)) return '';
+      var ek = mocEksikler(req, tr.to, ctx); if(!ek.length) return '';
+      return '<div class="mt-eksik"><b>'+esc(t(STATUS_LABEL[tr.to]||tr.to))+' '+esc(t('geçişi için eksikler'))+':</b>'+ek.map(function(x){ return '• '+esc(x); }).join('<br>')+'</div>';
+    }).join('');
     if(req.status==='SCREENING'){
       html+='<label style="margin-top:12px">'+t('Red gerekçesi (REJECTED için zorunlu)')+'</label><textarea id="rejectReason">'+esc(req.reason||'')+'</textarea>';
     }
@@ -2785,7 +3002,7 @@ function renderApprovalsPanel(){
           +'<button class="sm btn-crit apdec" data-id="'+a.id+'" data-dec="REJECTED">'+t('Reddet')+'</button>';
       }
       return '<div class="approval-row"><div class="step-badge'+(a.decision==='APPROVED'?' done':'')+'">'+a.step_order+'</div>'
-        +'<div style="flex:1"><b>'+esc(rolAd(a.role_code))+'</b><div class="hint">'+decLbl+'</div></div>'
+        +'<div style="flex:1"><b>'+esc(rolAd(a.role_code))+'</b><div class="hint">'+decLbl+'</div>'+mocOnayDetay(a, !!(active && active.id===a.id))+'</div>'
         +'<div style="display:flex;gap:6px">'+actions+'</div></div>';
     }).join('');
   }
