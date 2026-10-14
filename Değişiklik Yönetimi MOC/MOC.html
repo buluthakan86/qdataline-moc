@@ -349,6 +349,18 @@ textarea{resize:vertical;min-height:70px}
 .mt-pk{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .mt-pk-bar{flex:1 1 160px;min-width:120px;height:8px;background:var(--line);border-radius:9px;overflow:hidden}.mt-pk-bar i{display:block;height:100%;background:var(--leaf)}
 .mt-pm{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+
+/* Faz 3 (15.10.2026): detay sekmeleri + tek menü */
+.mt-tabs{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;margin-bottom:6px;border-bottom:1px solid var(--line);align-items:center}
+.mt-tab{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:7px 12px;font-size:13px;font-family:inherit;cursor:pointer;white-space:nowrap}
+.mt-tab:hover{border-color:var(--leaf)}
+.mt-tab.on{background:var(--leaf);border-color:var(--leaf);color:#fff;font-weight:700}
+.mt-tn{font-size:11px;opacity:.75;margin-left:2px}
+.mt-te{color:var(--warn);font-weight:800}.mt-tab.on .mt-te{color:#fff}
+.mt-tumu{margin-left:auto;border:0;background:transparent;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer;font-family:inherit;white-space:nowrap}
+.mt-gizli{display:none!important}
+.workspace-switch{display:none!important}
+.mt-step[data-asama]:hover .mt-dot{box-shadow:0 0 0 3px var(--mint)}
 </style>
 <script src="/qdl-hata.js"></script>
 <script src="/qdl-takvim.js"></script>
@@ -696,7 +708,7 @@ var I18N={
   'Yüklenemedi':'Could not load','Yüksek':'High','Öncelik':'Priority',
   'Şiddet (sonra, 1-5)':'Severity (after, 1-5)','Şiddet (önce, 1-5)':'Severity (before, 1-5)',
 };
-Object.assign(I18N,{'Bana Düşenler':'My Tasks','Bana düşen iş':'Items for me','Onayımı bekleyen':'Awaiting my approval','Proje görevi':'Project task','Koordinatörü olduğum MOC':'MOCs I coordinate','Şu an size düşen bir iş yok.':'Nothing is waiting for you right now.','Bekleyen iş yok.':'Nothing pending.','Onayımı bekleyenler':'Awaiting my approval','Bana atanan aksiyonlar':'Actions assigned to me','Proje görevlerim':'My project tasks','Eğitim / bilgilendirme':'Training / briefing','Onayımda':'My approval','Benim':'Mine','Açık':'Open','Kapalı':'Closed','Aşama (tümü)':'Stage (all)','Yalnız gecikenler':'Overdue only','Bu filtreyle eşleşen kayıt yok.':'No records match this filter.','Aşamada':'In stage','Uygulama planı':'Implementation plan','Planı aç':'Open plan','Proje alanına git':'Go to projects','Bu MOC için henüz bir uygulama planı (proje) oluşturulmadı.':'No implementation plan (project) has been created for this MOC yet.','Sıradaki görev':'Next task','geciken':'overdue','bloke':'blocked','görev':'tasks','MOC aşaması':'MOC stage','sonraki':'next','MOC detayı':'MOC details','Onay':'Approval','açık aksiyon':'open actions','geçişi için eksikler':'transition blockers','Onayınız bekleniyor':'Your approval is awaited','Geçişi siz yapabilirsiniz':'You can make the transition','Sıradaki adım':'Next step','İlerleme':'Progress','Aşama':'Stage','Onay bekleniyor':'Awaiting approval','Hazır':'Ready','Süreç tamamlandı.':'Process completed.','Süreç sonlandırıldı.':'Process ended.','gündür bekliyor':'days waiting','Bu aşamaya geri dönüldü':'Returned to this stage','yetkili kişi geçişi yapar':'an authorised person makes the transition','Onay zinciri sonuçlanıyor':'Approval chain concluding','Onay adımı tanımlı değil':'No approval step defined','checklist maddesi':'checklist items','aksiyon':'actions','onay':'approvals','doküman':'documents','eğitim':'trainings','Süreç durumu':'Process status','Mevcut aşama':'Current stage','Sıradaki sorumlu':'Current owner','Bu aşamada bekleme':'Time in this stage','Aşamaya giriş':'Entered stage','gün':'days','Hatırlatma taslağı hazırla':'Prepare reminder draft','Hatırlatma taslağı':'Reminder draft','Alıcı adresini girip taslağı e-posta uygulamanızda açın. Mesaj otomatik gönderilmez.':'Enter a recipient and open the draft in your email app. The message is not sent automatically.','Alıcı e-posta':'Recipient email','Konu':'Subject','Mesaj':'Message','E-postada aç':'Open in email app','Geçerli alıcı e-postası girin.':'Enter a valid recipient email.','MOC görev profili':'MOC responsibility profile','MOC görev profili, kişinin süreçteki işlevini belirtir: saha operatörü uygulama yapar, sorumlu işi takip eder, üst yönetim karar verir, denetçi kayıtları inceler. Bu seçim erişim yetkisini değiştirmez; kullanıcı yetkileri ayrı yönetilir.':'The MOC responsibility profile describes each person’s function in the process. This selection does not change access rights; permissions are managed separately.'});
+Object.assign(I18N,{'Projeler':'Projects','Risk & Checklist':'Risk & Checklist','Onay & İmza':'Approval & Signature','Aksiyonlar':'Actions','Aşama İşleri':'Stage Work','Doküman & Eğitim':'Documents & Training','Dosya & Maliyet':'Files & Cost','Geçmiş':'History','Tümünü göster':'Show all','Sekmeli göster':'Show tabbed','risk':'risks','Bu aşamanın tamamlanması için eksik var':'Something is missing to complete this stage','Bana Düşenler':'My Tasks','Bana düşen iş':'Items for me','Onayımı bekleyen':'Awaiting my approval','Proje görevi':'Project task','Koordinatörü olduğum MOC':'MOCs I coordinate','Şu an size düşen bir iş yok.':'Nothing is waiting for you right now.','Bekleyen iş yok.':'Nothing pending.','Onayımı bekleyenler':'Awaiting my approval','Bana atanan aksiyonlar':'Actions assigned to me','Proje görevlerim':'My project tasks','Eğitim / bilgilendirme':'Training / briefing','Onayımda':'My approval','Benim':'Mine','Açık':'Open','Kapalı':'Closed','Aşama (tümü)':'Stage (all)','Yalnız gecikenler':'Overdue only','Bu filtreyle eşleşen kayıt yok.':'No records match this filter.','Aşamada':'In stage','Uygulama planı':'Implementation plan','Planı aç':'Open plan','Proje alanına git':'Go to projects','Bu MOC için henüz bir uygulama planı (proje) oluşturulmadı.':'No implementation plan (project) has been created for this MOC yet.','Sıradaki görev':'Next task','geciken':'overdue','bloke':'blocked','görev':'tasks','MOC aşaması':'MOC stage','sonraki':'next','MOC detayı':'MOC details','Onay':'Approval','açık aksiyon':'open actions','geçişi için eksikler':'transition blockers','Onayınız bekleniyor':'Your approval is awaited','Geçişi siz yapabilirsiniz':'You can make the transition','Sıradaki adım':'Next step','İlerleme':'Progress','Aşama':'Stage','Onay bekleniyor':'Awaiting approval','Hazır':'Ready','Süreç tamamlandı.':'Process completed.','Süreç sonlandırıldı.':'Process ended.','gündür bekliyor':'days waiting','Bu aşamaya geri dönüldü':'Returned to this stage','yetkili kişi geçişi yapar':'an authorised person makes the transition','Onay zinciri sonuçlanıyor':'Approval chain concluding','Onay adımı tanımlı değil':'No approval step defined','checklist maddesi':'checklist items','aksiyon':'actions','onay':'approvals','doküman':'documents','eğitim':'trainings','Süreç durumu':'Process status','Mevcut aşama':'Current stage','Sıradaki sorumlu':'Current owner','Bu aşamada bekleme':'Time in this stage','Aşamaya giriş':'Entered stage','gün':'days','Hatırlatma taslağı hazırla':'Prepare reminder draft','Hatırlatma taslağı':'Reminder draft','Alıcı adresini girip taslağı e-posta uygulamanızda açın. Mesaj otomatik gönderilmez.':'Enter a recipient and open the draft in your email app. The message is not sent automatically.','Alıcı e-posta':'Recipient email','Konu':'Subject','Mesaj':'Message','E-postada aç':'Open in email app','Geçerli alıcı e-postası girin.':'Enter a valid recipient email.','MOC görev profili':'MOC responsibility profile','MOC görev profili, kişinin süreçteki işlevini belirtir: saha operatörü uygulama yapar, sorumlu işi takip eder, üst yönetim karar verir, denetçi kayıtları inceler. Bu seçim erişim yetkisini değiştirmez; kullanıcı yetkileri ayrı yönetilir.':'The MOC responsibility profile describes each person’s function in the process. This selection does not change access rights; permissions are managed separately.'});
 function t(s){ return (LANG==='en' && Object.prototype.hasOwnProperty.call(I18N,s)) ? I18N[s] : s; }
 function applyMocLangStatic(){
   document.documentElement.lang=LANG;
@@ -862,7 +874,7 @@ function afterLogin(session){
         document.getElementById('loginScreen').style.display='none';
         document.getElementById('app').style.display='flex';
         document.getElementById('userLabel').textContent=(cloudFullName?cloudFullName+' · ':'')+cloudUser+' · '+cloudRole;
-        workspaceAc();
+        CURRENT_VIEW='inbox'; workspaceMocAc();
         var linkedMoc=Number(new URLSearchParams(location.search).get('moc'));
         if(Number.isSafeInteger(linkedMoc)&&linkedMoc>0)workspaceMocAc(linkedMoc);
         try{ document.getElementById('sorunBildirBtn').style.display=''; }catch(e){}
@@ -1209,7 +1221,7 @@ function projectRenderDetail(){
   var starterPanel=!p.moc_id&&!ts.length?'<div class="panel"><div class="ph"><b>'+pT('Projeyi başlatın')+'</b></div><div class="pb"><p class="hint">'+pT('İlk görevi ekleyin. Sorumlu ve tarih tanımlandığında ilerleme ve zaman çizelgesi dolmaya başlar.')+'</p>'+(projectCanAddTask()?'<div style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" class="btn-leaf sm" id="prStarterTask">+ '+pT('İlk görevi ekle')+'</button><button type="button" class="btn-line sm" id="prStarterInfo">'+pT('Kapsam ve tarihleri düzenle')+'</button><button type="button" class="btn-line sm" id="prStarterCost">'+pT('Bütçe kalemi ekle')+'</button></div>':'')+'</div></div>':'';
   var viewMarkup=PROJECT_TASK_VIEW==='kanban'?projectTaskBoardMarkup(ts,ph,people):(PROJECT_TASK_VIEW==='timeline'?projectTimelineMarkup(ts): (rows?'<div class="table-scroll"><table><thead><tr><th>'+pT('Görev adı')+'</th><th>'+pT('Faz')+'</th><th>'+pT('Sorumlu')+'</th><th>'+pT('Durum')+'</th><th>'+pT('İlerleme')+'</th><th>'+pT('Termin')+'</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty-state"><div class="es-title">'+pT('Henüz görev yok.')+'</div></div>'));
   projectShell('<div class="panel"><div class="ph"><div><h2>'+esc(p.name)+'</h2><div class="hint">'+(p.moc_id?esc(m.moc_no||'MOC')+' · '+esc(m.title||''):pT('Bağımsız proje'))+'</div></div><div class="sp"></div>'+(projectCanAddTask()?'<button class="btn-leaf sm" id="prTaskQuick">+ '+pT('Görev ekle')+'</button>':'')+(projectRoleCanEdit()?'<button class="btn-line sm" id="prEdit">'+pT('Proje bilgileri')+'</button>':'')+(p.moc_id?'<button class="btn-line sm" id="prLinkedMoc">'+pT('Bağlı MOC kaydı')+' →</button>':'')+'<button class="btn-line sm" id="prBackList">← '+pT('Projeler')+'</button><button class="btn-line sm" id="prBackWork">'+pT('Çalışma alanları')+'</button></div><div class="pb">'+starterPanel+'<div class="hint" style="margin:0 0 14px">'+pT('İlk plan')+': '+pDate(p.initial_planned_start||p.planned_start)+' – '+pDate(p.initial_planned_end||p.planned_end)+' · '+pT('Güncel plan')+': '+pDate(p.planned_start)+' – '+pDate(p.planned_end)+'</div><div class="kpi-row"><div class="kpi"><div class="val">'+projectProgressPercent(ts)+'%</div><div class="lbl">'+pT('İlerleme')+'</div></div><div class="kpi"><div class="val">'+dn+' / '+ts.length+'</div><div class="lbl">'+pT('Tamamlanan')+' / '+pT('Görevler')+'</div></div><div class="kpi"><div class="val">'+late+'</div><div class="lbl">'+pT('Geciken')+'</div></div><div class="kpi"><div class="val">'+fmtMoney((PROJECT_CTX.costs||[]).filter(function(x){return (x.currency||'TRY')===(p.currency||'TRY');}).reduce(function(n,x){return n+(Number(x.actual)||0);},0))+' '+esc(p.currency||'TRY')+'</div><div class="lbl">'+pT('Kaydedilen gider')+'</div></div></div>'+projectOverviewMarkup()+'<div class="panel"><div class="ph"><b>'+pT('Plan zaman çizelgesi')+'</b></div><div class="pb">'+projectTimelineMarkup(ts)+'</div></div>'+baselinePanel+projectCostMarkup()+'<div class="panel"><div class="ph"><b>'+pT('Kilometre taşları')+'</b><span class="sp"></span>'+(projectRoleCanEdit()?'<button class="btn-leaf sm" id="prMilestoneNew">+ '+pT('Yeni kilometre taşı')+'</button>':'')+'</div><div class="pb">'+(milestoneRows||'<div class="empty-state"><div class="es-title">'+pT('Henüz kilometre taşı yok.')+'</div></div>')+'</div></div><div class="panel"><div class="ph"><b>'+pT('Görevler')+'</b><span class="sp"></span><div class="project-view-switch"><button type="button" class="btn-line sm '+(PROJECT_TASK_VIEW==='list'?'active':'')+'" id="prViewList">'+pT('Liste')+'</button><button type="button" class="btn-line sm '+(PROJECT_TASK_VIEW==='kanban'?'active':'')+'" id="prViewBoard">'+pT('Kanban')+'</button></div>'+(projectCanAddTask()?'<button class="btn-leaf sm" id="prTaskNew">+ '+pT('Yeni görev')+'</button>':'')+'</div><div class="pb"><p class="hint">'+pT('Aynı projeye birden fazla görev ekleyebilirsiniz. Bağımlılık tanımlanmayan görevler eşzamanlı ilerler; görevlerin tarihleri ve sorumluları ayrı izlenir.')+'</p>'+viewMarkup+'</div></div></div></div>');
-  var linkedMoc=document.getElementById('prLinkedMoc');if(linkedMoc)linkedMoc.onclick=function(){workspaceMocAc(Number(PROJECT_CTX.project.moc_id));};document.getElementById('prBackList').onclick=projectLoadIndex;document.getElementById('prBackWork').onclick=workspaceAc;
+  var linkedMoc=document.getElementById('prLinkedMoc');if(linkedMoc)linkedMoc.onclick=function(){workspaceMocAc(Number(PROJECT_CTX.project.moc_id));};document.getElementById('prBackList').onclick=projectLoadIndex;document.getElementById('prBackWork').onclick=function(){CURRENT_VIEW='inbox';workspaceMocAc();};
   var firstTask=document.getElementById('prStarterTask');if(firstTask)firstTask.onclick=function(){projectTaskForm(null);};var firstInfo=document.getElementById('prStarterInfo');if(firstInfo)firstInfo.onclick=projectEditForm;var firstCost=document.getElementById('prStarterCost');if(firstCost)firstCost.onclick=function(){projectCostForm(null);};
   var quick=document.getElementById('prTaskQuick');if(quick)quick.onclick=function(){projectTaskForm(null);};var n=document.getElementById('prTaskNew');if(n)n.onclick=function(){projectTaskForm(null);};
   var bn=document.getElementById('prBaselineNew');if(bn)bn.onclick=projectBaselineCreate;var cn=document.getElementById('prCostNew');if(cn)cn.onclick=function(){projectCostForm(null);};document.querySelectorAll('[data-pr-cost]').forEach(function(b){b.onclick=function(){projectCostForm(b.dataset.prCost);};});var mn=document.getElementById('prMilestoneNew');if(mn)mn.onclick=projectMilestoneForm;
@@ -1282,7 +1294,8 @@ function renderNav(){
     +navItem('inbox','Bana Düşenler')
     +navItem('mine','Değişiklik Talepleri')
     +navItem('pending','Onay Bekleyenler')
-    +navItem('all','Tüm Değişiklikler');
+    +navItem('all','Tüm Değişiklikler')
+    +navItem('projeler','Projeler');
   if(canDo('admin')) html+=navItem('settings','Ayarlar');
   document.getElementById('snav').innerHTML=html;
   Array.prototype.forEach.call(document.querySelectorAll('.navcard[data-v]'),function(el){
@@ -1865,7 +1878,7 @@ function renderMocTracker(){
       alt = '<div class="mt-t">' + info.days + ' ' + t('gün') + '</div>' + (ic.total ? '<div class="mt-p">' + ic.done + '/' + ic.total + ' ' + esc(t(ic.etiket)) + '</div>' : '<div class="mt-p">' + esc(info.owner.split(' ')[0]) + '</div>');
     }
     var gd = mocGeriDonusSayisi(ctx, s);
-    h += '<div class="mt-step ' + durum + '" role="listitem"><div class="mt-dot">' + (durum === 'done' ? '✓' : (durum === 'bad' ? '✕' : (durum === 'now' ? '●' : (i + 1)))) + '</div>' +
+    h += '<div class="mt-step ' + durum + '" role="listitem" data-asama="' + s + '"><div class="mt-dot">' + (durum === 'done' ? '✓' : (durum === 'bad' ? '✕' : (durum === 'now' ? '●' : (i + 1)))) + '</div>' +
       '<div class="mt-n">' + esc(t(STATUS_LABEL[s] || s)) + (gd > 1 ? ' <span class="mt-r" title="' + t('Bu aşamaya geri dönüldü') + '">↩' + gd + '</span>' : '') + '</div>' + alt + '</div>';
   });
   if(req.status === 'REJECTED' || req.status === 'CANCELLED') h += '<div class="mt-step bad"><div class="mt-dot">✕</div><div class="mt-n">' + esc(t(STATUS_LABEL[req.status])) + '</div></div>';
@@ -4186,7 +4199,7 @@ function viewInbox(){
 var _renderNavFaz1 = renderNav;
 renderNav = function(){ _renderNavFaz1(); mocInboxRozetSoru(); };
 var _inboxT = 0;
-function mocInboxRozetSoru(){ if(Date.now() - _inboxT < 60000 || ACTIVE_WORKSPACE !== 'moc') return; _inboxT = Date.now(); mocInboxRozet(); }
+function mocInboxRozetSoru(){ if(Date.now() - _inboxT < 60000 || ACTIVE_WORKSPACE === 'picker') return; _inboxT = Date.now(); mocInboxRozet(); }
 
 /* ---------- MOC DETAY: UYGULAMA PLANI KARTI ---------- */
 var _renderDetailFaz1 = renderDetail;
@@ -4237,6 +4250,106 @@ projectRenderDetail = function(){
   document.getElementById('prMocSeritAc').onclick = function(){ workspaceMocAc(Number(p.moc_id)); };
 };
 /* ============ FAZ 2 SONU ============ */
+
+/* ============================================================================
+   FAZ 3 (15.10.2026) — sekmeli MOC detayı + tek menü (MOC | Proje çalışma alanı seçici kalktı)
+   Geri alma: bu bloğu (FAZ 3 … FAZ 3 SONU) sil; boot'taki `CURRENT_VIEW='inbox'; workspaceMocAc();` satırını `workspaceAc();` yap;
+   renderNav içindeki 'projeler' kartını ve CSS'teki .workspace-switch{display:none} kuralını geri al.
+   ========================================================================= */
+var MOC_TAB_SECIM = {};          /* moc id -> son seçilen sekme (yeniden çizimde korunur) */
+var MOC_TAB_TUMU = false;
+try{ MOC_TAB_TUMU = localStorage.getItem('moc.tabTumu') === '1'; }catch(e){}
+var MOC_ASAMA_TAB = { DRAFT: 'ozet', SCREENING: 'ozet', RISK_ASSESSMENT: 'risk', TECHNICAL_REVIEW: 'risk', APPROVAL: 'onay', IMPLEMENTATION: 'aksiyon', DOC_UPDATE: 'dokegt', TRAINING: 'dokegt', PSSR: 'asama', STARTUP: 'aksiyon', CLOSED: 'ozet', REJECTED: 'ozet', CANCELLED: 'ozet' };
+function mocPanelSekmesi(el){
+  var id = el.id || '', bas = ((el.querySelector('h2,.ph b,.ph') || {}).textContent || '').trim();
+  if(id === 'transitionsPanel') return 'hep';      /* durum geçişi her sekmede görünür */
+  if(id === 'mocWaitingPanel') return 'ozet';
+  if(id === 'costPanel' || id === 'docsPanel') return 'dosya';
+  if(id === 'checklistPanel') return 'risk';
+  if(id === 'affDocsPanel' || id === 'trainPanel') return 'dokegt';
+  if(id === 'gecmisPanel') return 'gecmis';
+  if(/^Risk De/.test(bas)) return 'risk';
+  if(/^Onay Zinciri/.test(bas)) return 'onay';
+  if(/^Aksiyon/.test(bas)) return 'aksiyon';
+  if(/^PSSR|^Geçici/.test(bas)) return 'asama';
+  return 'ozet';
+}
+function mocDetayTablari(){
+  var ctx = DETAIL_CTX, req = ctx && ctx.req; if(!req) return;
+  var sol = document.querySelector('.detail-grid > div'); if(!sol || document.getElementById('mocTabBar')) return;
+  var paneller = Array.prototype.slice.call(sol.children);
+  var grup = {}; paneller.forEach(function(p){ var k = mocPanelSekmesi(p); p.setAttribute('data-sekme', k); (grup[k] = grup[k] || []).push(p); });
+  /* sekme sayaçları */
+  var risks = (ctx.risks || []).length, onaylar = ctx.approvals || [], aks = (ctx.actions || []).filter(function(a){ return a.status !== 'CANCELLED'; });
+  var items = applicableChecklistItems(req.category_id), ans = (ctx.checklistAnswers || []).filter(function(a){ return a.cevap; }).map(function(a){ return a.madde_id; });
+  var cevap = items.filter(function(m){ return ans.indexOf(m.id) >= 0; }).length;
+  var sayac = {
+    risk: risks + ' ' + t('risk') + (items.length ? ' · ' + cevap + '/' + items.length : ''),
+    onay: onaylar.length ? onaylar.filter(function(a){ return a.decision === 'APPROVED'; }).length + '/' + onaylar.length : '',
+    aksiyon: aks.length ? aks.filter(function(a){ return a.status === 'DONE'; }).length + '/' + aks.length : '',
+    dokegt: ((ctx.docs || []).filter(function(d){ return d.doc_kind === 'AFFECTED_DOC'; }).length + (ctx.trainings || []).length) || '',
+    dosya: ((ctx.docs || []).filter(function(d){ return d.doc_kind !== 'AFFECTED_DOC'; }).length) || '',
+    gecmis: (ctx.gecmis || []).length || ''
+  };
+  var tanim = [['ozet', 'Özet'], ['risk', 'Risk & Checklist'], ['onay', 'Onay & İmza'], ['aksiyon', 'Aksiyonlar'], ['asama', 'Aşama İşleri'], ['dokegt', 'Doküman & Eğitim'], ['dosya', 'Dosya & Maliyet'], ['gecmis', 'Geçmiş']]
+    .filter(function(x){ return grup[x[0]] && grup[x[0]].length; });
+  /* engel göstergesi: aktif aşamanın birincil geçişinde eksik varsa ilgili sekmede ⚠ */
+  var engelTab = '';
+  try{
+    var opts = (TRANSITIONS[req.status] || []), ilk = opts[0];
+    if(ilk && req.status !== 'APPROVAL' && mocEksikler(req, ilk.to, ctx).length) engelTab = MOC_ASAMA_TAB[req.status];
+  }catch(e){}
+  var varsayilan = MOC_TAB_SECIM[req.id] || MOC_ASAMA_TAB[req.status] || 'ozet';
+  if(!grup[varsayilan]) varsayilan = 'ozet';
+  var bar = '<div id="mocTabBar" class="mt-tabs" role="tablist">' + tanim.map(function(x){
+    return '<button type="button" role="tab" class="mt-tab" data-tab="' + x[0] + '">' + t(x[1]) + (sayac[x[0]] ? ' <span class="mt-tn">' + esc(String(sayac[x[0]])) + '</span>' : '') + (engelTab === x[0] ? ' <span class="mt-te" title="' + t('Bu aşamanın tamamlanması için eksik var') + '">⚠</span>' : '') + '</button>';
+  }).join('') + '<button type="button" class="mt-tumu" id="mocTabTumu">' + t(MOC_TAB_TUMU ? 'Sekmeli göster' : 'Tümünü göster') + '</button></div>';
+  sol.insertAdjacentHTML('afterbegin', bar);
+  var gecisPanel = document.getElementById('transitionsPanel');
+  if(gecisPanel) sol.insertBefore(gecisPanel, document.getElementById('mocTabBar'));   /* geçiş paneli sekme çubuğunun üstünde sabit */
+  var goster = function(k){
+    MOC_TAB_SECIM[req.id] = k;
+    paneller.forEach(function(p){ p.classList.toggle('mt-gizli', !MOC_TAB_TUMU && p.getAttribute('data-sekme') !== k && p.getAttribute('data-sekme') !== 'hep'); });
+    Array.prototype.forEach.call(document.querySelectorAll('.mt-tab'), function(b){ b.classList.toggle('on', b.getAttribute('data-tab') === k && !MOC_TAB_TUMU); b.setAttribute('aria-selected', b.getAttribute('data-tab') === k ? 'true' : 'false'); });
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('.mt-tab'), function(b){ b.onclick = function(){ MOC_TAB_TUMU = false; try{ localStorage.setItem('moc.tabTumu', '0'); }catch(e){} document.getElementById('mocTabTumu').textContent = t('Tümünü göster'); goster(b.getAttribute('data-tab')); }; });
+  document.getElementById('mocTabTumu').onclick = function(){ MOC_TAB_TUMU = !MOC_TAB_TUMU; try{ localStorage.setItem('moc.tabTumu', MOC_TAB_TUMU ? '1' : '0'); }catch(e){} this.textContent = t(MOC_TAB_TUMU ? 'Sekmeli göster' : 'Tümünü göster'); goster(MOC_TAB_SECIM[req.id] || varsayilan); };
+  /* aşama çubuğunda bir aşamaya tıklayınca ilgili sekmeye geç */
+  Array.prototype.forEach.call(document.querySelectorAll('.mt-step[data-asama]'), function(s){
+    var k = MOC_ASAMA_TAB[s.getAttribute('data-asama')]; if(!k || !grup[k]) return;
+    s.style.cursor = 'pointer'; s.onclick = function(){ MOC_TAB_TUMU = false; goster(k); document.getElementById('mocTabBar').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
+  });
+  goster(varsayilan);
+}
+var _renderDetailFaz2 = renderDetail;
+renderDetail = function(){ _renderDetailFaz2(); try{ mocDetayTablari(); }catch(e){ console.warn('sekmeler', e); } };
+
+/* ---------- TEK MENÜ: Proje alanı da aynı üst menüyü kullanır ---------- */
+NAV_ICONS.projeler = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5h16M4 12h10M4 19h6M18 14l2 2 3-4"/></svg>';
+var _workspaceProjectAcFaz2 = workspaceProjectAc;
+workspaceProjectAc = function(){
+  _workspaceProjectAcFaz2();
+  document.querySelector('.cardnav-wrap').style.display = 'block';
+  CURRENT_VIEW = 'projeler'; renderNav();
+};
+var _workspaceMocAcFaz2 = workspaceMocAc;
+workspaceMocAc = function(mocId){
+  if(CURRENT_VIEW === 'projeler') CURRENT_VIEW = 'inbox';
+  _workspaceMocAcFaz2(mocId);
+};
+var _renderNavFaz2 = renderNav;
+renderNav = function(){
+  _renderNavFaz2();
+  Array.prototype.forEach.call(document.querySelectorAll('.navcard[data-v]'), function(el){
+    el.onclick = function(){
+      var v = el.getAttribute('data-v');
+      if(v === 'projeler'){ LAST_PROJECT_ID = null; workspaceProjectAc(); }
+      else if(ACTIVE_WORKSPACE !== 'moc'){ CURRENT_VIEW = v; workspaceMocAc(); }
+      else go(v);
+    };
+  });
+};
+/* ============ FAZ 3 SONU ============ */
 </script>
 </body>
 </html>
