@@ -1325,3 +1325,10 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 - İlerleme formülü: `100 × (aşama indeksi + aşama içi oran) / (aşama sayısı − 1)`; aşama içi oran = onay / aksiyon / doküman / eğitim / checklist tamamlanma oranı. Yeni DB alanı YOK (aşama giriş/çıkış audit'ten türetilir).
 - Sıradaki fazlar (onay bekliyor): Faz 2 liste sütunları + "Bana düşenler" + MOC↔Proje kartları; Faz 3 sekmeli detay + tek menü; Faz 4 SQL (stage_entered_at, SLA, completed_by, onay terminleri). Aksiyon↔proje görevi tablo birleştirme KARAR bekliyor (şimdilik arayüzde birleşik gösterim önerildi).
 - Geri alma: renderDetail içindeki `html+=renderMocTracker();` satırını sil; diğer değişiklikler bağımsızdır.
+
+## 15.10.2026 — Faz 2: liste sütunları, Bana Düşenler, MOC↔Proje kartları (CANLI)
+- **MOC listesi** (Değişiklik Talepleri / Tüm Değişiklikler): `renderRequestTable` sarmalandı (Faz 2 bloğu, ana script sonunda "FAZ 2 … FAZ 2 SONU"). Sütunlar: aşama mini-çubuk + n/N, sıradaki adım/sorumlu, aşamada gün (>7 sarı, >14 kırmızı), ilerleme %, termin, bağlı proje %. Filtre chip'leri (Tümü/Benim/Onayımda/Açık/Kapalı) + aşama seçici + "yalnız gecikenler". Veri `mocZenginYukle()` (30 sn önbellek): onaylar, aksiyonlar, audit log (aşama girişi), projeler+görevler, profiller.
+- **Bana Düşenler** (`inbox`, menüde 2. kart, rozetli): onayımı bekleyenler, bana atanan aksiyonlar, proje görevlerim, bekleyen eğitim/bilgilendirme (`moc_trainings.user_id=ben, acknowledged=false`), koordinatörü olduğum açık MOC'lar. Her satır [Aç].
+- **MOC detayı**: izleyicinin altında "Uygulama planı" kartı (bağlı proje %, görev sayısı, geciken/bloke, sıradaki görev; proje yoksa uygulama aşamasında "Proje alanına git"). **Proje detayı**: en üstte MOC aşama şeridi (`#prMocSerit`) + "MOC detayı →". `projectOpen` içindeki MOC sorgusu `status,type_id,planned_end` da çekiyor.
+- Yeni DB alanı YOK. Geri alma: Faz 2 bloğunu sil + renderNav/go'daki `inbox` satırlarını ve projectOpen select değişikliğini geri al.
+- Sırada: Faz 3 (sekmeli detay + tek menü), Faz 4 (SQL: stage_entered_at, SLA, completed_by, onay terminleri). Aksiyon↔proje görev tablosu birleştirme: karar bekliyor.
