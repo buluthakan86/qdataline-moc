@@ -1,6 +1,6 @@
 ## 15.10.2026 — Yeni düzen (özet)
-- **Giriş ekranı:** Oturum açınca doğrudan **Bana Düşenler** açılır: onayınızı bekleyenler, size atanan aksiyonlar, proje görevleriniz, bekleyen eğitimler ve koordinatörü olduğunuz MOC'lar tek yerde.
-- **Menü tek:** Özet · Bana Düşenler · Değişiklik Talepleri · Onay Bekleyenler · Tüm Değişiklikler · Projeler · Ayarlar. Proje bölümü artık ayrı bir alan değil, aynı menünün parçası.
+- **Giriş ekranı:** Oturum açınca **çalışma alanı seçici** açılır: MOC ve Proje Yönetimi ayrı alanlardır. Kartların üzerinde canlı özet (açık değişiklik, onayınızı bekleyen, geciken; aktif proje, göreviniz, geciken görev) ve altında "N iş sizi bekliyor" şeridi görünür.
+- **Bana Düşenler** (MOC alanı menüsünde, rozetli): onayınızı bekleyenler, size atanan aksiyonlar, proje görevleriniz, bekleyen eğitimler ve koordinatörü olduğunuz MOC'lar tek yerde.
 - **Süreç izleyici:** Her MOC'un üstünde aşama çubuğu (✓ tamamlanan: tarih ve kişi · ● şu an: kaç gündür · ○ sıradaki) ve özet şeridi (aşama, ilerleme %, sıradaki adım, sorumlu, termin, bekleme günü). "Durum Geçişi" düğmesi pasifse hemen altında eksikler listelenir.
 - **Sekmeli detay:** Özet · Risk & Checklist · Onay & İmza · Aksiyonlar · Aşama İşleri · Doküman & Eğitim · Dosya & Maliyet · Geçmiş. Aktif aşamanın sekmesi otomatik açılır; ⚠ o sekmede tamamlanması gereken iş olduğunu gösterir. Eski uzun görünüm için "Tümünü göster".
 - **Listeler:** Aşama mini-çubuğu, sıradaki adım/sorumlu, aşamada gün, ilerleme %, termin ve bağlı proje yüzdesi; Benim / Onayımda / Açık / Kapalı filtreleri.

@@ -1339,3 +1339,9 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 - **Durum Geçişi paneli** sekme çubuğunun ÜSTÜNDE sabit (her sekmede görünür) — yeni panel eklenirse `mocPanelSekmesi`'ne yaz, yoksa "Özet"e düşer.
 - Geri alma: Faz 3 bloğunu sil; boot satırını `workspaceAc();` yap; renderNav'daki 'projeler' kartını, CSS `.workspace-switch{display:none!important}` ve `data-asama` işaretini geri al.
 - Kalan: Faz 4 (SQL: stage_entered_at, SLA ayarı, completed_by, onay terminleri, hatırlatma e-postası) ve aksiyon↔proje görevi tablo birleştirme kararı. Mobil görünüm üç fazda da henüz test edilmedi.
+
+## 15.10.2026 (2) — Karar değişikliği: çalışma alanı seçici GERİ GELDİ
+- Sahip, "tek menü" yerine eski seçici ekranı (MOC | Proje ayrı çalışma alanları) tercih etti ("daha farklı ve kullanıcıyı etkileyen"). Faz 3'ün tek-menü kısmı geri alındı: boot `workspaceAc()`, 'Projeler' kartı yok, MOC|Proje anahtarı görünür, proje alanında üst menü gizli.
+- Seçici ekran zenginleştirildi (`mocPickerOzet`): MOC kartında açık değişiklik / onayınızı bekleyen / geciken, Proje kartında aktif proje / göreviniz var / geciken görev; altında "N iş sizi bekliyor → Bana Düşenler" şeridi. **Bana Düşenler** MOC alanının menüsünde (rozetli) ve seçiciden açılır.
+- Sekmeli detay, süreç izleyici, liste sütunları, MOC↔Proje kartları OLDUĞU GİBİ KALDI.
+- Mobil: 390px'te taşma yok; aşama çubuğu şu anki aşamaya kaydırılır (`mocIzleyiciKaydir`), menü kartları küçük ekranda 150×64.
