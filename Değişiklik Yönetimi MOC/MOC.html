@@ -332,6 +332,23 @@ textarea{resize:vertical;min-height:70px}
 .mt-eksik{margin-top:10px;padding:9px 12px;border-radius:10px;background:var(--warn-bg);color:var(--warn);font-size:12.5px}
 .mt-eksik b{display:block;margin-bottom:3px}
 @media(max-width:700px){.mt-genis{grid-column:span 1}}
+
+/* Faz 2 (15.10.2026): liste filtreleri, mini aşama çubuğu, Bana Düşenler, MOC↔Proje kartları */
+.mt-mini{display:inline-flex;gap:2px;vertical-align:middle}
+.mt-mini i{display:block;width:9px;height:9px;border-radius:2px;background:var(--line)}
+.mt-mini i.d{background:var(--ok)}.mt-mini i.n{background:var(--leaf);box-shadow:0 0 0 2px var(--mint)}.mt-mini i.x{background:var(--crit)}
+.mt-filtre{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.mt-chip{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:20px;padding:5px 12px;font-size:12.5px;cursor:pointer;font-family:inherit}
+.mt-chip span{color:var(--muted);font-weight:700;margin-left:2px}
+.mt-chip.on{background:var(--leaf);border-color:var(--leaf);color:#fff}.mt-chip.on span{color:#fff}
+.mt-sel{font-family:inherit;font-size:12.5px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+.mt-gec{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.mt-ib-ozet{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+.mt-ib-ozet>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.mt-ib-ozet b{display:block;font-size:22px}.mt-ib-ozet span{font-size:11.5px;color:var(--muted)}
+.mt-pk{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.mt-pk-bar{flex:1 1 160px;min-width:120px;height:8px;background:var(--line);border-radius:9px;overflow:hidden}.mt-pk-bar i{display:block;height:100%;background:var(--leaf)}
+.mt-pm{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 </style>
 <script src="/qdl-hata.js"></script>
 <script src="/qdl-takvim.js"></script>
@@ -679,7 +696,7 @@ var I18N={
   'Yüklenemedi':'Could not load','Yüksek':'High','Öncelik':'Priority',
   'Şiddet (sonra, 1-5)':'Severity (after, 1-5)','Şiddet (önce, 1-5)':'Severity (before, 1-5)',
 };
-Object.assign(I18N,{'geçişi için eksikler':'transition blockers','Onayınız bekleniyor':'Your approval is awaited','Geçişi siz yapabilirsiniz':'You can make the transition','Sıradaki adım':'Next step','İlerleme':'Progress','Aşama':'Stage','Onay bekleniyor':'Awaiting approval','Hazır':'Ready','Süreç tamamlandı.':'Process completed.','Süreç sonlandırıldı.':'Process ended.','gündür bekliyor':'days waiting','Bu aşamaya geri dönüldü':'Returned to this stage','yetkili kişi geçişi yapar':'an authorised person makes the transition','Onay zinciri sonuçlanıyor':'Approval chain concluding','Onay adımı tanımlı değil':'No approval step defined','checklist maddesi':'checklist items','aksiyon':'actions','onay':'approvals','doküman':'documents','eğitim':'trainings','Süreç durumu':'Process status','Mevcut aşama':'Current stage','Sıradaki sorumlu':'Current owner','Bu aşamada bekleme':'Time in this stage','Aşamaya giriş':'Entered stage','gün':'days','Hatırlatma taslağı hazırla':'Prepare reminder draft','Hatırlatma taslağı':'Reminder draft','Alıcı adresini girip taslağı e-posta uygulamanızda açın. Mesaj otomatik gönderilmez.':'Enter a recipient and open the draft in your email app. The message is not sent automatically.','Alıcı e-posta':'Recipient email','Konu':'Subject','Mesaj':'Message','E-postada aç':'Open in email app','Geçerli alıcı e-postası girin.':'Enter a valid recipient email.','MOC görev profili':'MOC responsibility profile','MOC görev profili, kişinin süreçteki işlevini belirtir: saha operatörü uygulama yapar, sorumlu işi takip eder, üst yönetim karar verir, denetçi kayıtları inceler. Bu seçim erişim yetkisini değiştirmez; kullanıcı yetkileri ayrı yönetilir.':'The MOC responsibility profile describes each person’s function in the process. This selection does not change access rights; permissions are managed separately.'});
+Object.assign(I18N,{'Bana Düşenler':'My Tasks','Bana düşen iş':'Items for me','Onayımı bekleyen':'Awaiting my approval','Proje görevi':'Project task','Koordinatörü olduğum MOC':'MOCs I coordinate','Şu an size düşen bir iş yok.':'Nothing is waiting for you right now.','Bekleyen iş yok.':'Nothing pending.','Onayımı bekleyenler':'Awaiting my approval','Bana atanan aksiyonlar':'Actions assigned to me','Proje görevlerim':'My project tasks','Eğitim / bilgilendirme':'Training / briefing','Onayımda':'My approval','Benim':'Mine','Açık':'Open','Kapalı':'Closed','Aşama (tümü)':'Stage (all)','Yalnız gecikenler':'Overdue only','Bu filtreyle eşleşen kayıt yok.':'No records match this filter.','Aşamada':'In stage','Uygulama planı':'Implementation plan','Planı aç':'Open plan','Proje alanına git':'Go to projects','Bu MOC için henüz bir uygulama planı (proje) oluşturulmadı.':'No implementation plan (project) has been created for this MOC yet.','Sıradaki görev':'Next task','geciken':'overdue','bloke':'blocked','görev':'tasks','MOC aşaması':'MOC stage','sonraki':'next','MOC detayı':'MOC details','Onay':'Approval','açık aksiyon':'open actions','geçişi için eksikler':'transition blockers','Onayınız bekleniyor':'Your approval is awaited','Geçişi siz yapabilirsiniz':'You can make the transition','Sıradaki adım':'Next step','İlerleme':'Progress','Aşama':'Stage','Onay bekleniyor':'Awaiting approval','Hazır':'Ready','Süreç tamamlandı.':'Process completed.','Süreç sonlandırıldı.':'Process ended.','gündür bekliyor':'days waiting','Bu aşamaya geri dönüldü':'Returned to this stage','yetkili kişi geçişi yapar':'an authorised person makes the transition','Onay zinciri sonuçlanıyor':'Approval chain concluding','Onay adımı tanımlı değil':'No approval step defined','checklist maddesi':'checklist items','aksiyon':'actions','onay':'approvals','doküman':'documents','eğitim':'trainings','Süreç durumu':'Process status','Mevcut aşama':'Current stage','Sıradaki sorumlu':'Current owner','Bu aşamada bekleme':'Time in this stage','Aşamaya giriş':'Entered stage','gün':'days','Hatırlatma taslağı hazırla':'Prepare reminder draft','Hatırlatma taslağı':'Reminder draft','Alıcı adresini girip taslağı e-posta uygulamanızda açın. Mesaj otomatik gönderilmez.':'Enter a recipient and open the draft in your email app. The message is not sent automatically.','Alıcı e-posta':'Recipient email','Konu':'Subject','Mesaj':'Message','E-postada aç':'Open in email app','Geçerli alıcı e-postası girin.':'Enter a valid recipient email.','MOC görev profili':'MOC responsibility profile','MOC görev profili, kişinin süreçteki işlevini belirtir: saha operatörü uygulama yapar, sorumlu işi takip eder, üst yönetim karar verir, denetçi kayıtları inceler. Bu seçim erişim yetkisini değiştirmez; kullanıcı yetkileri ayrı yönetilir.':'The MOC responsibility profile describes each person’s function in the process. This selection does not change access rights; permissions are managed separately.'});
 function t(s){ return (LANG==='en' && Object.prototype.hasOwnProperty.call(I18N,s)) ? I18N[s] : s; }
 function applyMocLangStatic(){
   document.documentElement.lang=LANG;
@@ -1068,7 +1085,7 @@ function projectCreateStandalone(){
   sb.rpc('moc_project_create_standalone',{p_name:name,p_description:val('prNewDescription').trim()||null,p_planned_start:start,p_planned_end:end}).then(function(r){if(r.error)throw r.error;PROJECT_CREATE_PENDING=false;closeModal();toast(pT('Proje oluşturuldu.'));projectOpen(r.data);}).catch(function(e){console.error(e);PROJECT_CREATE_PENDING=false;toast(hataMesaji(e),true);btn.disabled=false;});
 }
 function projectCreateFromMoc(id){if(!projectRoleCanEdit()){toast(pT('Plan oluşturma yetkisi gerekli.'),true);return;}var b=document.querySelector('[data-pr-create="'+id+'"]');if(b)b.disabled=true;sb.rpc('moc_project_create_for_request',{p_moc_id:Number(id)}).then(function(r){if(r.error)throw r.error;closeModal();toast(pT('Uygulama planı oluşturuldu.'));projectOpen(r.data);}).catch(function(e){console.error(e);toast(hataMesaji(e),true);if(b)b.disabled=false;});}
-function projectOpen(id){LAST_PROJECT_ID=id;projectShell('<div class="panel"><div class="pb empty">'+pT('Yükleniyor…')+'</div></div>');Promise.all([sb.from('moc_projects').select('*').eq('id',id).eq('tenant_id',cloudTenantId).maybeSingle(),sb.from('moc_project_phases').select('*').eq('project_id',id).eq('tenant_id',cloudTenantId).order('sort_order'),sb.from('moc_project_tasks').select('*').eq('project_id',id).eq('tenant_id',cloudTenantId).order('due_date',{ascending:true,nullsFirst:false}),sb.from('moc_project_milestones').select('*').eq('project_id',id).eq('tenant_id',cloudTenantId).order('target_date',{ascending:true,nullsFirst:false}),sb.from('moc_project_costs').select('*').eq('project_id',id).eq('tenant_id',cloudTenantId),sb.from('profiles').select('id,full_name').eq('tenant_id',cloudTenantId).eq('is_active',true),sb.from('moc_project_baselines').select('*').eq('project_id',id).eq('tenant_id',cloudTenantId).order('version_no',{ascending:false}),sb.from('moc_task_dependencies').select('id,predecessor_task_id,successor_task_id,dependency_type').eq('project_id',id).eq('tenant_id',cloudTenantId)]).then(function(r){r.forEach(function(x){if(x.error)throw x.error;});PROJECT_CTX={project:r[0].data,phases:r[1].data||[],tasks:r[2].data||[],milestones:r[3].data||[],costs:r[4].data||[],people:r[5].data||[],baselines:r[6].data||[],dependencies:r[7].data||[]};if(!PROJECT_CTX.project)throw new Error('missing');return PROJECT_CTX.project.moc_id?sb.from('moc_requests').select('moc_no,title,coordinator_id').eq('id',PROJECT_CTX.project.moc_id).maybeSingle():Promise.resolve({data:null});}).then(function(r){if(r.error)throw r.error;PROJECT_CTX.moc=r.data||{};projectRenderDetail();}).catch(function(e){if(ACTIVE_WORKSPACE!=='project')return;console.error(e);projectShell('<div class="panel"><div class="pb"><div class="alert-chip crit">'+pT('Plan yüklenemedi.')+'</div><button class="btn-line" id="prBack">← '+pT('Projeler')+'</button></div></div>');document.getElementById('prBack').onclick=projectLoadIndex;});}
+function projectOpen(id){LAST_PROJECT_ID=id;projectShell('<div class="panel"><div class="pb empty">'+pT('Yükleniyor…')+'</div></div>');Promise.all([sb.from('moc_projects').select('*').eq('id',id).eq('tenant_id',cloudTenantId).maybeSingle(),sb.from('moc_project_phases').select('*').eq('project_id',id).eq('tenant_id',cloudTenantId).order('sort_order'),sb.from('moc_project_tasks').select('*').eq('project_id',id).eq('tenant_id',cloudTenantId).order('due_date',{ascending:true,nullsFirst:false}),sb.from('moc_project_milestones').select('*').eq('project_id',id).eq('tenant_id',cloudTenantId).order('target_date',{ascending:true,nullsFirst:false}),sb.from('moc_project_costs').select('*').eq('project_id',id).eq('tenant_id',cloudTenantId),sb.from('profiles').select('id,full_name').eq('tenant_id',cloudTenantId).eq('is_active',true),sb.from('moc_project_baselines').select('*').eq('project_id',id).eq('tenant_id',cloudTenantId).order('version_no',{ascending:false}),sb.from('moc_task_dependencies').select('id,predecessor_task_id,successor_task_id,dependency_type').eq('project_id',id).eq('tenant_id',cloudTenantId)]).then(function(r){r.forEach(function(x){if(x.error)throw x.error;});PROJECT_CTX={project:r[0].data,phases:r[1].data||[],tasks:r[2].data||[],milestones:r[3].data||[],costs:r[4].data||[],people:r[5].data||[],baselines:r[6].data||[],dependencies:r[7].data||[]};if(!PROJECT_CTX.project)throw new Error('missing');return PROJECT_CTX.project.moc_id?sb.from('moc_requests').select('moc_no,title,coordinator_id,status,type_id,planned_end').eq('id',PROJECT_CTX.project.moc_id).maybeSingle():Promise.resolve({data:null});}).then(function(r){if(r.error)throw r.error;PROJECT_CTX.moc=r.data||{};projectRenderDetail();}).catch(function(e){if(ACTIVE_WORKSPACE!=='project')return;console.error(e);projectShell('<div class="panel"><div class="pb"><div class="alert-chip crit">'+pT('Plan yüklenemedi.')+'</div><button class="btn-line" id="prBack">← '+pT('Projeler')+'</button></div></div>');document.getElementById('prBack').onclick=projectLoadIndex;});}
 function projectTaskStatusLabel(s){return pT(({TODO:'Yapılacak',IN_PROGRESS:'Sürüyor',IN_REVIEW:'İncelemede',BLOCKED:'Bloklandı',DONE:'Tamamlandı',CANCELLED:'İptal edildi'})[s]||s);}
 function projectTaskBoardMarkup(ts,ph,people){
   var statuses=['TODO','IN_PROGRESS','IN_REVIEW','BLOCKED','DONE','CANCELLED'],today=new Date().toISOString().slice(0,10);
@@ -1262,6 +1279,7 @@ var NAV_ICONS = {
 };
 function renderNav(){
   var html=navItem('dashboard','Özet')
+    +navItem('inbox','Bana Düşenler')
     +navItem('mine','Değişiklik Talepleri')
     +navItem('pending','Onay Bekleyenler')
     +navItem('all','Tüm Değişiklikler');
@@ -1282,6 +1300,7 @@ function go(view,id){
   CURRENT_VIEW=view; CURRENT_ID=id||null;
   renderNav();
   if(view==='dashboard') viewDashboard();
+  else if(view==='inbox') viewInbox();
   else if(view==='mine') viewList('mine');
   else if(view==='pending') viewList('pending');
   else if(view==='all') viewList('all');
@@ -3979,6 +3998,245 @@ function startTour(steps){
   window.addEventListener('keydown', onKey);
   show();
 }
+
+/* ============================================================================
+   FAZ 2 (15.10.2026) — liste sütunları + filtreler, "Bana Düşenler", MOC↔Proje kartları
+   Yeni DB alanı yok: aşama giriş zamanı moc_audit_log'dan, diğerleri mevcut tablolardan türetilir.
+   Geri alma: bu bloğu (FAZ 2 … FAZ 2 SONU) sil, nav/go içindeki 'inbox' satırlarını kaldır.
+   ========================================================================= */
+var MOC_ZENGIN = null, MOC_ZENGIN_TS = 0, LISTE_CHIP = 'tum', LISTE_ASAMA = '', LISTE_GEC = false;
+var MOC_TERMINAL = ['CLOSED', 'REJECTED', 'CANCELLED'];
+function mocZenginYukle(zorla){
+  if(!zorla && MOC_ZENGIN && Date.now() - MOC_ZENGIN_TS < 30000) return Promise.resolve(MOC_ZENGIN);
+  return Promise.all([
+    tumSatirlar(function(){ return sb.from('moc_approvals').select('moc_id,step_order,role_code,approver_id,decision,decided_at'); }),
+    tumSatirlar(function(){ return sb.from('moc_action_items').select('moc_id,phase,status,assignee_id,due_date'); }),
+    tumSatirlar(function(){ return sb.from('moc_audit_log').select('record_id,old_data,new_data,created_at').eq('table_name', 'moc_requests').order('created_at', { ascending: false }); }),
+    tumSatirlar(function(){ return sb.from('moc_projects').select('id,moc_id,name,status,planned_end'); }),
+    tumSatirlar(function(){ return sb.from('moc_project_tasks').select('project_id,status,progress,due_date'); }),
+    sb.from('profiles').select('id,full_name').eq('tenant_id', cloudTenantId).eq('is_active', true)
+  ]).then(function(r){
+    var z = { onay: {}, aks: {}, giris: {}, proje: {}, kisi: {} };
+    (r[0] || []).forEach(function(a){ (z.onay[a.moc_id] = z.onay[a.moc_id] || []).push(a); });
+    (r[1] || []).forEach(function(a){ (z.aks[a.moc_id] = z.aks[a.moc_id] || []).push(a); });
+    (r[2] || []).forEach(function(g){ if(g.new_data && g.old_data && g.new_data.status !== g.old_data.status){ (z.giris[g.record_id] = z.giris[g.record_id] || []).push({ st: g.new_data.status, t: g.created_at }); } });
+    var gorev = {}; (r[4] || []).forEach(function(x){ (gorev[x.project_id] = gorev[x.project_id] || []).push(x); });
+    var bugun = todayISO();
+    (r[3] || []).forEach(function(p){
+      var ts = gorev[p.id] || [], akt = ts.filter(function(x){ return x.status !== 'CANCELLED'; });
+      z.proje[p.moc_id] = { id: p.id, ad: p.name, durum: p.status, pct: projectProgressPercent(ts), done: akt.filter(function(x){ return x.status === 'DONE'; }).length, total: akt.length,
+        gec: akt.filter(function(x){ return x.due_date && x.due_date < bugun && x.status !== 'DONE'; }).length };
+    });
+    ((r[5] && r[5].data) || []).forEach(function(p){ z.kisi[p.id] = p.full_name; });
+    MOC_ZENGIN = z; MOC_ZENGIN_TS = Date.now(); return z;
+  });
+}
+function mocSatirBilgi(r){
+  var z = MOC_ZENGIN, typ = typeById(r.type_id), st = mocAsamaListesi({ type: typ }), n = st.length, idx = st.indexOf(r.status), terminal = MOC_TERMINAL.indexOf(r.status) > -1;
+  var giris = ((z.giris[r.id] || []).filter(function(g){ return g.st === r.status; })[0] || {}).t || r.created_at;
+  var gun = Math.max(0, Math.floor((Date.now() - Date.parse(giris)) / 86400000));
+  var onaylar = (z.onay[r.id] || []).slice().sort(function(a, b){ return a.step_order - b.step_order; });
+  var aksiyonlar = z.aks[r.id] || [];
+  var aktif = r.status === 'APPROVAL' ? activeApprovalStep(onaylar) : null;
+  var sorumlu = aktif ? (z.kisi[aktif.approver_id] || rolAd(aktif.role_code)) : (z.kisi[r.status === 'DRAFT' ? r.initiator_id : r.coordinator_id] || '—');
+  var frac = 0, sirada = '';
+  var nextTo = ((TRANSITIONS[r.status] || [])[0] || {}).to;
+  var acikAks = function(phase){ return aksiyonlar.filter(function(a){ return (!phase || a.phase === phase) && a.status !== 'DONE' && a.status !== 'CANCELLED'; }).length; };
+  if(terminal){ sirada = '—'; }
+  else if(r.status === 'APPROVAL'){
+    var kar = onaylar.filter(function(a){ return a.decision === 'APPROVED'; }).length; frac = onaylar.length ? kar / onaylar.length : 0;
+    sirada = aktif ? (t('Onay') + ': ' + sorumlu + ' (' + (kar + 1) + '/' + onaylar.length + ')') : t('Onay zinciri sonuçlanıyor');
+  } else if(r.status === 'IMPLEMENTATION' || r.status === 'PSSR' || r.status === 'STARTUP'){
+    var ph = r.status === 'STARTUP' ? null : r.status, tum = aksiyonlar.filter(function(a){ return (!ph || a.phase === ph) && a.status !== 'CANCELLED'; });
+    var ac = acikAks(ph); frac = tum.length ? (tum.length - ac) / tum.length : 0;
+    sirada = ac ? (ac + ' ' + t('açık aksiyon')) : (nextTo ? '→ ' + t(STATUS_LABEL[nextTo] || nextTo) : '—');
+  } else { sirada = nextTo ? '→ ' + t(STATUS_LABEL[nextTo] || nextTo) : '—'; }
+  var pct = r.status === 'CLOSED' ? 100 : (idx < 0 ? 0 : Math.max(0, Math.min(99, Math.round(100 * (idx + frac) / (n - 1)))));
+  return { st: st, n: n, idx: idx, terminal: terminal, gun: gun, sorumlu: sorumlu, sirada: sirada, pct: pct, proje: z.proje[r.id] || null, aktif: aktif,
+    gec: !terminal && (gun > MOC_ASAMA_SLA_GUN || (r.planned_end && r.planned_end < todayISO())) };
+}
+function mocMiniBar(b, r){
+  var h = '<span class="mt-mini" title="' + esc(t(STATUS_LABEL[r.status] || r.status)) + '">';
+  b.st.forEach(function(s, i){
+    var c = r.status === 'CLOSED' ? 'd' : (b.terminal ? (i < b.idx ? 'd' : (i === b.idx ? 'x' : '')) : (i < b.idx ? 'd' : (i === b.idx ? 'n' : '')));
+    h += '<i class="' + c + '"></i>';
+  });
+  return h + '</span>';
+}
+function mocBenimMi(r){ return r.initiator_id === cloudUserId || r.coordinator_id === cloudUserId; }
+function mocOnayimdaMi(r){
+  if(r.status !== 'APPROVAL' || !MOC_ZENGIN) return false;
+  var list = (MOC_ZENGIN.onay[r.id] || []).slice().sort(function(a, b){ return a.step_order - b.step_order; }), a = activeApprovalStep(list);
+  return !!(a && r.initiator_id !== cloudUserId && cloudRole !== 'VIEWER' && (!a.approver_id || a.approver_id === cloudUserId));
+}
+function mocListeSatirlari(rows){
+  return rows.filter(function(r){
+    var term = MOC_TERMINAL.indexOf(r.status) > -1;
+    if(LISTE_CHIP === 'benim' && !mocBenimMi(r)) return false;
+    if(LISTE_CHIP === 'onay' && !mocOnayimdaMi(r)) return false;
+    if(LISTE_CHIP === 'acik' && term) return false;
+    if(LISTE_CHIP === 'kapali' && !term) return false;
+    if(LISTE_ASAMA && r.status !== LISTE_ASAMA) return false;
+    if(LISTE_GEC && !mocSatirBilgi(r).gec) return false;
+    return true;
+  });
+}
+var _rrtFaz1 = renderRequestTable;
+renderRequestTable = function(rows, kind){
+  if(!rows.length){ _rrtFaz1(rows, kind); return; }
+  if(!MOC_ZENGIN){
+    _rrtFaz1(rows, kind);
+    mocZenginYukle().then(function(){ if(CURRENT_VIEW === 'mine' || CURRENT_VIEW === 'all') renderRequestTable(filtreliListe(), LISTE_TURU); }).catch(function(){});
+    return;
+  }
+  var tum = rows, f = mocListeSatirlari(rows);
+  var sayi = function(k){ var s = LISTE_CHIP; LISTE_CHIP = k; var n = mocListeSatirlari(tum).length; LISTE_CHIP = s; return n; };
+  var chips = [['tum', 'Tümü'], ['benim', 'Benim'], ['onay', 'Onayımda'], ['acik', 'Açık'], ['kapali', 'Kapalı']].map(function(c){
+    return '<button type="button" class="mt-chip' + (LISTE_CHIP === c[0] ? ' on' : '') + '" data-chip="' + c[0] + '">' + t(c[1]) + ' <span>' + sayi(c[0]) + '</span></button>';
+  }).join('');
+  var asamaSec = '<select id="mtAsama" class="mt-sel"><option value="">' + t('Aşama (tümü)') + '</option>' + Object.keys(STATUS_LABEL).map(function(s){ return '<option value="' + s + '"' + (LISTE_ASAMA === s ? ' selected' : '') + '>' + t(STATUS_LABEL[s]) + '</option>'; }).join('') + '</select>';
+  var body = f.map(function(r){
+    var typ = typeById(r.type_id), c = catById(r.category_id), b = mocSatirBilgi(r);
+    var rowActions = '';
+    if(canManageRequest(r)) rowActions = '<button class="sm btn-line rowedit" data-id="' + r.id + '">' + t('Düzenle') + '</button> <button class="sm btn-crit rowdel" data-id="' + r.id + '">' + t('Sil') + '</button>';
+    var gunRenk = b.terminal ? 'na' : (b.gun > MOC_ASAMA_SLA_GUN ? 'crit' : (b.gun > 7 ? 'warn' : 'na'));
+    var tempBadge = (typ && typ.requires_end_date && r.planned_end && !b.terminal) ? ' ' + tempWarnPill(r.planned_end) : '';
+    return '<tr class="rowclk" data-id="' + r.id + '"><td>' + esc(r.moc_no || ('#' + r.id)) + '</td>' +
+      '<td><b>' + esc(r.title) + '</b><div class="hint">' + (c ? esc(c.name_tr) : '—') + ' · ' + (typ ? esc(typ.name_tr) : '—') + (r.priority === 'EMERGENCY' ? ' · <span class="pill crit">' + t('Acil') + '</span>' : '') + '</div></td>' +
+      '<td>' + mocMiniBar(b, r) + '<div style="margin-top:3px">' + statusPill(r.status) + (b.idx > -1 && !b.terminal ? ' <span class="hint">' + (b.idx + 1) + '/' + b.n + '</span>' : '') + tempBadge + '</div></td>' +
+      '<td style="min-width:150px">' + esc(b.sirada) + (b.terminal ? '' : '<div class="hint">' + esc(b.sorumlu) + '</div>') + '</td>' +
+      '<td>' + (b.terminal ? '—' : '<span class="pill ' + gunRenk + '">' + b.gun + ' ' + t('gün') + '</span>') + '</td>' +
+      '<td>' + (b.terminal ? '—' : '<b>%' + b.pct + '</b>') + '</td>' +
+      '<td class="mono" style="' + (r.planned_end && r.planned_end < todayISO() && !b.terminal ? 'color:var(--crit);font-weight:700' : '') + '">' + esc(r.planned_end || '—') + '</td>' +
+      '<td>' + (b.proje ? '<span class="pill ' + (b.proje.gec ? 'warn' : 'blue') + '" title="' + esc(b.proje.ad) + '">' + b.proje.pct + '% · ' + b.proje.done + '/' + b.proje.total + (b.proje.gec ? ' ⚠' + b.proje.gec : '') + '</span>' : '<span class="hint">—</span>') + '</td>' +
+      '<td>' + rowActions + '</td></tr>';
+  }).join('');
+  var bos = !f.length ? '<div class="empty" style="padding:22px">' + t('Bu filtreyle eşleşen kayıt yok.') + '</div>' : '';
+  document.getElementById('content').innerHTML =
+    (LISTE_KPI ? '<div class="kpi-filtre"><b>' + t('Filtre') + ':</b> ' + t('Açık MOC') + ' <button class="btn-line sm" id="mocKpiTemizle">✕ ' + t('Filtreyi kaldır') + '</button></div>' : '') +
+    '<div class="mt-filtre">' + chips + asamaSec + '<label class="mt-gec"><input type="checkbox" id="mtGec"' + (LISTE_GEC ? ' checked' : '') + '> ' + t('Yalnız gecikenler') + '</label></div>' +
+    '<div class="panel"><div class="table-scroll"><table><thead><tr><th>' + t('MOC No') + '</th><th>' + t('Başlık') + '</th><th>' + t('Aşama') + '</th><th>' + t('Sıradaki adım') + ' / ' + t('Sorumlu') + '</th><th>' + t('Aşamada') + '</th><th>' + t('İlerleme') + '</th><th>' + t('Termin') + '</th><th>' + t('Uygulama planı') + '</th><th></th></tr></thead><tbody>' + body + '</tbody></table></div>' + bos + '</div>';
+  var yenile = function(){ renderRequestTable(filtreliListe(), LISTE_TURU); };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-chip]'), function(b){ b.onclick = function(){ LISTE_CHIP = b.getAttribute('data-chip'); yenile(); }; });
+  document.getElementById('mtAsama').onchange = function(){ LISTE_ASAMA = this.value; yenile(); };
+  document.getElementById('mtGec').onchange = function(){ LISTE_GEC = this.checked; yenile(); };
+  var kt = document.getElementById('mocKpiTemizle'); if(kt) kt.onclick = function(){ LISTE_KPI = ''; yenile(); };
+  bindRowClicks(rows);
+};
+var _viewListFaz1 = viewList;
+viewList = function(kind){ MOC_ZENGIN_TS = 0; _viewListFaz1(kind); };
+
+/* ---------- BANA DÜŞENLER ---------- */
+NAV_ICONS.inbox = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13h5l1.5 3h5L16 13h5M5 4h14l2 9v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6l2-9Z"/></svg>';
+function mocInboxVeri(){
+  return Promise.all([
+    mocZenginYukle(true),
+    tumSatirlar(function(){ return sb.from('moc_requests').select('id,moc_no,title,status,type_id,category_id,initiator_id,coordinator_id,planned_end,created_at').is('deleted_at', null); }),
+    tumSatirlar(function(){ return sb.from('moc_project_tasks').select('id,project_id,title,status,due_date,assignee_id').eq('assignee_id', cloudUserId); }),
+    tumSatirlar(function(){ return sb.from('moc_trainings').select('id,moc_id,training_type,acknowledged,egitim_enrollment_id').eq('user_id', cloudUserId).eq('acknowledged', false); })
+  ]).then(function(r){
+    var z = r[0], reqs = r[1], byId = {}; reqs.forEach(function(x){ byId[x.id] = x; });
+    var bugun = todayISO();
+    var onay = reqs.filter(mocOnayimdaMi).map(function(x){ var a = activeApprovalStep((z.onay[x.id] || []).slice().sort(function(p, q){ return p.step_order - q.step_order; })); return { r: x, a: a }; });
+    var aks = []; Object.keys(z.aks).forEach(function(mid){ (z.aks[mid] || []).forEach(function(a){ if(a.assignee_id === cloudUserId && a.status !== 'DONE' && a.status !== 'CANCELLED' && byId[mid]) aks.push({ r: byId[mid], a: a }); }); });
+    var gor = (r[2] || []).filter(function(x){ return x.status !== 'DONE' && x.status !== 'CANCELLED'; });
+    var egt = (r[3] || []).filter(function(x){ return byId[x.moc_id]; });
+    var koord = reqs.filter(function(x){ return x.coordinator_id === cloudUserId && MOC_TERMINAL.indexOf(x.status) < 0; });
+    var projeAd = {}; Object.keys(z.proje).forEach(function(mid){ projeAd[z.proje[mid].id] = z.proje[mid].ad; });
+    return { z: z, onay: onay, aks: aks, gor: gor, egt: egt, koord: koord, byId: byId, projeAd: projeAd, bugun: bugun };
+  });
+}
+function mocInboxSayisi(v){ return v.onay.length + v.aks.length + v.gor.length + v.egt.length; }
+function mocInboxRozet(){
+  mocInboxVeri().then(function(v){
+    var n = mocInboxSayisi(v), el = document.querySelector('.navcard[data-v="inbox"] .lbl'); if(!el) return;
+    var eski = el.querySelector('.mt-rz'); if(eski) eski.remove();
+    if(n) el.insertAdjacentHTML('beforeend', ' <span class="pill warn mt-rz">' + n + '</span>');
+  }).catch(function(){});
+}
+function viewInbox(){
+  document.getElementById('pageTitle').textContent = t('Bana Düşenler'); document.getElementById('pageCrumb').textContent = '';
+  document.getElementById('content').innerHTML = '<div class="empty">' + t('Yükleniyor…') + '</div>';
+  mocInboxVeri().then(function(v){
+    var toplam = mocInboxSayisi(v);
+    var gecPill = function(d){ return d ? '<span class="pill ' + (d < v.bugun ? 'crit' : 'na') + '">' + esc(d) + (d < v.bugun ? ' ⚠' : '') + '</span>' : '<span class="hint">—</span>'; };
+    var bolum = function(baslik, sayi, ic){ return '<div class="panel"><div class="ph"><h2>' + t(baslik) + '</h2><span class="pill ' + (sayi ? 'warn' : 'na') + '">' + sayi + '</span></div>' + (sayi ? '<div class="table-scroll">' + ic + '</div>' : '<div class="pb"><span class="hint">' + t('Bekleyen iş yok.') + '</span></div>') + '</div>'; };
+    var acBtn = function(attr, val){ return '<button class="btn-line sm" ' + attr + '="' + val + '">' + t('Aç') + ' →</button>'; };
+    var h = '<div class="mt-ib-ozet"><div><b>' + toplam + '</b><span>' + t('Bana düşen iş') + '</span></div><div><b>' + v.onay.length + '</b><span>' + t('Onayımı bekleyen') + '</span></div><div><b>' + v.aks.length + '</b><span>' + t('Aksiyon') + '</span></div><div><b>' + v.gor.length + '</b><span>' + t('Proje görevi') + '</span></div><div><b>' + v.koord.length + '</b><span>' + t('Koordinatörü olduğum MOC') + '</span></div></div>';
+    if(!toplam && !v.koord.length) h += '<div class="panel">' + renderEmptyState('<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4m5 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>', t('Şu an size düşen bir iş yok.'), t('Onay, aksiyon, proje görevi veya eğitim atandığında burada toplanır.')) + '</div>';
+    else {
+      h += bolum('Onayımı bekleyenler', v.onay.length, '<table><thead><tr><th>MOC</th><th>' + t('Başlık') + '</th><th>' + t('Onay adımı') + '</th><th>' + t('Bekleme') + '</th><th></th></tr></thead><tbody>' + v.onay.map(function(o){
+        var gun = Math.max(0, Math.floor((Date.now() - Date.parse((((v.z.giris[o.r.id] || []).filter(function(g){ return g.st === 'APPROVAL'; })[0]) || {}).t || o.r.created_at)) / 86400000));
+        return '<tr><td>' + esc(o.r.moc_no || '#' + o.r.id) + '</td><td>' + esc(o.r.title) + '</td><td>' + t('Adım') + ' ' + o.a.step_order + ' · ' + esc(rolAd(o.a.role_code)) + '</td><td><span class="pill ' + (gun > 7 ? 'crit' : 'na') + '">' + gun + ' ' + t('gün') + '</span></td><td>' + acBtn('data-ib-moc', o.r.id) + '</td></tr>'; }).join('') + '</tbody></table>');
+      h += bolum('Bana atanan aksiyonlar', v.aks.length, '<table><thead><tr><th>MOC</th><th>' + t('Başlık') + '</th><th>' + t('Aşama') + '</th><th>' + t('Termin') + '</th><th></th></tr></thead><tbody>' + v.aks.sort(function(p, q){ return String(p.a.due_date || '9').localeCompare(String(q.a.due_date || '9')); }).map(function(o){
+        return '<tr><td>' + esc(o.r.moc_no || '#' + o.r.id) + '</td><td>' + esc(o.r.title) + '</td><td>' + t(STATUS_LABEL[o.a.phase] || o.a.phase || '—') + '</td><td>' + gecPill(o.a.due_date) + '</td><td>' + acBtn('data-ib-moc', o.r.id) + '</td></tr>'; }).join('') + '</tbody></table>');
+      h += bolum('Proje görevlerim', v.gor.length, '<table><thead><tr><th>' + t('Görev') + '</th><th>' + t('Proje') + '</th><th>' + t('Durum') + '</th><th>' + t('Termin') + '</th><th></th></tr></thead><tbody>' + v.gor.sort(function(p, q){ return String(p.due_date || '9').localeCompare(String(q.due_date || '9')); }).map(function(g){
+        return '<tr><td>' + esc(g.title) + '</td><td>' + esc(v.projeAd[g.project_id] || '—') + '</td><td>' + esc(projectTaskStatusLabel(g.status)) + '</td><td>' + gecPill(g.due_date) + '</td><td>' + acBtn('data-ib-proje', g.project_id) + '</td></tr>'; }).join('') + '</tbody></table>');
+      h += bolum('Eğitim / bilgilendirme', v.egt.length, '<table><thead><tr><th>MOC</th><th>' + t('Başlık') + '</th><th>' + t('Tür') + '</th><th></th></tr></thead><tbody>' + v.egt.map(function(e){ var r = v.byId[e.moc_id];
+        return '<tr><td>' + esc(r.moc_no || '#' + r.id) + '</td><td>' + esc(r.title) + '</td><td>' + esc(e.training_type || '—') + '</td><td>' + acBtn('data-ib-moc', r.id) + '</td></tr>'; }).join('') + '</tbody></table>');
+      h += bolum('Koordinatörü olduğum açık MOC\'lar', v.koord.length, '<table><thead><tr><th>MOC</th><th>' + t('Başlık') + '</th><th>' + t('Aşama') + '</th><th>' + t('Sıradaki adım') + '</th><th>' + t('Aşamada') + '</th><th></th></tr></thead><tbody>' + v.koord.map(function(r){ var b = mocSatirBilgi(r);
+        return '<tr><td>' + esc(r.moc_no || '#' + r.id) + '</td><td>' + esc(r.title) + '</td><td>' + mocMiniBar(b, r) + '<div>' + statusPill(r.status) + '</div></td><td>' + esc(b.sirada) + '</td><td><span class="pill ' + (b.gun > MOC_ASAMA_SLA_GUN ? 'crit' : 'na') + '">' + b.gun + ' ' + t('gün') + '</span></td><td>' + acBtn('data-ib-moc', r.id) + '</td></tr>'; }).join('') + '</tbody></table>');
+    }
+    document.getElementById('content').innerHTML = h;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-ib-moc]'), function(b){ b.onclick = function(){ go('detail', Number(b.getAttribute('data-ib-moc'))); }; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-ib-proje]'), function(b){ b.onclick = function(){ LAST_PROJECT_ID = b.getAttribute('data-ib-proje'); workspaceProjectAc(); }; });
+    var el = document.querySelector('.navcard[data-v="inbox"] .lbl'); if(el){ var e0 = el.querySelector('.mt-rz'); if(e0) e0.remove(); if(toplam) el.insertAdjacentHTML('beforeend', ' <span class="pill warn mt-rz">' + toplam + '</span>'); }
+  }).catch(function(e){ toast(hataMesaji(e), true); });
+}
+var _renderNavFaz1 = renderNav;
+renderNav = function(){ _renderNavFaz1(); mocInboxRozetSoru(); };
+var _inboxT = 0;
+function mocInboxRozetSoru(){ if(Date.now() - _inboxT < 60000 || ACTIVE_WORKSPACE !== 'moc') return; _inboxT = Date.now(); mocInboxRozet(); }
+
+/* ---------- MOC DETAY: UYGULAMA PLANI KARTI ---------- */
+var _renderDetailFaz1 = renderDetail;
+renderDetail = function(){ _renderDetailFaz1(); mocProjeKartiYukle(); };
+function mocProjeKartiYukle(){
+  var req = DETAIL_CTX && DETAIL_CTX.req; if(!req) return;
+  sb.from('moc_projects').select('id,name,status,planned_end').eq('moc_id', req.id).maybeSingle().then(function(r){
+    if(!DETAIL_CTX.req || DETAIL_CTX.req.id !== req.id) return;
+    var p = r.data, uygulama = ['IMPLEMENTATION', 'DOC_UPDATE', 'TRAINING', 'PSSR', 'STARTUP', 'CLOSED'].indexOf(req.status) > -1;
+    if(!p && !uygulama) return;
+    var yer = document.querySelector('.mt-wrap'); if(!yer || document.getElementById('mocProjeKart')) return;
+    if(!p){
+      yer.insertAdjacentHTML('afterend', '<div class="panel" id="mocProjeKart"><div class="ph"><h2>' + t('Uygulama planı') + '</h2></div><div class="pb"><span class="hint">' + t('Bu MOC için henüz bir uygulama planı (proje) oluşturulmadı.') + '</span> <button class="btn-line sm" id="mocProjeAc">' + t('Proje alanına git') + ' →</button></div></div>');
+      document.getElementById('mocProjeAc').onclick = function(){ LAST_PROJECT_ID = null; workspaceProjectAc(); };
+      return;
+    }
+    sb.from('moc_project_tasks').select('id,title,status,progress,due_date,assignee_id').eq('project_id', p.id).then(function(tr){
+      var ts = tr.data || [], akt = ts.filter(function(x){ return x.status !== 'CANCELLED'; }), bugun = todayISO();
+      var done = akt.filter(function(x){ return x.status === 'DONE'; }).length;
+      var gec = akt.filter(function(x){ return x.due_date && x.due_date < bugun && x.status !== 'DONE'; }).length;
+      var bloke = akt.filter(function(x){ return x.status === 'BLOCKED'; }).length;
+      var sonraki = akt.filter(function(x){ return x.status !== 'DONE'; }).sort(function(a, b){ return String(a.due_date || '9').localeCompare(String(b.due_date || '9')); })[0];
+      var kisi = function(id){ var q = (DETAIL_CTX.people || []).find(function(x){ return x.id === id; }); return q ? q.full_name : ''; };
+      var pct = projectProgressPercent(ts);
+      yer.insertAdjacentHTML('afterend', '<div class="panel" id="mocProjeKart"><div class="ph"><h2>' + t('Uygulama planı') + ': ' + esc(p.name) + '</h2><span class="pill blue">' + esc(projectStatusLabel(p.status)) + '</span></div><div class="pb">' +
+        '<div class="mt-pk"><div class="mt-pk-bar"><i style="width:' + pct + '%"></i></div><b>%' + pct + '</b><span class="hint">' + done + '/' + akt.length + ' ' + t('görev') + '</span>' +
+        (gec ? '<span class="pill crit">' + gec + ' ' + t('geciken') + '</span>' : '') + (bloke ? '<span class="pill warn">' + bloke + ' ' + t('bloke') + '</span>' : '') + '</div>' +
+        (sonraki ? '<div class="hint" style="margin-top:8px">' + t('Sıradaki görev') + ': <b>' + esc(sonraki.title) + '</b>' + (kisi(sonraki.assignee_id) ? ' — ' + esc(kisi(sonraki.assignee_id)) : '') + (sonraki.due_date ? ' — ' + esc(sonraki.due_date) : '') + '</div>' : '') +
+        '<div style="margin-top:10px"><button class="btn-line sm" id="mocProjeAc">' + t('Planı aç') + ' →</button></div></div></div>');
+      document.getElementById('mocProjeAc').onclick = function(){ LAST_PROJECT_ID = p.id; workspaceProjectAc(); };
+    });
+  });
+}
+
+/* ---------- PROJE DETAYI: MOC AŞAMA ŞERİDİ ---------- */
+var _projectRenderDetailFaz1 = projectRenderDetail;
+projectRenderDetail = function(){
+  _projectRenderDetailFaz1();
+  var p = PROJECT_CTX && PROJECT_CTX.project, m = PROJECT_CTX && PROJECT_CTX.moc;
+  if(!p || !p.moc_id || !m || !m.status) return;
+  var view = document.querySelector('#content .view'); if(!view || document.getElementById('prMocSerit')) return;
+  var typ = typeById(m.type_id), st = mocAsamaListesi({ type: typ }), idx = st.indexOf(m.status), terminal = MOC_TERMINAL.indexOf(m.status) > -1;
+  var siradaki = idx > -1 && idx < st.length - 1 ? st[idx + 1] : null;
+  var dots = st.map(function(s, i){ return '<i class="' + (m.status === 'CLOSED' || i < idx ? 'd' : (i === idx ? (terminal ? 'x' : 'n') : '')) + '" title="' + esc(t(STATUS_LABEL[s] || s)) + '"></i>'; }).join('');
+  view.insertAdjacentHTML('afterbegin', '<div class="panel" id="prMocSerit"><div class="pb mt-pm"><span class="mt-mini">' + dots + '</span><div><b>' + esc(m.moc_no || 'MOC') + '</b> · ' + t('MOC aşaması') + ': <span class="pill ' + (STATUS_PILL[m.status] || 'na') + '">' + esc(t(STATUS_LABEL[m.status] || m.status)) + '</span>' +
+    (idx > -1 && !terminal ? ' <span class="hint">' + (idx + 1) + '/' + st.length + '</span>' : '') + (siradaki && !terminal ? ' <span class="hint">→ ' + t('sonraki') + ': ' + esc(t(STATUS_LABEL[siradaki])) + '</span>' : '') + '</div>' +
+    '<button class="btn-line sm" id="prMocSeritAc">' + t('MOC detayı') + ' →</button></div></div>');
+  document.getElementById('prMocSeritAc').onclick = function(){ workspaceMocAc(Number(p.moc_id)); };
+};
+/* ============ FAZ 2 SONU ============ */
 </script>
 </body>
 </html>
