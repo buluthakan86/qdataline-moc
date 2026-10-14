@@ -718,7 +718,7 @@ var I18N={
   'Yüklenemedi':'Could not load','Yüksek':'High','Öncelik':'Priority',
   'Şiddet (sonra, 1-5)':'Severity (after, 1-5)','Şiddet (önce, 1-5)':'Severity (before, 1-5)',
 };
-Object.assign(I18N,{'açık değişiklik':'open changes','onayınızı bekliyor':'awaiting your approval','aktif proje':'active projects','göreviniz var':'tasks for you','geciken görev':'overdue tasks','iş sizi bekliyor':'items are waiting for you','görev':'tasks','Projeler':'Projects','Risk & Checklist':'Risk & Checklist','Onay & İmza':'Approval & Signature','Aksiyonlar':'Actions','Aşama İşleri':'Stage Work','Doküman & Eğitim':'Documents & Training','Dosya & Maliyet':'Files & Cost','Geçmiş':'History','Tümünü göster':'Show all','Sekmeli göster':'Show tabbed','risk':'risks','Bu aşamanın tamamlanması için eksik var':'Something is missing to complete this stage','Bana Düşenler':'My Tasks','Bana düşen iş':'Items for me','Onayımı bekleyen':'Awaiting my approval','Proje görevi':'Project task','Koordinatörü olduğum MOC':'MOCs I coordinate','Şu an size düşen bir iş yok.':'Nothing is waiting for you right now.','Bekleyen iş yok.':'Nothing pending.','Onayımı bekleyenler':'Awaiting my approval','Bana atanan aksiyonlar':'Actions assigned to me','Proje görevlerim':'My project tasks','Eğitim / bilgilendirme':'Training / briefing','Onayımda':'My approval','Benim':'Mine','Açık':'Open','Kapalı':'Closed','Aşama (tümü)':'Stage (all)','Yalnız gecikenler':'Overdue only','Bu filtreyle eşleşen kayıt yok.':'No records match this filter.','Aşamada':'In stage','Uygulama planı':'Implementation plan','Planı aç':'Open plan','Proje alanına git':'Go to projects','Bu MOC için henüz bir uygulama planı (proje) oluşturulmadı.':'No implementation plan (project) has been created for this MOC yet.','Sıradaki görev':'Next task','geciken':'overdue','bloke':'blocked','görev':'tasks','MOC aşaması':'MOC stage','sonraki':'next','MOC detayı':'MOC details','Onay':'Approval','açık aksiyon':'open actions','geçişi için eksikler':'transition blockers','Onayınız bekleniyor':'Your approval is awaited','Geçişi siz yapabilirsiniz':'You can make the transition','Sıradaki adım':'Next step','İlerleme':'Progress','Aşama':'Stage','Onay bekleniyor':'Awaiting approval','Hazır':'Ready','Süreç tamamlandı.':'Process completed.','Süreç sonlandırıldı.':'Process ended.','gündür bekliyor':'days waiting','Bu aşamaya geri dönüldü':'Returned to this stage','yetkili kişi geçişi yapar':'an authorised person makes the transition','Onay zinciri sonuçlanıyor':'Approval chain concluding','Onay adımı tanımlı değil':'No approval step defined','checklist maddesi':'checklist items','aksiyon':'actions','onay':'approvals','doküman':'documents','eğitim':'trainings','Süreç durumu':'Process status','Mevcut aşama':'Current stage','Sıradaki sorumlu':'Current owner','Bu aşamada bekleme':'Time in this stage','Aşamaya giriş':'Entered stage','gün':'days','Hatırlatma taslağı hazırla':'Prepare reminder draft','Hatırlatma taslağı':'Reminder draft','Alıcı adresini girip taslağı e-posta uygulamanızda açın. Mesaj otomatik gönderilmez.':'Enter a recipient and open the draft in your email app. The message is not sent automatically.','Alıcı e-posta':'Recipient email','Konu':'Subject','Mesaj':'Message','E-postada aç':'Open in email app','Geçerli alıcı e-postası girin.':'Enter a valid recipient email.','MOC görev profili':'MOC responsibility profile','MOC görev profili, kişinin süreçteki işlevini belirtir: saha operatörü uygulama yapar, sorumlu işi takip eder, üst yönetim karar verir, denetçi kayıtları inceler. Bu seçim erişim yetkisini değiştirmez; kullanıcı yetkileri ayrı yönetilir.':'The MOC responsibility profile describes each person’s function in the process. This selection does not change access rights; permissions are managed separately.'});
+Object.assign(I18N,{'Aşamada bekleme süresi (SLA)':'Time in stage (SLA)','Bir değişiklik bir aşamada bu süreden uzun kalırsa listede ve detayda ⚠ gösterilir; koordinatöre günlük özet e-postasında bildirilir.':'If a change stays in a stage longer than this, it is flagged with ⚠ in lists and detail and reported to the coordinator in the daily digest e-mail.','1 ile 365 arasında bir gün sayısı girin.':'Enter a number of days between 1 and 365.','Kaydedildi':'Saved','açık değişiklik':'open changes','onayınızı bekliyor':'awaiting your approval','aktif proje':'active projects','göreviniz var':'tasks for you','geciken görev':'overdue tasks','iş sizi bekliyor':'items are waiting for you','görev':'tasks','Projeler':'Projects','Risk & Checklist':'Risk & Checklist','Onay & İmza':'Approval & Signature','Aksiyonlar':'Actions','Aşama İşleri':'Stage Work','Doküman & Eğitim':'Documents & Training','Dosya & Maliyet':'Files & Cost','Geçmiş':'History','Tümünü göster':'Show all','Sekmeli göster':'Show tabbed','risk':'risks','Bu aşamanın tamamlanması için eksik var':'Something is missing to complete this stage','Bana Düşenler':'My Tasks','Bana düşen iş':'Items for me','Onayımı bekleyen':'Awaiting my approval','Proje görevi':'Project task','Koordinatörü olduğum MOC':'MOCs I coordinate','Şu an size düşen bir iş yok.':'Nothing is waiting for you right now.','Bekleyen iş yok.':'Nothing pending.','Onayımı bekleyenler':'Awaiting my approval','Bana atanan aksiyonlar':'Actions assigned to me','Proje görevlerim':'My project tasks','Eğitim / bilgilendirme':'Training / briefing','Onayımda':'My approval','Benim':'Mine','Açık':'Open','Kapalı':'Closed','Aşama (tümü)':'Stage (all)','Yalnız gecikenler':'Overdue only','Bu filtreyle eşleşen kayıt yok.':'No records match this filter.','Aşamada':'In stage','Uygulama planı':'Implementation plan','Planı aç':'Open plan','Proje alanına git':'Go to projects','Bu MOC için henüz bir uygulama planı (proje) oluşturulmadı.':'No implementation plan (project) has been created for this MOC yet.','Sıradaki görev':'Next task','geciken':'overdue','bloke':'blocked','görev':'tasks','MOC aşaması':'MOC stage','sonraki':'next','MOC detayı':'MOC details','Onay':'Approval','açık aksiyon':'open actions','geçişi için eksikler':'transition blockers','Onayınız bekleniyor':'Your approval is awaited','Geçişi siz yapabilirsiniz':'You can make the transition','Sıradaki adım':'Next step','İlerleme':'Progress','Aşama':'Stage','Onay bekleniyor':'Awaiting approval','Hazır':'Ready','Süreç tamamlandı.':'Process completed.','Süreç sonlandırıldı.':'Process ended.','gündür bekliyor':'days waiting','Bu aşamaya geri dönüldü':'Returned to this stage','yetkili kişi geçişi yapar':'an authorised person makes the transition','Onay zinciri sonuçlanıyor':'Approval chain concluding','Onay adımı tanımlı değil':'No approval step defined','checklist maddesi':'checklist items','aksiyon':'actions','onay':'approvals','doküman':'documents','eğitim':'trainings','Süreç durumu':'Process status','Mevcut aşama':'Current stage','Sıradaki sorumlu':'Current owner','Bu aşamada bekleme':'Time in this stage','Aşamaya giriş':'Entered stage','gün':'days','Hatırlatma taslağı hazırla':'Prepare reminder draft','Hatırlatma taslağı':'Reminder draft','Alıcı adresini girip taslağı e-posta uygulamanızda açın. Mesaj otomatik gönderilmez.':'Enter a recipient and open the draft in your email app. The message is not sent automatically.','Alıcı e-posta':'Recipient email','Konu':'Subject','Mesaj':'Message','E-postada aç':'Open in email app','Geçerli alıcı e-postası girin.':'Enter a valid recipient email.','MOC görev profili':'MOC responsibility profile','MOC görev profili, kişinin süreçteki işlevini belirtir: saha operatörü uygulama yapar, sorumlu işi takip eder, üst yönetim karar verir, denetçi kayıtları inceler. Bu seçim erişim yetkisini değiştirmez; kullanıcı yetkileri ayrı yönetilir.':'The MOC responsibility profile describes each person’s function in the process. This selection does not change access rights; permissions are managed separately.'});
 function t(s){ return (LANG==='en' && Object.prototype.hasOwnProperty.call(I18N,s)) ? I18N[s] : s; }
 function applyMocLangStatic(){
   document.documentElement.lang=LANG;
@@ -1225,7 +1225,7 @@ function projectRenderDetail(){
   var p=PROJECT_CTX.project,m=PROJECT_CTX.moc,ph=PROJECT_CTX.phases,ts=PROJECT_CTX.tasks,ms=PROJECT_CTX.milestones||[],people={};
   PROJECT_CTX.people.forEach(function(x){people[String(x.id)]=x.full_name||'—';});
   var dn=ts.filter(function(x){return x.status==='DONE';}).length,late=ts.filter(function(x){return x.due_date&&x.due_date<new Date().toISOString().slice(0,10)&&!['DONE','CANCELLED'].includes(x.status);}).length;
-  var rows=ts.map(function(x){return '<tr><td><b>'+esc(pT(x.title))+'</b>'+projectTaskDependencyNote(x)+'</td><td>'+esc(pT((ph.find(function(y){return String(y.id)===String(x.phase_id);})||{}).name||'—'))+'</td><td>'+esc(people[String(x.assignee_id)]||'—')+'</td><td>'+esc(projectTaskStatusLabel(x.status))+'</td><td><div class="project-progress-inline"><div class="project-flow-progress"><span style="width:'+projectProgressPercent([x])+'%"></span></div><span>'+projectProgressPercent([x])+'%</span></div></td><td>'+pDate(x.due_date)+(x.initial_due_date&&x.initial_due_date!==x.due_date?'<div class="hint">'+pT('İlk termin')+': '+pDate(x.initial_due_date)+'</div>':'')+'</td><td>'+(projectRoleCanEdit()&&projectCanManageTask()?'<button class="btn-line sm" data-pr-task="'+x.id+'">'+pT('Düzenle')+'</button>':'')+'<button class="btn-line sm" data-pr-checks="'+x.id+'">'+pT('Kontrol / Kanıt')+'</button></td></tr>';}).join('');
+  var rows=ts.map(function(x){return '<tr><td><b>'+esc(pT(x.title))+'</b>'+projectTaskDependencyNote(x)+'</td><td>'+esc(pT((ph.find(function(y){return String(y.id)===String(x.phase_id);})||{}).name||'—'))+'</td><td>'+esc(people[String(x.assignee_id)]||'—')+'</td><td>'+esc(projectTaskStatusLabel(x.status))+(x.status==='DONE'&&x.completed_by&&people[String(x.completed_by)]?'<div class="hint">✓ '+esc(people[String(x.completed_by)])+(x.completed_at?' · '+pDate(String(x.completed_at).slice(0,10)):'')+'</div>':'')+'</td><td><div class="project-progress-inline"><div class="project-flow-progress"><span style="width:'+projectProgressPercent([x])+'%"></span></div><span>'+projectProgressPercent([x])+'%</span></div></td><td>'+pDate(x.due_date)+(x.initial_due_date&&x.initial_due_date!==x.due_date?'<div class="hint">'+pT('İlk termin')+': '+pDate(x.initial_due_date)+'</div>':'')+'</td><td>'+(projectRoleCanEdit()&&projectCanManageTask()?'<button class="btn-line sm" data-pr-task="'+x.id+'">'+pT('Düzenle')+'</button>':'')+'<button class="btn-line sm" data-pr-checks="'+x.id+'">'+pT('Kontrol / Kanıt')+'</button></td></tr>';}).join('');
   var milestoneRows=ms.map(function(x){return '<div class="project-milestone"><span class="project-milestone-mark '+(x.completed_at?'done':'')+'">'+(x.completed_at?'✓':'◇')+'</span><div class="project-milestone-main"><b>'+esc(x.name)+'</b><span>'+projectMilestoneTypeLabel(x.milestone_type)+' · '+pDate(x.target_date)+'</span></div><span class="pill '+(x.completed_at?'ok':(x.target_date&&x.target_date<new Date().toISOString().slice(0,10)?'warn':'na'))+'">'+(x.completed_at?pT('Tamamlandı'):(x.target_date&&x.target_date<new Date().toISOString().slice(0,10)?pT('Gecikti'):pT('Beklemede')))+'</span>'+(projectRoleCanEdit()?'<button class="btn-line sm" data-pr-milestone="'+x.id+'" data-done="'+(x.completed_at?'1':'0')+'">'+pT(x.completed_at?'Geri al':'Tamamlandı')+'</button>':'')+'</div>';}).join('');
   var baselinePanel=projectBaselineMarkup();
   var starterPanel=!p.moc_id&&!ts.length?'<div class="panel"><div class="ph"><b>'+pT('Projeyi başlatın')+'</b></div><div class="pb"><p class="hint">'+pT('İlk görevi ekleyin. Sorumlu ve tarih tanımlandığında ilerleme ve zaman çizelgesi dolmaya başlar.')+'</p>'+(projectCanAddTask()?'<div style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" class="btn-leaf sm" id="prStarterTask">+ '+pT('İlk görevi ekle')+'</button><button type="button" class="btn-line sm" id="prStarterInfo">'+pT('Kapsam ve tarihleri düzenle')+'</button><button type="button" class="btn-line sm" id="prStarterCost">'+pT('Bütçe kalemi ekle')+'</button></div>':'')+'</div></div>':'';
@@ -2017,7 +2017,7 @@ function mocCurrentStageInfo(){
     return g.table_name==='moc_requests'&&g.new_data&&g.new_data.status===req.status&&
       (!g.old_data||g.old_data.status!==req.status);
   }).sort(function(a,b){return String(b.created_at).localeCompare(String(a.created_at));});
-  var since=history.length?history[0].created_at:req.created_at;
+  var since=req.stage_entered_at||(history.length?history[0].created_at:req.created_at);   /* Faz 4: kalıcı aşama giriş zamanı */
   var days=Math.max(0,Math.floor((Date.now()-Date.parse(since||new Date().toISOString()))/86400000));
   var approval=req.status==='APPROVAL'?activeApprovalStep(ctx.approvals):null;
   var ownerId=approval&&approval.approver_id||((req.status==='DRAFT')?req.initiator_id:req.coordinator_id);
@@ -3066,7 +3066,7 @@ function renderActionsPanel(){
   var ctx=DETAIL_CTX;
   var rows=ctx.actions.map(function(a){
     return '<tr><td>'+esc(a.title)+'</td><td>'+esc(a.phase)+'</td><td>'+esc(a.due_date||'—')+'</td>'
-      +'<td>'+actionStatusPill(a.status)+'</td>'
+      +'<td>'+actionStatusPill(a.status)+(a.status==='DONE'&&a.completed_by&&mocKisiAdi(a.completed_by)?'<div class="hint">✓ '+esc(mocKisiAdi(a.completed_by))+(a.completed_at?' · '+esc(fmtDT(a.completed_at)):'')+'</div>':'')+'</td>'
       +'<td>'+(canManageAction(a)&&a.status!=='DONE'?'<button class="sm btn-line actdone" data-id="'+a.id+'">'+t('Tamamla')+'</button>':'')+'</td></tr>';
   }).join('');
   var html='<div class="panel"><div class="ph"><h2>'+t('Aksiyonlar')+'</h2>';
@@ -4056,7 +4056,7 @@ function mocZenginYukle(zorla){
 }
 function mocSatirBilgi(r){
   var z = MOC_ZENGIN, typ = typeById(r.type_id), st = mocAsamaListesi({ type: typ }), n = st.length, idx = st.indexOf(r.status), terminal = MOC_TERMINAL.indexOf(r.status) > -1;
-  var giris = ((z.giris[r.id] || []).filter(function(g){ return g.st === r.status; })[0] || {}).t || r.created_at;
+  var giris = r.stage_entered_at || ((z.giris[r.id] || []).filter(function(g){ return g.st === r.status; })[0] || {}).t || r.created_at;
   var gun = Math.max(0, Math.floor((Date.now() - Date.parse(giris)) / 86400000));
   var onaylar = (z.onay[r.id] || []).slice().sort(function(a, b){ return a.step_order - b.step_order; });
   var aksiyonlar = z.aks[r.id] || [];
@@ -4360,6 +4360,41 @@ function mocPickerOzet(){
 var _workspaceAcFaz3 = workspaceAc;
 workspaceAc = function(){ _workspaceAcFaz3(); mocPickerOzet(); };
 /* ============ FAZ 3 SONU ============ */
+
+/* ============================================================================
+   FAZ 4 (15.10.2026) — kalıcı aşama giriş zamanı, tenant SLA ayarı, tamamlayan kişi, günlük özet bildirimi
+   SQL: moc_faz4_asama_sla_tamamlayan_2026_10_15.sql + moc_faz4_daily_notify_2026_10_15.sql (uygulandı).
+   ========================================================================= */
+var MOC_SLA_YUKLENDI = false;
+function mocSlaYukle(){
+  if(MOC_SLA_YUKLENDI) return;
+  MOC_SLA_YUKLENDI = true;
+  sb.from('moc_ayarlar').select('stage_sla_days').maybeSingle().then(function(r){ if(r.data && r.data.stage_sla_days > 0) MOC_ASAMA_SLA_GUN = r.data.stage_sla_days; });
+}
+var _workspaceAcFaz4 = workspaceAc;
+workspaceAc = function(){ mocSlaYukle(); _workspaceAcFaz4(); };
+var _renderSettingsFaz4 = renderSettings;
+renderSettings = function(){
+  _renderSettingsFaz4();
+  if(!canDo('admin')) return;
+  var c = document.getElementById('content'); if(!c || document.getElementById('mocSlaPanel')) return;
+  sb.from('moc_ayarlar').select('stage_sla_days').maybeSingle().then(function(r){
+    var gun = (r.data && r.data.stage_sla_days) || MOC_ASAMA_SLA_GUN;
+    c.insertAdjacentHTML('beforeend', '<div class="panel" id="mocSlaPanel" style="margin-top:14px"><div class="ph"><h2>' + t('Aşamada bekleme süresi (SLA)') + '</h2></div><div class="pb">' +
+      '<p class="hint" style="margin-bottom:10px">' + t('Bir değişiklik bir aşamada bu süreden uzun kalırsa listede ve detayda ⚠ gösterilir; koordinatöre günlük özet e-postasında bildirilir.') + '</p>' +
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input id="mocSlaGun" type="number" min="1" max="365" value="' + gun + '" style="width:90px"> <span>' + t('gün') + '</span>' +
+      '<button class="btn-leaf sm" id="mocSlaKaydet">' + t('Kaydet') + '</button></div></div></div>');
+    document.getElementById('mocSlaKaydet').onclick = function(){
+      var g = parseInt(document.getElementById('mocSlaGun').value, 10);
+      if(!(g >= 1 && g <= 365)){ toast(t('1 ile 365 arasında bir gün sayısı girin.'), true); return; }
+      sb.from('moc_ayarlar').upsert({ tenant_id: cloudTenantId, stage_sla_days: g, updated_by: cloudUserId, updated_at: new Date().toISOString() }, { onConflict: 'tenant_id' }).then(function(x){
+        if(x.error){ toast(hataMesaji(x.error), true); return; }
+        MOC_ASAMA_SLA_GUN = g; toast(t('Kaydedildi'));
+      });
+    };
+  });
+};
+/* ============ FAZ 4 SONU ============ */
 </script>
 </body>
 </html>

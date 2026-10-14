@@ -1345,3 +1345,12 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 - Seçici ekran zenginleştirildi (`mocPickerOzet`): MOC kartında açık değişiklik / onayınızı bekleyen / geciken, Proje kartında aktif proje / göreviniz var / geciken görev; altında "N iş sizi bekliyor → Bana Düşenler" şeridi. **Bana Düşenler** MOC alanının menüsünde (rozetli) ve seçiciden açılır.
 - Sekmeli detay, süreç izleyici, liste sütunları, MOC↔Proje kartları OLDUĞU GİBİ KALDI.
 - Mobil: 390px'te taşma yok; aşama çubuğu şu anki aşamaya kaydırılır (`mocIzleyiciKaydir`), menü kartları küçük ekranda 150×64.
+
+## 15.10.2026 (3) — Faz 4: kalıcı aşama zamanı, SLA ayarı, tamamlayan kişi, günlük özet (CANLI; SQL uygulandı)
+- **SQL** (Supabase CLI ile uygulandı): `moc_faz4_asama_sla_tamamlayan_2026_10_15.sql` + `moc_faz4_daily_notify_2026_10_15.sql` (öncesi: `moc_daily_notify_ONCEKI_2026_10_15.sql`).
+  - `moc_requests.stage_entered_at` + `moc_stage_entered_trg` (insert'te now(), status değişince now()); açık talepler audit'ten geriye doldurıldı (audit/updated_at tetikleyicileri kısa süre kapatılarak).
+  - `moc_ayarlar(tenant_id pk, stage_sla_days default 14)` + RLS (okuma modül yetkilisi, yazma yalnız ADMIN). Ayarlar ekranında "Aşamada bekleme süresi (SLA)" paneli; `MOC_ASAMA_SLA_GUN` girişte yüklenir.
+  - `completed_by` (moc_action_items, moc_project_tasks) + `moc_completed_by_trg` (DONE'a geçince auth.uid(), geri açılınca null). Aksiyon satırında ve proje görev tablosunda "✓ kişi · tarih".
+  - `moc_daily_notify()` (cron 06:20) yeni 4. bölüm: koordinatörü olduğu, SLA'sını aşan değişiklikler ("X aşamasında N gündür").
+- İstemci: `mocCurrentStageInfo` / `mocSatirBilgi` önce `stage_entered_at`'ı kullanır (yoksa audit).
+- **Yapılmadı (bilinçli):** `moc_approvals.due_date` — onay terimi stage_entered_at/önceki karar + SLA'dan türetilebiliyor, alan eklemek her güncellemede audit gürültüsü yaratırdı. Aksiyon↔proje görev tablosu birleştirme: karar bekliyor.
