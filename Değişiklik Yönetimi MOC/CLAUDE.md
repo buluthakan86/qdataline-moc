@@ -1316,3 +1316,12 @@ Bu kayıt önceki “proje verisi yok” ve “grafikler henüz yok” durum not
 
 ## 08.10.2026 — Yüzen düğmeler
 - Q-AI ve Sorun bildir düğmeleri 36 px yuvarlak simge, sağ altta alt alta (ortak QDL-DOCK bloğu, qdl-ajan.js + qdl-destek-link.js). Q-AI rengi koyu menekşe #5B45A8. Modal açıkken gizlenir, küçültülebilir.
+
+## 15.10.2026 — Faz 1: Süreç izleyici (MOC/Proje UX analizi, bkz. Drive `_ajan-raporlari/MOC-Proje-UX-2026-10-14/`)
+- MOC detayının en üstüne **süreç izleyici** eklendi (`renderMocTracker`, MOC.html): yatay aşama çubuğu (✓ tamamlanan: tarih + kişi, `moc_audit_log`'dan; ● şu an: kaç gündür + aşama içi ilerleme kesri; ○ sıradaki; geri dönüşte ↩N rozeti; PSSR yalnız `requires_pssr` türlerde) + **özet şeridi** (aşama n/N, ilerleme %, sıradaki adım + ek engeller, sorumlu, termin, bekleme günü / `MOC_ASAMA_SLA_GUN`=14 üstü ⚠, "Onayınız bekleniyor" / "Geçişi siz yapabilirsiniz").
+- **Pasif "Durum Geçişi" düğmesi neden pasif olduğunu söyler** (`mocEksikler` — `cond` fonksiyonlarının insan dilinde aynası; düğme `title`'ı + altında "geçişi için eksikler" kutusu). cond fonksiyonları DEĞİŞMEDİ; yeni bir koşul eklenirse `mocEksikler` de güncellenmeli.
+- **Onay zinciri satırı**: karar veren kişi, tarih, yorum; bekleyen adımda kimi/kaç gündür bekliyor (`mocOnayDetay`).
+- **Proje listesi yüzdesi** düzeltildi (liste görevlerin `progress` sütununu çekmiyordu: liste %33 / detay %50).
+- İlerleme formülü: `100 × (aşama indeksi + aşama içi oran) / (aşama sayısı − 1)`; aşama içi oran = onay / aksiyon / doküman / eğitim / checklist tamamlanma oranı. Yeni DB alanı YOK (aşama giriş/çıkış audit'ten türetilir).
+- Sıradaki fazlar (onay bekliyor): Faz 2 liste sütunları + "Bana düşenler" + MOC↔Proje kartları; Faz 3 sekmeli detay + tek menü; Faz 4 SQL (stage_entered_at, SLA, completed_by, onay terminleri). Aksiyon↔proje görevi tablo birleştirme KARAR bekliyor (şimdilik arayüzde birleşik gösterim önerildi).
+- Geri alma: renderDetail içindeki `html+=renderMocTracker();` satırını sil; diğer değişiklikler bağımsızdır.
